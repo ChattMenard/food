@@ -1,0 +1,15 @@
+{
+  "appId": "com.pantryai.app",
+  "appName": "PantryAI",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "scheme": "PantryAI"
+  },
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

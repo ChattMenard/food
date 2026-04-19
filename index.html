@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PantryAI">
+    <meta name="theme-color" content="#10b981">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2310b981' rx='20' width='100' height='100'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>P</text></svg>">
+    <title>PantryAI - Smart Meal Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; background: #fef7f0; }
+        .tab-active { border-bottom: 2px solid #d97706; color: #d97706; }
+        input, select { -webkit-appearance: none; appearance: none; }
+        * { max-width: 100vw; }
+        .max-w-6xl { max-width: 100%; }
+        @media (max-width: 768px) {
+            .grid.md\\:grid-cols-2 { grid-template-columns: 1fr; }
+            .grid.md\\:grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <nav class="bg-amber-50 shadow-sm sticky top-0 z-50 border-b border-amber-200">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
+                <span class="text-xl font-bold text-gray-800">PantryAI</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="showTab('pantry')" id="nav-pantry" class="px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Pantry</button>
+                <button onclick="showTab('meals')" id="nav-meals" class="relative px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Meals<span id="meals-badge" class="hidden absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span></button>
+                <button onclick="showTab('plan')" id="nav-plan" class="px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Plan</button>
+                <button onclick="showTab('shop')" id="nav-shop" class="px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Shop</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Settings Bar -->
+        <div class="bg-amber-50 rounded-xl shadow-sm p-4 mb-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 border border-amber-200">
+            <div class="flex flex-col">
+                <label class="text-sm text-gray-600 font-medium">People</label>
+                <select id="people-count" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6+</option>
+                </select>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-sm text-gray-600 font-medium">Diet</label>
+                <select id="diet" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
+                    <option value="none">None</option>
+                    <option value="vegetarian">Veg</option>
+                    <option value="vegan">Vegan</option>
+                    <option value="keto">Keto</option>
+                    <option value="gluten-free">Gluten-Free</option>
+                    <option value="diabetic">Diabetic</option>
+                    <option value="lowcarb">Low-Carb</option>
+                    <option value="lowsodium">Low-Sodium</option>
+                    <option value="heart">Heart</option>
+                </select>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-sm text-gray-600 font-medium">Allergy</label>
+                <select id="allergy" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
+                    <option value="none">None</option>
+                    <option value="dairy">Dairy</option>
+                    <option value="gluten">Gluten</option>
+                    <option value="nuts">Nuts</option>
+                    <option value="onion">Onion</option>
+                    <option value="eggs">Eggs</option>
+                    <option value="soy">Soy</option>
+                    <option value="shellfish">Shellfish</option>
+                </select>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-sm text-gray-600 font-medium">Cuisine</label>
+                <select id="cuisine" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
+                    <option value="all">All</option>
+                    <option value="american">American</option>
+                    <option value="italian">Italian</option>
+                    <option value="mexican">Mexican</option>
+                    <option value="asian">Asian</option>
+                    <option value="indian">Indian</option>
+                    <option value="mediterranean">Mediterranean</option>
+                    <option value="middle-eastern">Middle Eastern</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- PANTRY TAB -->
+        <div id="tab-pantry" class="tab-content">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
+                    <h2 class="text-xl font-semibold mb-4">Your Pantry</h2>
+                    <div class="grid grid-cols-12 gap-2 mb-4">
+                        <div class="col-span-12 sm:col-span-5">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Ingredient</label>
+                            <div class="relative">
+                                <input type="text" id="new-ingredient" placeholder="Type to search..." autocomplete="off" class="w-full border rounded-lg px-3 py-2" oninput="showSuggestions()" onkeydown="handleIngredientKey(event)" onblur="setTimeout(hideSuggestions, 200)">
+                                <div id="ingredient-suggestions" class="hidden absolute top-full left-0 right-0 bg-white border rounded-lg mt-1 max-h-40 overflow-y-auto z-50 shadow-lg text-sm"></div>
+                            </div>
+                        </div>
+                        <div class="col-span-4 sm:col-span-2">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Qty</label>
+                            <input type="number" id="new-quantity" min="1" value="1" step="0.5" class="w-full border rounded-lg px-2 py-2">
+                        </div>
+                        <div class="col-span-4 sm:col-span-2">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Unit</label>
+                            <select id="new-unit" class="w-full border rounded-lg px-2 py-2">
+                                <optgroup label="Count">
+                                    <option value="units">units</option>
+                                    <option value="head">head</option>
+                                    <option value="bunch">bunch</option>
+                                    <option value="loaf">loaf</option>
+                                    <option value="bottle">bottle</option>
+                                    <option value="can">can</option>
+                                    <option value="jar">jar</option>
+                                    <option value="carton">carton</option>
+                                    <option value="pack">pack</option>
+                                    <option value="bag">bag</option>
+                                    <option value="box">box</option>
+                                </optgroup>
+                                <optgroup label="Weight · Metric">
+                                    <option value="mg">mg</option>
+                                    <option value="g">g</option>
+                                    <option value="kg">kg</option>
+                                </optgroup>
+                                <optgroup label="Weight · Standard">
+                                    <option value="oz">oz</option>
+                                    <option value="lbs">lbs</option>
+                                </optgroup>
+                                <optgroup label="Volume · Metric">
+                                    <option value="ml">ml</option>
+                                    <option value="liters">L</option>
+                                </optgroup>
+                                <optgroup label="Volume · Standard">
+                                    <option value="tsp">tsp</option>
+                                    <option value="tbsp">tbsp</option>
+                                    <option value="cups">cups</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="col-span-8 sm:col-span-2">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Purchased</label>
+                            <input type="date" id="new-date" class="w-full border rounded-lg px-2 py-2">
+                        </div>
+                        <div class="col-span-4 sm:col-span-1 flex items-end">
+                            <button id="add-button" onclick="addIngredient()" class="w-full bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 font-medium">Add</button>
+                        </div>
+                    </div>
+                    <button onclick="openCamera()" class="w-full mb-4 bg-orange-100 border-2 border-dashed border-orange-300 rounded-xl p-6 text-gray-600 hover:border-orange-400 hover:text-orange-700 transition">
+                        <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Scan Ingredients (Demo)
+                    </button>
+                    <div id="pantry-list" class="space-y-2 max-h-64 overflow-y-auto">
+                        <p class="text-gray-400 text-sm text-center py-8">No ingredients yet. Add some above!</p>
+                    </div>
+                </div>
+                <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
+                    <h2 class="text-xl font-semibold mb-4">Low Stock Alerts</h2>
+                    <div id="alerts-list" class="space-y-2">
+                        <p class="text-gray-400 text-sm">No alerts yet. Add more ingredients to track.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MEALS TAB -->
+        <div id="tab-meals" class="tab-content hidden">
+            <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Meal Suggestions</h2>
+                    <div class="flex gap-2">
+                        <button onclick="sortMeals('fewest')" class="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Fewest Missing</button>
+                        <button onclick="sortMeals('best')" class="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Best Match</button>
+                        <button onclick="sortMeals('fastest')" class="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Fastest</button>
+                    </div>
+                </div>
+                <div id="meals-list" class="grid md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <p class="text-gray-400 col-span-2 text-center py-8">Add ingredients to your pantry first!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PLAN TAB -->
+        <div id="tab-plan" class="tab-content hidden">
+            <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
+                <h2 class="text-xl font-semibold mb-4">Weekly Meal Plan</h2>
+                <div class="grid md:grid-cols-7 gap-2" id="week-plan">
+                </div>
+                <div class="mt-6 p-4 bg-orange-100 rounded-xl">
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium text-orange-600">Weekly Summary</span>
+                        <span id="plan-stats" class="text-sm text-orange-600"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SHOP TAB -->
+        <div id="tab-shop" class="tab-content hidden">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
+                    <h2 class="text-xl font-semibold mb-4">Shopping List</h2>
+                    <div id="shopping-list" class="space-y-2">
+                        <p class="text-gray-400 text-sm">Select meals to see what you need.</p>
+                    </div>
+                    <button onclick="copyShoppingList()" class="mt-4 w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600">Copy List</button>
+                </div>
+                <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
+                    <h2 class="text-xl font-semibold mb-4">Budget Optimizer</h2>
+                    <div id="budget-tips" class="space-y-3">
+                        <p class="text-gray-400 text-sm">Add meals to see cost-saving tips.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-orange-100 rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Scan Ingredients (Demo)</h3>
+            <div class="bg-gray-100 rounded-xl h-48 flex items-center justify-center mb-4">
+                <div class="text-center text-gray-500">
+                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <p>Camera simulation</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">In production, this would use Google Lens or Vision API to detect ingredients.</p>
+            <div class="flex gap-2">
+                <button onclick="simulateScan()" class="flex-1 bg-orange-500 text-white py-2 rounded-lg">Simulate Scan</button>
+                <button onclick="closeCamera()" class="px-4 py-2 border rounded-lg">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        let pantry = JSON.parse(localStorage.getItem('pantry') || '[]');
+        let mealPlan = JSON.parse(localStorage.getItem('mealPlan') || '{}');
+        let preferences = JSON.parse(localStorage.getItem('preferences') || '{"people":1,"diet":"none"}');
+        let editingIndex = null;
+
+        // Recipes + ingredient vocabulary loaded from bundled dataset
+        let recipes = [];
+        let autocompleteIngredients = [];
+
+        // Keyword heuristics applied to ingredient names for diet/allergy filtering
+        const DIET_KEYWORDS = {
+            meat: ['chicken','beef','pork','turkey','lamb','bacon','ham','sausage','prosciutto','pepperoni','salami','veal','duck','goose','fish','salmon','tuna','shrimp','crab','lobster','anchov','sardine','tilapia','cod'],
+            dairy: ['milk','cheese','butter','cream','yogurt','whey','casein','ghee'],
+            eggs: ['egg'],
+            gluten: ['flour','bread','pasta','noodle','wheat','barley','rye','couscous','tortilla','cracker','biscuit','bagel','pita','crouton','semolina','farina','bulgur','spaghetti','penne','macaroni','lasagna','ramen'],
+            soy: ['soy','tofu','edamame','tempeh','miso'],
+            nuts: ['almond','walnut','pecan','cashew','pistachio','hazelnut','peanut','macadamia']
+        };
+
+        function recipeHasAny(recipe, keywords) {
+            return recipe.ingredients.some(ing => keywords.some(k => ing.includes(k)));
+        }
+
+        function passesDiet(recipe, diet) {
+            if (!diet || diet === 'none') return true;
+            const hasMeat = recipeHasAny(recipe, DIET_KEYWORDS.meat);
+            const hasDairy = recipeHasAny(recipe, DIET_KEYWORDS.dairy);
+            const hasEggs = recipeHasAny(recipe, DIET_KEYWORDS.eggs);
+            const hasGluten = recipeHasAny(recipe, DIET_KEYWORDS.gluten);
+            if (diet === 'vegetarian') return !hasMeat;
+            if (diet === 'vegan') return !hasMeat && !hasDairy && !hasEggs;
+            if (diet === 'gluten-free') return !hasGluten;
+            return true;
+        }
+
+        function passesAllergy(recipe, allergy) {
+            if (!allergy || allergy === 'none') return true;
+            const kws = DIET_KEYWORDS[allergy];
+            if (!kws) return true;
+            return !recipeHasAny(recipe, kws);
+        }
+
+        function passesCuisine(recipe, cuisine) {
+            if (!cuisine || cuisine === 'all') return true;
+            const text = ((recipe.category || '') + ' ' + recipe.name).toLowerCase();
+            return text.includes(cuisine.replace('-', ' '));
+        }
+
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+        async function loadData() {
+            const [ing, rec] = await Promise.all([
+                fetch('data/ingredients.json').then(r => r.json()),
+                fetch('data/recipes.json').then(r => r.json())
+            ]);
+            autocompleteIngredients = ing;
+            recipes = rec;
+        }
+
+        async function init() {
+            preferences.people = preferences.people || 1;
+            document.getElementById('people-count').value = preferences.people;
+            document.getElementById('diet').value = preferences.diet;
+            document.getElementById('allergy').value = preferences.allergy || 'none';
+            document.getElementById('cuisine').value = preferences.cuisine || 'all';
+            renderPantry();
+            renderMealPlan();
+            resetIngredientForm();
+            try {
+                await loadData();
+            } catch (e) {
+                console.error('Failed to load dataset', e);
+            }
+            updateMeals();
+        }
+        init();
+
+        // Tab Navigation
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.querySelectorAll('#nav-pantry, #nav-meals, #nav-plan, #nav-shop').forEach(n => n.classList.remove('tab-active'));
+            document.getElementById('nav-' + tab).classList.add('tab-active');
+            if (tab === 'meals') updateMeals();
+            if (tab === 'shop') updateShoppingList();
+        }
+
+        function showSuggestions() {
+            const input = document.getElementById('new-ingredient');
+            const box = document.getElementById('ingredient-suggestions');
+            const query = input.value.trim().toLowerCase();
+            if (!query) { box.classList.add('hidden'); return; }
+            const matches = autocompleteIngredients.filter(i => i.includes(query)).slice(0, 10);
+            if (matches.length === 0) { box.classList.add('hidden'); return; }
+            box.innerHTML = matches.map(m => `<div onclick="selectSuggestion('${m}')" class="px-4 py-2 hover:bg-orange-200 cursor-pointer capitalize">${m}</div>`).join('');
+            box.classList.remove('hidden');
+        }
+
+        function hideSuggestions() {
+            document.getElementById('ingredient-suggestions').classList.add('hidden');
+        }
+
+        // Smart unit suggestions based on ingredient type
+        const unitHints = {
+            head: ['lettuce', 'cabbage', 'cauliflower', 'broccoli'],
+            bunch: ['bananas', 'grapes', 'parsley', 'cilantro', 'green onion', 'kale', 'spinach', 'asparagus', 'dill'],
+            loaf: ['bread', 'sourdough', 'bagel'],
+            bottle: ['oil', 'vinegar', 'soy sauce', 'hot sauce', 'ketchup', 'mustard', 'bbq', 'worcestershire', 'wine', 'beer', 'syrup', 'juice', 'soda'],
+            can: ['beans', 'tomatoes', 'tuna', 'corn', 'coconut milk'],
+            bag: ['flour', 'sugar', 'rice', 'pasta', 'chips', 'salad'],
+            box: ['cereal', 'granola', 'crackers'],
+            carton: ['milk', 'cream', 'yogurt', 'juice', 'eggs', 'broth'],
+            jar: ['jam', 'jelly', 'peanut butter', 'nutella', 'mayonnaise', 'pickles', 'sauce', 'paste'],
+            pack: ['bacon', 'sausage', 'tortillas', 'cheese'],
+            lbs: ['beef', 'chicken', 'pork', 'turkey', 'fish', 'salmon', 'shrimp', 'ham'],
+            g: [],
+            cups: ['oats'],
+            tsp: ['salt', 'pepper', 'paprika', 'cumin', 'oregano', 'basil', 'thyme', 'rosemary', 'parsley', 'cilantro', 'dill', 'chili powder', 'cinnamon', 'nutmeg', 'vanilla extract'],
+            tbsp: []
+        };
+
+        function suggestUnit(ingredient) {
+            const name = ingredient.toLowerCase();
+            for (const [unit, keywords] of Object.entries(unitHints)) {
+                if (keywords.some(k => name.includes(k))) return unit;
+            }
+            return 'units';
+        }
+
+        function selectSuggestion(value) {
+            document.getElementById('new-ingredient').value = value;
+            document.getElementById('new-unit').value = suggestUnit(value);
+            hideSuggestions();
+            document.getElementById('new-quantity').focus();
+            document.getElementById('new-quantity').select();
+        }
+
+        function handleIngredientKey(e) {
+            if (e.key === 'Enter') {
+                hideSuggestions();
+                addIngredient();
+            } else if (e.key === 'Escape') {
+                hideSuggestions();
+            }
+        }
+
+        // Pantry Functions
+        function ensureUnitOption(value) {
+            if (!value) return;
+            const select = document.getElementById('new-unit');
+            const exists = Array.from(select.options).some(opt => opt.value === value);
+            if (!exists) {
+                const opt = document.createElement('option');
+                opt.value = value;
+                opt.textContent = value;
+                select.appendChild(opt);
+            }
+        }
+
+        function resetIngredientForm() {
+            document.getElementById('new-ingredient').value = '';
+            document.getElementById('new-quantity').value = 1;
+            document.getElementById('new-unit').value = 'units';
+            document.getElementById('new-date').value = new Date().toISOString().split('T')[0];
+            editingIndex = null;
+            const button = document.getElementById('add-button');
+            button.textContent = 'Add';
+            button.classList.remove('bg-amber-700');
+            button.classList.add('bg-orange-500');
+            button.onclick = addIngredient;
+        }
+
+        function addIngredient() {
+            const input = document.getElementById('new-ingredient');
+            const quantity = document.getElementById('new-quantity');
+            const unit = document.getElementById('new-unit');
+            const dateEl = document.getElementById('new-date');
+            const name = input.value.trim().toLowerCase();
+            const purchaseDate = dateEl.value || new Date().toISOString().split('T')[0];
+            if (!name) return;
+            const newItem = { name, quantity: parseFloat(quantity.value) || 1, unit: unit.value, purchaseDate };
+
+            if (editingIndex !== null) {
+                pantry[editingIndex] = { ...pantry[editingIndex], ...newItem };
+            } else if (!pantry.find(i => i.name === name)) {
+                pantry.push(newItem);
+            }
+            savePantry();
+            renderPantry();
+            resetIngredientForm();
+        }
+
+        function daysSince(dateStr) {
+            if (!dateStr) return 0;
+            const diff = new Date() - new Date(dateStr);
+            return Math.floor(diff / (1000 * 60 * 60 * 24));
+        }
+
+        function freshnessLabel(days) {
+            if (days <= 3) return { text: 'Fresh', color: 'text-orange-600' };
+            if (days <= 7) return { text: `${days}d old`, color: 'text-yellow-600' };
+            if (days <= 14) return { text: `${days}d old`, color: 'text-orange-600' };
+            return { text: `${days}d old - use soon!`, color: 'text-red-600' };
+        }
+
+        function editIngredient(index) {
+            const item = pantry[index];
+            editingIndex = index;
+            ensureUnitOption(item.unit);
+            document.getElementById('new-ingredient').value = item.name;
+            document.getElementById('new-quantity').value = item.quantity;
+            document.getElementById('new-unit').value = item.unit;
+            document.getElementById('new-date').value = item.purchaseDate || new Date().toISOString().split('T')[0];
+            const button = document.getElementById('add-button');
+            button.textContent = 'Save';
+            button.classList.remove('bg-orange-500');
+            button.classList.add('bg-amber-700');
+            button.onclick = saveEditedIngredient;
+        }
+
+        function saveEditedIngredient() {
+            addIngredient();
+            resetIngredientForm();
+        }
+
+        function removeIngredient(index) {
+            const item = pantry[index];
+            const ok = confirm(`Remove ${item.name}?`);
+            if (!ok) return;
+            pantry.splice(index, 1);
+            savePantry();
+            renderPantry();
+        }
+
+        function savePantry() {
+            localStorage.setItem('pantry', JSON.stringify(pantry));
+        }
+
+        function renderPantry() {
+            const list = document.getElementById('pantry-list');
+            if (pantry.length === 0) {
+                list.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">No ingredients yet. Add some above!</p>';
+                return;
+            }
+            list.innerHTML = pantry.map((item, i) => {
+                const days = daysSince(item.purchaseDate);
+                const fresh = freshnessLabel(days);
+                return `
+                <div class="flex justify-between items-center p-3 bg-orange-100 rounded-lg">
+                    <div class="flex-1">
+                        <span class="capitalize font-medium">${item.name}</span>
+                        <div class="text-sm text-gray-500">${item.quantity} ${item.unit} · <span class="${fresh.color}">${fresh.text}</span></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editIngredient(${i})" class="text-orange-500 hover:text-orange-700 text-sm">Edit</button>
+                        <button onclick="removeIngredient(${i})" class="text-red-500 hover:text-red-700 text-sm">Remove</button>
+                    </div>
+                </div>
+            `}).join('');
+            renderAlerts();
+        }
+
+        function renderAlerts() {
+            const alerts = document.getElementById('alerts-list');
+            const seen = new Set();
+            const lowStock = pantry.filter(i => {
+                if (i.quantity > 1) return false;
+                const key = i.name.toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            if (lowStock.length === 0) {
+                alerts.innerHTML = '<p class="text-gray-400 text-sm">No alerts yet. Add more ingredients to track.</p>';
+                return;
+            }
+            alerts.innerHTML = lowStock.map(item => `
+                <div class="flex items-center gap-2 p-3 bg-orange-100 border border-orange-200 rounded-lg">
+                    <span class="text-orange-500">!</span>
+                    <span class="capitalize">${item.name}</span>
+                    <span class="text-sm text-orange-600">running low</span>
+                </div>
+            `).join('');
+        }
+
+        // Camera Functions
+        function openCamera() {
+            document.getElementById('camera-modal').classList.remove('hidden');
+            document.getElementById('camera-modal').classList.add('flex');
+        }
+
+        function closeCamera() {
+            document.getElementById('camera-modal').classList.add('hidden');
+            document.getElementById('camera-modal').classList.remove('flex');
+        }
+
+        function simulateScan() {
+            const scanned = ['eggs', 'potatoes', 'onion', 'cheese', 'tomatoes'];
+            scanned.forEach(name => {
+                if (!pantry.find(i => i.name === name)) {
+                    pantry.push({ name, quantity: 3, unit: 'units' });
+                }
+            });
+            savePantry();
+            renderPantry();
+            closeCamera();
+        }
+
+        // Preferences
+        function updatePreferences() {
+            preferences = {
+                people: parseInt(document.getElementById('people-count').value),
+                diet: document.getElementById('diet').value,
+                allergy: document.getElementById('allergy').value,
+                cuisine: document.getElementById('cuisine').value
+            };
+            localStorage.setItem('preferences', JSON.stringify(preferences));
+            updateMeals();
+        }
+
+        // Meal matching: return recipes scored by how much the pantry covers
+        function rankedMeals(sortBy = 'fewest') {
+            const pantryNames = pantry.map(i => i.name.toLowerCase());
+            if (pantryNames.length === 0 || recipes.length === 0) return [];
+
+            const scored = [];
+            for (const r of recipes) {
+                if (!passesDiet(r, preferences.diet)) continue;
+                if (!passesAllergy(r, preferences.allergy)) continue;
+                if (!passesCuisine(r, preferences.cuisine)) continue;
+                const matched = r.ingredients.filter(ing => pantryNames.some(p => ing.includes(p) || p.includes(ing))).length;
+                if (matched < 2) continue;
+                const ratio = matched / r.ingredients.length;
+                if (ratio < 0.25) continue;
+                scored.push({ r, matched, missing: r.ingredients.length - matched, ratio });
+            }
+
+            if (sortBy === 'fewest') {
+                scored.sort((a, b) => a.missing - b.missing || b.ratio - a.ratio);
+            } else if (sortBy === 'best') {
+                scored.sort((a, b) => b.ratio - a.ratio || a.missing - b.missing);
+            } else if (sortBy === 'fastest') {
+                scored.sort((a, b) => a.r.time - b.r.time);
+            }
+            return scored.slice(0, 60);
+        }
+
+        function renderMeals(scored) {
+            const list = document.getElementById('meals-list');
+            const pantryNames = pantry.map(i => i.name.toLowerCase());
+            const badge = document.getElementById('meals-badge');
+
+            if (scored.length > 0) {
+                badge.textContent = scored.length >= 60 ? '60+' : scored.length;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            if (scored.length === 0) {
+                list.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-8">Add more ingredients to get suggestions!</p>';
+                return;
+            }
+
+            list.innerHTML = scored.map(({ r, matched, missing }, i) => `
+                <div class="border rounded-xl p-4 hover:shadow-md transition cursor-pointer" onclick="addToPlanByName('${r.name.replace(/'/g, "\\'")}')">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold">${r.name}</h3>
+                        <span class="text-sm text-orange-600">★${r.rating || '-'}</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-2">${r.time} min${r.servings ? ' · ' + r.servings + ' servings' : ''}</p>
+                    <div class="flex flex-wrap gap-1">
+                        ${r.ingredients.map(ing => `
+                            <span class="text-xs px-2 py-1 rounded-full ${pantryNames.some(p => ing.includes(p) || p.includes(ing)) ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}">
+                                ${ing}
+                            </span>
+                        `).join('')}
+                    </div>
+                    <div class="mt-3 text-xs text-gray-400">
+                        ${matched} of ${r.ingredients.length} ingredients in pantry · ${missing} to buy
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateMeals() {
+            renderMeals(rankedMeals('fewest'));
+        }
+
+        function sortMeals(sortBy) {
+            renderMeals(rankedMeals(sortBy));
+        }
+
+        function addToPlanByName(name) {
+            const recipe = recipes.find(r => r.name === name);
+            if (!recipe) return;
+            const day = Object.keys(mealPlan).length < 7 ? days[Object.keys(mealPlan).length] : days[Math.floor(Math.random() * 7)];
+            mealPlan[day] = recipe.name;
+            localStorage.setItem('mealPlan', JSON.stringify(mealPlan));
+            renderMealPlan();
+        }
+
+        function renderMealPlan() {
+            const plan = document.getElementById('week-plan');
+            plan.innerHTML = days.map(day => `
+                <div class="text-center p-3 bg-orange-100 rounded-lg">
+                    <div class="text-xs text-gray-500 mb-1">${day}</div>
+                    <div class="text-sm font-medium">${mealPlan[day] || '---'}</div>
+                </div>
+            `).join('');
+
+            const totalMin = Object.values(mealPlan).reduce((sum, name) => {
+                const r = recipes.find(r => r.name === name);
+                return sum + (r ? r.time : 0);
+            }, 0);
+
+            document.getElementById('plan-stats').textContent = `${Object.keys(mealPlan).length} meals · ~${totalMin} min total`;
+        }
+
+        // Shopping List Functions
+        function updateShoppingList() {
+            const list = document.getElementById('shopping-list');
+            const tips = document.getElementById('budget-tips');
+            const pantryNames = pantry.map(i => i.name.toLowerCase());
+
+            const needed = {};
+            Object.values(mealPlan).forEach(mealName => {
+                const recipe = recipes.find(r => r.name === mealName);
+                if (recipe) {
+                    recipe.ingredients.forEach(ing => {
+                        const inPantry = pantryNames.some(p => ing.includes(p) || p.includes(ing));
+                        if (!inPantry) {
+                            needed[ing] = (needed[ing] || 0) + 1;
+                        }
+                    });
+                }
+            });
+
+            if (Object.keys(needed).length === 0) {
+                list.innerHTML = '<p class="text-gray-400 text-sm">Add meals to your plan first!</p>';
+                tips.innerHTML = '<p class="text-gray-400 text-sm">Add meals to see cost-saving tips.</p>';
+                return;
+            }
+
+            list.innerHTML = Object.entries(needed).map(([item, qty]) => `
+                <div class="flex justify-between items-center p-3 bg-orange-100 rounded-lg">
+                    <span class="capitalize">${item}</span>
+                    <span class="text-sm text-gray-500">${qty}</span>
+                </div>
+            `).join('');
+
+            // Budget tips
+            const tipTexts = [];
+            const hasPotatoes = pantryNames.includes('potatoes');
+            const hasRice = pantryNames.includes('rice');
+            const hasBeans = pantryNames.includes('beans');
+            const hasEggs = pantryNames.includes('eggs');
+
+            if (hasPotatoes) tipTexts.push('Potatoes can stretch 5+ meals - hash, soup, wedges, salad, fried rice');
+            if (hasRice && hasBeans) tipTexts.push('Rice + beans = complete protein, feeds family cheap');
+            if (hasEggs) tipTexts.push('Eggs are versatile: breakfast, baking, protein boost in any meal');
+            if (Object.keys(needed).length > 5) tipTexts.push('Tip: Prioritize meals using more pantry items to reduce shopping');
+
+            tips.innerHTML = tipTexts.map(t => `
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700">
+                    ${t}
+                </div>
+            `).join('') || '<p class="text-gray-400 text-sm">Add more ingredients for tips.</p>';
+        }
+
+        function copyShoppingList() {
+            const pantryNames = pantry.map(i => i.name.toLowerCase());
+            const needed = {};
+            Object.values(mealPlan).forEach(mealName => {
+                const recipe = recipes.find(r => r.name === mealName);
+                if (recipe) {
+                    recipe.ingredients.forEach(ing => {
+                        const inPantry = pantryNames.some(p => ing.includes(p) || p.includes(ing));
+                        if (!inPantry) {
+                            needed[ing] = (needed[ing] || 0) + 1;
+                        }
+                    });
+                }
+            });
+            const text = Object.entries(needed).map(([item, qty]) => `${item} (${qty})`).join('\n');
+            navigator.clipboard.writeText(text);
+            alert('Shopping list copied!');
+        }
+    </script>
+</body>
+</html>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>

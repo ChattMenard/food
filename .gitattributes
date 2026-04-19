@@ -1,0 +1,4 @@
+scripts/*.csv filter=lfs diff=lfs merge=lfs -text
+scripts/*.json filter=lfs diff=lfs merge=lfs -text
+www/data/recipes*.json filter=lfs diff=lfs merge=lfs -text
+www/data/*.gz filter=lfs diff=lfs merge=lfs -text
