@@ -1,0 +1,18 @@
+{
+  "name": "pantryai",
+  "version": "1.0.0",
+  "description": "AI-Powered Meal Planner",
+  "scripts": {
+    "build:data": "python3 scripts/build_dataset.py",
+    "android": "npm run sync && CAPACITOR_ANDROID_STUDIO_PATH=/home/x99/Downloads/android-studio/bin/studio.sh npx cap open android",
+    "android:build": "JAVA_HOME=/home/x99/Downloads/android-studio/jbr PATH=/home/x99/Downloads/android-studio/jbr/bin:$PATH ./android/gradlew -p android :app:assembleDebug",
+    "ios": "cap add ios && cap open ios",
+    "sync": "cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1"
+  }
+}
