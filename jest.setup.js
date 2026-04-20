@@ -1,0 +1,58 @@
+/**
+ * Jest Setup File
+ * Global setup for test environment
+ */
+
+// Mock IndexedDB
+class MockDB {
+    constructor(name, version) {
+        this.name = name;
+        this.version = version;
+        this.stores = new Map();
+    }
+    
+    async open() {
+        return this;
+    }
+    
+    async transaction(storeNames, mode) {
+        return {
+            objectStore: (name) => this.stores.get(name) || { data: [] }
+        };
+    }
+    
+    async close() {}
+}
+
+global.MockDB = MockDB;
+
+// Mock localStorage
+const localStorageMock = (() => {
+    let store = {};
+    
+    return {
+        getItem: (key) => store[key] || null,
+        setItem: (key, value) => { store[key] = String(value); },
+        removeItem: (key) => { delete store[key]; },
+        clear: () => { store = {}; },
+        get length() { return Object.keys(store).length; },
+        key: (index) => Object.keys(store)[index] || null
+    };
+})();
+
+global.localStorage = localStorageMock;
+
+// Mock fetch
+global.fetch = jest.fn(() =>
+    Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+        text: () => Promise.resolve('{}')
+    })
+);
+
+// Reset mocks before each test
+beforeEach(() => {
+    localStorageMock.clear();
+    fetch.mockClear();
+});

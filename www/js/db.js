@@ -1,12 +1,24 @@
+/**
+ * PantryAI IndexedDB Database Layer
+ * Provides persistent storage for recipes, pantry items, meal plans, preferences, and nutrition logs
+ */
 const DB_NAME = 'pantryai-pro';
 const DB_VERSION = 3;
 
+/**
+ * Main database class for PantryAI
+ * Handles all IndexedDB operations for persistent storage
+ */
 class PantryDB {
     constructor() {
         this.db = null;
         this.ready = this.init();
     }
 
+    /**
+     * Initialize the IndexedDB database and create object stores
+     * @returns {Promise<void>}
+     */
     async init() {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -61,6 +73,11 @@ class PantryDB {
         });
     }
 
+    /**
+     * Load recipe dataset from external file and store in IndexedDB
+     * @param {Function} [progressCallback] - Callback for progress updates (progress, count)
+     * @returns {Promise<number>} Number of recipes loaded
+     */
     async loadRecipes(progressCallback) {
         await this.ready;
 
@@ -95,6 +112,10 @@ class PantryDB {
         return normalized.length;
     }
 
+    /**
+     * Fetch recipe dataset from gzip file or fallback to regular JSON
+     * @returns {Promise<Array>} Array of recipe objects
+     */
     async fetchRecipeDataset() {
         try {
             const res = await fetch('data/recipes_enhanced_gzip.json.gz');
@@ -115,6 +136,11 @@ class PantryDB {
         return fallback.json();
     }
 
+    /**
+     * Normalize recipe data to standard schema
+     * @param {Object} recipe - Raw recipe object
+     * @returns {Object} Normalized recipe object
+     */
     normalizeRecipe(recipe) {
         const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
         const clean = Array.isArray(recipe.ingredients_clean) ? recipe.ingredients_clean : ingredients;
@@ -146,6 +172,11 @@ class PantryDB {
         };
     }
 
+    /**
+     * Build search index for fast recipe queries
+     * @param {Array} recipes - Array of recipe objects
+     * @returns {Promise<void>}
+     */
     async buildSearchIndex(recipes) {
         const index = {};
         const stopWords = new Set(['the', 'and', 'with', 'for', 'you', 'that', 'this']);
@@ -178,6 +209,12 @@ class PantryDB {
         await this.transactionDone(transaction);
     }
 
+    /**
+     * Search recipes by query with optional filters
+     * @param {string} query - Search query string
+     * @param {Object} [filters] - Optional filters (maxTime, maxCalories, diet, cuisine)
+     * @returns {Promise<Array>} Array of matching recipes
+     */
     async searchRecipes(query, filters = {}) {
         await this.ready;
 
@@ -210,6 +247,12 @@ class PantryDB {
         return recipes.slice(0, 50);
     }
 
+    /**
+     * Calculate relevance score for recipe based on search tokens
+     * @param {Object} recipe - Recipe object
+     * @param {Array} tokens - Search tokens
+     * @returns {number} Relevance score
+     */
     calculateRelevanceScore(recipe, tokens) {
         let score = 0;
         const text = `${recipe.name} ${(recipe.ingredients_clean || []).join(' ')}`.toLowerCase();
@@ -224,6 +267,12 @@ class PantryDB {
         return score;
     }
 
+    /**
+     * Get personalized recipe recommendations based on pantry items
+     * @param {Array} pantryItems - Array of pantry items
+     * @param {Object} [preferences] - User preferences (diet, cuisine, maxTime)
+     * @returns {Promise<Array>} Array of recommended recipes
+     */
     async getPersonalizedRecommendations(pantryItems, preferences = {}) {
         await this.ready;
 
@@ -263,6 +312,11 @@ class PantryDB {
             .map(item => item.recipe);
     }
 
+    /**
+     * Create vector representation of pantry items for matching
+     * @param {Array} pantryItems - Array of pantry items or strings
+     * @returns {Map} Vector map of words to counts
+     */
     createPantryVector(pantryItems = []) {
         const vector = new Map();
         pantryItems.forEach(item => {
@@ -277,6 +331,12 @@ class PantryDB {
         return vector;
     }
 
+    /**
+     * Find best matching pantry item for an ingredient
+     * @param {string} ingredient - Ingredient name
+     * @param {Map} pantryVector - Pantry vector
+     * @returns {Object} Match result with score
+     */
     findBestMatch(ingredient, pantryVector) {
         let bestScore = 0;
         const ingWords = String(ingredient).toLowerCase().split(/\W+/).filter(Boolean);
@@ -293,6 +353,12 @@ class PantryDB {
         return { score: bestScore };
     }
 
+    /**
+     * Calculate string similarity using Levenshtein distance
+     * @param {string} a - First string
+     * @param {string} b - Second string
+     * @returns {number} Similarity score (0-1)
+     */
     stringSimilarity(a, b) {
         if (!a || !b) return 0;
         if (a === b) return 1;
@@ -318,6 +384,13 @@ class PantryDB {
         return 1 - distance / maxLen;
     }
 
+    /**
+     * Log nutrition data for a meal
+     * @param {Date|string} date - Date of meal
+     * @param {number} recipeId - Recipe ID
+     * @param {number} servings - Number of servings
+     * @returns {Promise<Object>} Logged nutrition entry
+     */
     async logNutrition(date, recipeId, servings) {
         const recipe = await this.get('recipes', recipeId);
         if (!recipe) throw new Error('Recipe not found');
@@ -344,6 +417,11 @@ class PantryDB {
         return log;
     }
 
+    /**
+     * Get daily nutrition totals
+     * @param {Date|string} date - Date to query
+     * @returns {Promise<Object>} Daily nutrition data with totals and meals
+     */
     async getDailyNutrition(date) {
         const safeDate = date instanceof Date ? date : new Date(date);
         const dateStr = safeDate.toISOString().split('T')[0];
@@ -374,6 +452,10 @@ class PantryDB {
         };
     }
 
+    /**
+     * Get nutrition data for the past 7 days
+     * @returns {Promise<Array>} Array of daily nutrition objects
+     */
     async getWeeklyNutrition() {
         const week = [];
         const today = new Date();
@@ -387,6 +469,11 @@ class PantryDB {
         return week;
     }
 
+    /**
+     * Promisify an IndexedDB transaction
+     * @param {IDBTransaction} transaction - Transaction to promisify
+     * @returns {Promise<void>}
+     */
     transactionDone(transaction) {
         return new Promise((resolve, reject) => {
             transaction.oncomplete = () => resolve();
@@ -395,6 +482,11 @@ class PantryDB {
         });
     }
 
+    /**
+     * Promisify an IndexedDB request
+     * @param {IDBRequest} request - Request to promisify
+     * @returns {Promise<any>} Request result
+     */
     promisify(request) {
         return new Promise((resolve, reject) => {
             request.onsuccess = () => resolve(request.result);
@@ -402,6 +494,12 @@ class PantryDB {
         });
     }
 
+    /**
+     * Get a single item from an object store
+     * @param {string} storeName - Name of object store
+     * @param {*} key - Key to retrieve
+     * @returns {Promise<any>} Retrieved item
+     */
     async get(storeName, key) {
         await this.ready;
         const transaction = this.db.transaction(storeName, 'readonly');
@@ -409,6 +507,11 @@ class PantryDB {
         return this.promisify(store.get(key));
     }
 
+    /**
+     * Get all items from an object store
+     * @param {string} storeName - Name of object store
+     * @returns {Promise<Array>} Array of all items
+     */
     async getAll(storeName) {
         await this.ready;
         const transaction = this.db.transaction(storeName, 'readonly');
@@ -416,6 +519,11 @@ class PantryDB {
         return this.promisify(store.getAll());
     }
 
+    /**
+     * Count items in an object store
+     * @param {string} storeName - Name of object store
+     * @returns {Promise<number>} Count of items
+     */
     async count(storeName) {
         await this.ready;
         const transaction = this.db.transaction(storeName, 'readonly');
@@ -423,6 +531,12 @@ class PantryDB {
         return this.promisify(store.count());
     }
 
+    /**
+     * Put an item into an object store
+     * @param {string} storeName - Name of object store
+     * @param {*} item - Item to store
+     * @returns {Promise<any>} Stored item key
+     */
     async put(storeName, item) {
         await this.ready;
         const transaction = this.db.transaction(storeName, 'readwrite');
@@ -430,6 +544,12 @@ class PantryDB {
         return this.promisify(store.put(item));
     }
 
+    /**
+     * Delete an item from an object store
+     * @param {string} storeName - Name of object store
+     * @param {*} key - Key to delete
+     * @returns {Promise<void>}
+     */
     async delete(storeName, key) {
         await this.ready;
         const transaction = this.db.transaction(storeName, 'readwrite');
@@ -438,10 +558,19 @@ class PantryDB {
     }
 
     // ===== PANTRY HELPERS =====
+    /**
+     * Get all pantry items
+     * @returns {Promise<Array>} Array of pantry items
+     */
     async getPantry() {
         return this.getAll('pantry');
     }
 
+    /**
+     * Set all pantry items (replaces existing)
+     * @param {Array} items - Array of pantry items
+     * @returns {Promise<void>}
+     */
     async setPantry(items) {
         const tx = this.db.transaction('pantry', 'readwrite');
         const store = tx.objectStore('pantry');
@@ -452,15 +581,29 @@ class PantryDB {
         return this.transactionDone(tx);
     }
 
+    /**
+     * Add a single pantry item
+     * @param {Object} item - Pantry item to add
+     * @returns {Promise<any>} Stored item key
+     */
     async addPantryItem(item) {
         return this.put('pantry', item);
     }
 
+    /**
+     * Remove a pantry item by ID
+     * @param {number} id - Item ID to remove
+     * @returns {Promise<void>}
+     */
     async removePantryItem(id) {
         return this.delete('pantry', id);
     }
 
     // ===== MEAL PLAN HELPERS =====
+    /**
+     * Get meal plan as object keyed by date
+     * @returns {Promise<Object>} Meal plan object
+     */
     async getMealPlan() {
         const items = await this.getAll('mealPlan');
         const plan = {};
@@ -470,6 +613,11 @@ class PantryDB {
         return plan;
     }
 
+    /**
+     * Set meal plan (replaces existing)
+     * @param {Object} plan - Meal plan object keyed by date
+     * @returns {Promise<void>}
+     */
     async setMealPlan(plan) {
         const tx = this.db.transaction('mealPlan', 'readwrite');
         const store = tx.objectStore('mealPlan');
@@ -480,25 +628,49 @@ class PantryDB {
         return this.transactionDone(tx);
     }
 
+    /**
+     * Add a meal to the plan for a specific date
+     * @param {string} date - Date key
+     * @param {Object} meal - Meal object
+     * @returns {Promise<any>} Stored item key
+     */
     async addMealToPlan(date, meal) {
         return this.put('mealPlan', { ...meal, date });
     }
 
+    /**
+     * Remove a meal from the plan for a specific date
+     * @param {string} date - Date key
+     * @returns {Promise<void>}
+     */
     async removeMealFromPlan(date) {
         return this.delete('mealPlan', date);
     }
 
     // ===== PREFERENCES HELPERS =====
+    /**
+     * Get user preferences
+     * @returns {Promise<Object>} Preferences object with defaults
+     */
     async getPreferences() {
         const prefs = await this.get('preferences', 'main');
         return prefs || { people: 1, diet: 'none', allergy: 'none', cuisine: 'all' };
     }
 
+    /**
+     * Set user preferences
+     * @param {Object} prefs - Preferences object
+     * @returns {Promise<any>} Stored item key
+     */
     async setPreferences(prefs) {
         return this.put('preferences', { ...prefs, key: 'main' });
     }
 
     // ===== MIGRATION =====
+    /**
+     * Migrate data from localStorage to IndexedDB
+     * @returns {Promise<Object>} Migration status object
+     */
     async migrateFromLocalStorage() {
         const migrated = { pantry: false, mealPlan: false, preferences: false };
 
@@ -547,5 +719,9 @@ class PantryDB {
     }
 }
 
+/**
+ * Global database instance
+ * @type {PantryDB}
+ */
 const db = new PantryDB();
 export default db;

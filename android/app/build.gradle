@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+task syncWebAssets(type: Copy) {
+    from '../../www'
+    into 'src/main/assets/public'
+}
+preBuild.dependsOn syncWebAssets
+
 android {
     namespace = "com.pantryai.app"
     compileSdk = rootProject.ext.compileSdkVersion
