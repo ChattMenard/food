@@ -1,22 +1,30 @@
-const CACHE_NAME = 'pantryai-v2';
-const STATIC_CACHE = 'pantryai-static-v2';
-const DATA_CACHE = 'pantryai-data-v2';
+const CACHE_NAME = 'main-v4';
+const STATIC_CACHE = 'main-static-v4';
+const DATA_CACHE = 'main-data-v4';
 
 const staticUrlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/js/db.js',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
+  '/manifest.json?v=4',
+  '/css/output.css?v=4'
 ];
 
 // Install: Cache static assets
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(STATIC_CACHE)
+    // Clear old caches first
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames
+          .filter(name => name !== STATIC_CACHE && name !== DATA_CACHE)
+          .map(name => {
+            console.log('[SW] Deleting old cache:', name);
+            return caches.delete(name);
+          })
+      );
+    }).then(() => caches.open(STATIC_CACHE))
       .then(cache => {
-        console.log('[SW] Caching static assets');
+        console.log('[SW] Caching static assets v4');
         return cache.addAll(staticUrlsToCache);
       })
       .catch(err => console.error('[SW] Cache failed:', err))
@@ -30,7 +38,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames
-          .filter(name => name.startsWith('pantryai-') && name !== STATIC_CACHE && name !== DATA_CACHE)
+          .filter(name => name.startsWith('main-') && name !== STATIC_CACHE && name !== DATA_CACHE)
           .map(name => {
             console.log('[SW] Deleting old cache:', name);
             return caches.delete(name);
@@ -98,7 +106,7 @@ self.addEventListener('fetch', event => {
 // Push notifications
 self.addEventListener('push', event => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'PantryAI Alert';
+  const title = data.title || 'Main Alert';
   const options = {
     body: data.body || 'You have a notification',
     icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2310b981" rx="20" width="100" height="100"/><text x="50" y="65" font-size="50" text-anchor="middle" fill="white">P</text></svg>',

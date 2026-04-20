@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>PantryAI</string>
+        <string>Main</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,11 +48,11 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>PantryAI needs camera access to scan barcodes and take photos of receipts</string>
+	<string>Main needs camera access to scan barcodes and take photos of receipts</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>PantryAI needs photo library access to save recipe images and shopping lists</string>
+	<string>Main needs photo library access to save recipe images and shopping lists</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>PantryAI needs permission to save photos to your library</string>
+	<string>Main needs permission to save photos to your library</string>
 	<key>UIUserInterfaceStyle</key>
 	<string>Automatic</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

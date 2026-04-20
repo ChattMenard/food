@@ -7,10 +7,10 @@ task syncWebAssets(type: Copy) {
 preBuild.dependsOn syncWebAssets
 
 android {
-    namespace = "com.pantryai.app"
+    namespace = "com.main.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.pantryai.app"
+        applicationId "com.main.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

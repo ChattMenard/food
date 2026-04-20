@@ -51,8 +51,51 @@ global.fetch = jest.fn(() =>
     })
 );
 
+// Mock db.js module with state tracking
+const mockDbStore = new Map();
+
+jest.mock('./www/js/data/db.js', () => ({
+    __esModule: true,
+    default: {
+        ready: Promise.resolve(),
+        get: jest.fn((store, key) => {
+            // Handle cost-savings specially for costTracker tests
+            if (key === 'cost-savings') {
+                const value = mockDbStore.get(key);
+                return Promise.resolve(value || null);
+            }
+            return Promise.resolve(mockDbStore.get(key) || null);
+        }),
+        put: jest.fn((store, item) => {
+            // Handle cost-savings specially
+            if (item && item.key === 'cost-savings') {
+                mockDbStore.set(item.key, item);
+            } else if (item && item.key) {
+                mockDbStore.set(item.key, item);
+            }
+            return Promise.resolve();
+        }),
+        add: jest.fn(() => Promise.resolve()),
+        delete: jest.fn(() => Promise.resolve()),
+        getPantry: jest.fn(() => Promise.resolve([])),
+        setPantry: jest.fn(() => Promise.resolve()),
+        getMealPlan: jest.fn(() => Promise.resolve({})),
+        setMealPlan: jest.fn(() => Promise.resolve()),
+        getPreferences: jest.fn(() => Promise.resolve({})),
+        setPreferences: jest.fn(() => Promise.resolve()),
+        addMutation: jest.fn(() => Promise.resolve()),
+        getPendingMutations: jest.fn(() => Promise.resolve([])),
+        markMutationSynced: jest.fn(() => Promise.resolve()),
+        markMutationFailed: jest.fn(() => Promise.resolve()),
+        incrementMutationRetry: jest.fn(() => Promise.resolve(0)),
+        // Expose store for test inspection
+        _store: mockDbStore
+    }
+}));
+
 // Reset mocks before each test
 beforeEach(() => {
     localStorageMock.clear();
+    mockDbStore.clear();
     fetch.mockClear();
 });

@@ -33,6 +33,30 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Meal Widget -->
+        <receiver android:name=".widget.MealWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/meal_widget_info" />
+        </receiver>
+
+        <!-- Android Intents Receiver -->
+        <receiver android:name=".intents.MealIntentReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.main.app.ADD_INGREDIENT" />
+                <action android:name="com.main.app.ADD_MEAL" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Native Push Notification Receiver -->
+        <receiver android:name=".push.NotificationReceiver"
+            android:exported="false" />
     </application>
 
     <!-- Permissions -->

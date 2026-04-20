@@ -10,6 +10,12 @@ export default {
         '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
         '^@/(.*)$': '<rootDir>/$1'
     },
+    transform: {
+        '^.+\\.jsx?$': 'babel-jest'
+    },
+    transformIgnorePatterns: [
+        'node_modules'
+    ],
     collectCoverageFrom: [
         'www/js/**/*.js',
         '!www/js/**/*.test.js',
@@ -24,6 +30,5 @@ export default {
         '/node_modules/',
         '/e2e/'
     ],
-    transform: {},
     verbose: true
 };
