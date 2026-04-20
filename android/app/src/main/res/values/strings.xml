@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Main</string>
     <string name="title_activity_main">Main</string>
-    <string name="package_name">com.pantryai.app</string>
-    <string name="custom_url_scheme">com.pantryai.app</string>
+    <string name="package_name">com.main.app</string>
+    <string name="custom_url_scheme">com.main.app</string>
+    <string name="widget_description">See your pantry count and upcoming meals</string>
 </resources>

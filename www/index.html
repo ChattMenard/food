@@ -7,10 +7,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Main">
     <meta name="theme-color" content="#10b981">
-    <link rel="manifest" href="manifest.json">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="manifest" href="manifest.json?v=4">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2310b981' rx='20' width='100' height='100'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>P</text></svg>">
     <title>Main</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/output.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; background: #fef7f0; }
@@ -42,7 +45,7 @@
     <nav class="bg-amber-50 shadow-sm sticky top-0 z-50 border-b border-amber-200">
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center">
-                <img src="logo.png" alt="Main" class="h-12 w-12 rounded-lg object-cover">
+                <img src="logo.png" alt="Main" class="h-14 w-14 rounded-lg object-cover">
             </div>
             <div class="flex items-center gap-2 sm:gap-4 flex-wrap">
                 <button onclick="showTab('pantry')" id="nav-pantry" class="px-3 sm:px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Pantry</button>
@@ -133,30 +136,28 @@
         <!-- PANTRY TAB -->
         <div id="tab-pantry" class="tab-content">
             <div class="grid md:grid-cols-2 gap-6">
-                <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xl font-semibold">Your Pantry</h2>
-                        <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">AI-Powered</span>
+                <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-sm p-6 border border-purple-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-purple-800">🤖 AI-Powered Pantry</h2>
                     </div>
                     <p class="text-sm text-gray-600 mb-3">Type ingredients to add them, or ask the AI anything about cooking, substitutions, or meal ideas.</p>
                     <div class="flex gap-2 mb-2">
                         <div class="relative flex-1">
-                            <input type="text" id="new-ingredient" placeholder="Add ingredients or ask the AI anything…" autocomplete="off" class="w-full border rounded-lg px-3 py-2" oninput="showSuggestions()" onkeydown="handleIngredientKey(event)" onblur="setTimeout(hideSuggestions, 200)">
-                            <div id="ingredient-suggestions" class="hidden absolute top-full left-0 right-0 bg-white border rounded-lg mt-1 max-h-40 overflow-y-auto z-50 shadow-lg text-sm"></div>
+                            <input type="text" id="new-ingredient" placeholder="Add ingredients or ask the AI anything…" autocomplete="off" class="w-full border border-purple-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" oninput="showSuggestions()" onkeydown="handleIngredientKey(event)" onblur="setTimeout(hideSuggestions, 200)">
                         </div>
-                        <button id="add-button" onclick="routeInput()" class="bg-orange-500 text-white px-5 py-2 rounded-lg hover:bg-orange-600 font-medium">Send</button>
+                        <button id="add-button" onclick="routeInput()" class="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 font-medium">Send</button>
                     </div>
-                    <div id="pantry-ai-response" class="hidden mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm">
+                    <div id="pantry-ai-response" class="hidden mb-3 p-3 bg-white border border-purple-200 rounded-lg text-sm">
                         <div class="flex justify-between items-start gap-2">
                             <div id="pantry-ai-response-text" class="text-gray-800 leading-relaxed flex-1"></div>
                             <button onclick="document.getElementById('pantry-ai-response').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 shrink-0">✕</button>
                         </div>
                     </div>
-                    <button onclick="startSpeechRecognition()" class="w-full mb-4 bg-orange-100 border-2 border-dashed border-orange-300 rounded-xl p-6 text-gray-600 hover:border-orange-400 hover:text-orange-700 transition">
+                    <button onclick="startSpeechRecognition()" class="w-full mb-4 bg-purple-100 border-2 border-dashed border-purple-300 rounded-xl p-6 text-gray-600 hover:border-purple-400 hover:text-purple-700 transition">
                         <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
                         Add by Voice
                     </button>
-                    <div id="pantry-list" class="space-y-2 max-h-64 overflow-y-auto">
+                    <div id="pantry-list" class="space-y-2 max-h-64 overflow-y-auto bg-white rounded-lg p-3 border border-purple-100">
                         <p class="text-gray-400 text-sm text-center py-8">No ingredients yet. Add some above!</p>
                     </div>
                 </div>
@@ -180,9 +181,6 @@
                     <button onclick="getAISuggestions()" id="ai-suggestions-btn" class="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 text-sm font-medium">
                         Get AI Meal Ideas
                     </button>
-                    <button onclick="getAIMealPlan()" id="ai-mealplan-btn" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium">
-                        Generate AI Meal Plan
-                    </button>
                 </div>
                 <div id="ai-suggestions-container" class="space-y-3">
                     <p class="text-gray-500 text-sm text-center py-4">Click above for AI-powered suggestions, or ask anything from the Pantry tab</p>
@@ -190,12 +188,19 @@
             </div>
             
             <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold">Meal Suggestions</h2>
-                    <div class="flex gap-2">
-                        <button onclick="sortMeals('fewest')" class="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Fewest Missing</button>
-                        <button onclick="sortMeals('best')" class="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Best Match</button>
-                        <button onclick="sortMeals('fastest')" class="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Fastest</button>
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                    <h2 class="text-xl font-semibold">All Recipes</h2>
+                    <div class="flex items-center gap-2">
+                        <select id="meals-sort" onchange="sortMeals(this.value, document.getElementById('meals-sort-dir').value)" class="text-sm border border-orange-300 rounded-lg px-2 py-1 bg-white" title="Sort by">
+                            <option value="fewest">Fewest Missing</option>
+                            <option value="best">Best Match</option>
+                            <option value="fastest">Fastest</option>
+                            <option value="difficulty">Difficulty</option>
+                            <option value="ingredients">Ingredients</option>
+                            <option value="rating">Rating</option>
+                            <option value="name">Name</option>
+                        </select>
+                        <button id="meals-sort-dir" onclick="const btn=this; const dir=btn.value==='asc'?'desc':'asc'; btn.value=dir; btn.textContent=dir==='asc'?'↑':'↓'; sortMeals(document.getElementById('meals-sort').value, dir)" value="asc" class="px-3 py-1 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-bold" title="Sort direction">↑</button>
                     </div>
                 </div>
                 <div id="meals-list" class="grid md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -206,6 +211,15 @@
 
         <!-- PLAN TAB -->
         <div id="tab-plan" class="tab-content hidden">
+            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-sm p-6 border border-indigo-200 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-indigo-800">🤖 AI Meal Planning</h2>
+                </div>
+                <button onclick="getAIMealPlan()" id="ai-mealplan-btn" class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 text-sm font-medium">
+                    Generate AI Meal Plan
+                </button>
+                <div id="ai-mealplan-container" class="mt-4 space-y-3"></div>
+            </div>
             <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
                 <h2 class="text-xl font-semibold mb-4">Weekly Meal Plan</h2>
                 <div class="grid md:grid-cols-7 gap-2" id="week-plan">
@@ -291,26 +305,33 @@
     </div>
 
     <script type="module">
-        import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState } from './js/appState.js';
-        import { PantryManager } from './js/pantryManager.js';
-        import { MealPlanner } from './js/mealPlanner.js';
-        import { RecipeEngine } from './js/recipeEngine.js';
-        import { DataManager } from './js/dataManager.js';
-        import { UIManager } from './js/uiManager.js';
-        import { PreferencesManager } from './js/preferencesManager.js';
-        import { getSeasonalIngredientSuggestion } from './js/seasonalIngredients.js';
-        import { MealPlanSharing } from './js/mealPlanSharing.js';
-        import { MealPlanTemplates } from './js/mealPlanTemplates.js';
-        import { LeftoverTracker } from './js/leftoverTracker.js';
-        import { MealPrep } from './js/mealPrep.js';
-        import { GeminiAI } from './js/geminiAI.js';
+        import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState } from './js/core/appState.js';
+        import { PantryManager } from './js/features/pantry/pantryManager.js';
+        import { MealPlanner } from './js/features/meals/mealPlanner.js';
+        import { RecipeEngine } from './js/logic/recipeEngine.js';
+        import { DataManager } from './js/data/dataManager.js';
+        import { UIManager } from './js/ui/uiManager.js';
+        import { PreferencesManager } from './js/features/preferencesManager.js';
+        import { getSeasonalIngredientSuggestion } from './js/features/pantry/seasonalIngredients.js';
+        import { MealPlanSharing } from './js/features/plan/mealPlanSharing.js';
+        import { MealPlanTemplates } from './js/features/plan/mealPlanTemplates.js';
+        import { LeftoverTracker } from './js/features/pantry/leftoverTracker.js';
+        import { MealPrep } from './js/features/mealPrep.js';
+        import { GeminiAI } from './js/ai/geminiAI.js';
+        import syncProcessor from './js/data/syncProcessor.js';
+        import { registerAllHandlers } from './js/data/mutationHandlers.js';
+        import nutritionGoalsManager from './js/features/nutrition/nutritionGoals.js';
+        import budgetMealPlanner from './js/features/plan/budgetMealPlanner.js';
+        import mealPrepPlanner from './js/features/plan/mealPrepPlanner.js';
+        import groceryDelivery from './js/features/grocery/groceryDelivery.js';
+        import deviceSyncManager from './js/data/deviceSyncManager.js';
+        import pushNotifications from './js/utils/pushNotifications.js';
         // Data
-        const initialState = loadState();
-        let pantry = initialState.pantry;
-        let mealPlan = initialState.mealPlan;
-        let preferences = initialState.preferences;
+        let pantry = [];
+        let mealPlan = {};
+        let preferences = { people: 1, diet: 'none', diets: [], allergy: 'none', cuisine: 'all', maxTime: 60, difficulty: 'any' };
         let editingIndex = null;
-        let recipeRatings = initialState.recipeRatings;
+        let recipeRatings = {};
 
         // Recipes + ingredient vocabulary loaded from bundled dataset
         let recipes = [];
@@ -323,7 +344,7 @@
 
         const pantryManager = new PantryManager({
             getPantry: () => pantry,
-            persistPantry: () => savePantryState(pantry),
+            persistPantry: async () => { await savePantryState(pantry); },
             announce: message => uiManager.announceToScreenReader(message),
             getAutocompleteIngredients: () => autocompleteIngredients,
             getEditingIndex: () => editingIndex,
@@ -334,7 +355,7 @@
         const recipeEngine = new RecipeEngine({
             getRecipes: () => recipes,
             getRecipeRatings: () => recipeRatings,
-            persistRecipeRatings: () => saveRecipeRatingsState(recipeRatings),
+            persistRecipeRatings: async () => { await saveRecipeRatingsState(recipeRatings); },
             announce: message => uiManager.announceToScreenReader(message)
         });
 
@@ -344,23 +365,45 @@
             updateMeals: () => { updateMeals(); window._recipesLoaded = true; }
         });
 
+        // Initialize sync system
+        registerAllHandlers(syncProcessor);
+        console.log('[App] Sync processor initialized:', syncProcessor.getStatus());
+
+        // Initialize nutrition goals
+        try { await nutritionGoalsManager.loadGoals(); console.log('[App] Nutrition goals loaded'); } catch(e) { console.error('[App] Nutrition goals failed:', e); }
+
+        // Initialize budget meal planner
+        try { await budgetMealPlanner.loadTier(); console.log('[App] Budget tier loaded'); } catch(e) { console.error('[App] Budget tier failed:', e); }
+
+        // Initialize meal prep planner
+        try { await mealPrepPlanner.loadSettings(); console.log('[App] Meal prep settings loaded'); } catch(e) { console.error('[App] Meal prep settings failed:', e); }
+
+        // Initialize grocery delivery
+        try { await groceryDelivery.loadPreferences(); console.log('[App] Grocery preferences loaded'); } catch(e) { console.error('[App] Grocery preferences failed:', e); }
+
+        // Initialize device sync
+        try { await deviceSyncManager.init(); console.log('[App] Device sync initialized'); } catch(e) { console.error('[App] Device sync failed:', e); }
+
+        // Initialize push notifications
+        try { await pushNotifications.init(); console.log('[App] Push notifications initialized'); pushNotifications.scheduleAllEnabled(); } catch(e) { console.error('[App] Push notifications failed:', e); }
+
         const preferencesManager = new PreferencesManager({
             getPreferences: () => preferences,
-            savePreferencesState: savePreferencesState,
+            savePreferencesState: async (prefs) => { await savePreferencesState(prefs); },
             updateMeals: () => updateMeals()
         });
 
         const mealPlanSharing = new MealPlanSharing({
             getMealPlan: () => mealPlan,
             setMealPlan: value => { mealPlan = value; },
-            persistMealPlan: () => saveMealPlanState(mealPlan),
+            persistMealPlan: async () => { await saveMealPlanState(mealPlan); },
             announce: message => uiManager.announceToScreenReader(message)
         });
 
         const mealPlanTemplates = new MealPlanTemplates({
             getMealPlan: () => mealPlan,
             setMealPlan: value => { mealPlan = value; },
-            persistMealPlan: () => saveMealPlanState(mealPlan),
+            persistMealPlan: async () => { await saveMealPlanState(mealPlan); },
             getRecipes: () => recipes,
             announce: message => uiManager.announceToScreenReader(message)
         });
@@ -368,7 +411,7 @@
         const leftoverTracker = new LeftoverTracker({
             getPantry: () => pantry,
             setPantry: value => { pantry = value; },
-            persistPantry: () => savePantryState(pantry),
+            persistPantry: async () => { await savePantryState(pantry); },
             announce: message => uiManager.announceToScreenReader(message)
         });
 
@@ -514,10 +557,29 @@
         window.copyShoppingList = mealPlanner.copyShoppingList.bind(mealPlanner);
 
         /**
+         * Add ingredient from Shop tab suggestions
+         * @param {string} name - Ingredient name
+         */
+        window.addShopItem = function(name) {
+            document.getElementById('new-ingredient').value = name;
+            pantryManager.addIngredient();
+        };
+
+        /**
          * Initialize the application state and UI
          * @returns {Promise<void>}
          */
         async function init() {
+            // Load state from IndexedDB (single source of truth)
+            const loadedState = await loadState();
+            pantry = loadedState.pantry;
+            mealPlan = loadedState.mealPlan;
+            preferences = loadedState.preferences;
+            recipeRatings = loadedState.recipeRatings;
+
+            // Run one-time migration from localStorage if needed
+            await db.migrateFromLocalStorage();
+
             preferences.people = preferences.people || 1;
             document.getElementById('people-count').value = preferences.people;
             
@@ -597,7 +659,7 @@
         };
 
         window.getAIMealPlan = async function() {
-            const container = document.getElementById('ai-suggestions-container');
+            const container = document.getElementById('ai-mealplan-container');
             const btn = document.getElementById('ai-mealplan-btn');
             
             if (geminiAI.isLoading) return;
@@ -681,8 +743,29 @@
         };
     </script>
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+        // NUCLEAR OPTION: Set to true to completely disable Service Worker
+        const DISABLE_SW = true;
+        
+        if ('serviceWorker' in navigator && !DISABLE_SW) {
+            // Force update: unregister old SW, then register new
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                return Promise.all(regs.map(r => r.unregister()));
+            }).then(() => {
+                console.log('[SW] Old service workers cleared');
+                // Register new service worker
+                return navigator.serviceWorker.register('sw.js');
+            }).then(reg => {
+                console.log('[SW] New service worker registered:', reg.scope);
+            }).catch(err => {
+                console.error('[SW] Registration failed:', err);
+            });
+        } else if (DISABLE_SW) {
+            // Nuclear option: unregister ALL service workers
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                return Promise.all(regs.map(r => r.unregister()));
+            }).then(() => {
+                console.log('[SW] SERVICE WORKER DISABLED - Fresh loads only');
+            });
         }
     </script>
 </body>
