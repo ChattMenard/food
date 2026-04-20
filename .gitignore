@@ -1,5 +1,5 @@
-# GitHub Personal Access Token
-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
+# API keys — stored in js/config.js (gitignored)
+js/config.js
 
 # Node.js
 node_modules/

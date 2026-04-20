@@ -47,5 +47,17 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>PantryAI needs camera access to scan barcodes and take photos of receipts</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PantryAI needs photo library access to save recipe images and shopping lists</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>PantryAI needs permission to save photos to your library</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Automatic</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>

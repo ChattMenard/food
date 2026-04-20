@@ -443,6 +443,108 @@ class PantryAIDataBuilder:
         print(f"  {output / 'ingredients_enhanced.json'}")
         print(f"  {output / 'nutrition_index.json'}")
         print(f"  {output / 'search_index.json'}")
+        
+        # Validate the built dataset
+        validate_dataset(enhanced_recipes, strict=True)
+        
+        return enhanced_recipes
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Build PantryAI enhanced recipe dataset")
+    parser.add_argument("--input", default=None, help="Path to input parquet file")
+    parser.add_argument("--output-dir", default="www/data", help="Output folder for built data files")
+    parser.add_argument("--min-rating", type=float, default=4.0, help="Minimum rating filter")
+    parser.add_argument("--max-recipes", type=int, default=10000, help="Maximum recipes to include")
+    args = parser.parse_args()
+
+    builder = PantryAIDataBuilder(args.input)
+    builder.build_enhanced_dataset(
+        output_dir=args.output_dir,
+        min_rating=args.min_rating,
+        max_recipes=args.max_recipes,
+    )
+
+
+if __name__ == "__main__":
+    main()
+                "ingredients": ingredients,
+                "ingredients_clean": cleaned_ingredients,
+                "steps": steps,
+                "rating": float(rating),
+                "review_count": review_count,
+                "nutrition": nutrition,
+                "dietary_flags": self.compute_dietary_flags(cleaned_ingredients),
+                "tags": tags,
+                "cuisine": self.detect_cuisine(tags, str(self.pick(row, ["name", "Name"], ""))),
+                "difficulty": self.calculate_difficulty(len(cleaned_ingredients), minutes, len(steps)),
+                "ingredient_vector": self.calculate_ingredient_similarity_vector(cleaned_ingredients),
+                "servings": servings,
+                "image_url": f"https://img.food.com/img/recipes/{recipe_id}/large.jpg",
+            }
+
+            for key in recipe["nutrition"]:
+                recipe["nutrition"][key] = round(recipe["nutrition"][key] / servings, 1)
+
+            enhanced_recipes.append(recipe)
+
+            if position % 1000 == 0:
+                print(f"  processed {position:,} recipes")
+
+        common_ingredients = {
+            ingredient: count
+            for ingredient, count in ingredient_vocab.items()
+            if count >= 3 and len(ingredient) > 1
+        }
+
+        output = Path(output_dir)
+        output.mkdir(parents=True, exist_ok=True)
+
+        with gzip.open(output / "recipes_enhanced_gzip.json.gz", "wt", encoding="utf-8") as handle:
+            json.dump(enhanced_recipes, handle, separators=(",", ":"))
+
+        with (output / "recipes_enhanced.json").open("w", encoding="utf-8") as handle:
+            json.dump(enhanced_recipes, handle)
+
+        legacy_conflict_file = output / "recipes_enhanced.json.gz"
+        if legacy_conflict_file.exists():
+            legacy_conflict_file.unlink()
+
+        with (output / "ingredients_enhanced.json").open("w", encoding="utf-8") as handle:
+            json.dump(sorted(common_ingredients.keys()), handle)
+
+        nutrition_index = {recipe["id"]: recipe["nutrition"] for recipe in enhanced_recipes}
+        with (output / "nutrition_index.json").open("w", encoding="utf-8") as handle:
+            json.dump(nutrition_index, handle)
+
+        search_index = self.build_search_index(enhanced_recipes)
+        with (output / "search_index.json").open("w", encoding="utf-8") as handle:
+            json.dump(search_index, handle)
+
+        legacy_recipes = [
+            {
+                "id": recipe["id"],
+                "name": recipe["name"],
+                "ingredients": recipe["ingredients_clean"],
+                "time": recipe["minutes"],
+                "servings": recipe["servings"],
+                "category": recipe["cuisine"],
+                "rating": round(recipe["rating"], 1),
+            }
+            for recipe in enhanced_recipes
+        ]
+        with (output / "recipes.json").open("w", encoding="utf-8") as handle:
+            json.dump(legacy_recipes, handle)
+
+        with (output / "ingredients.json").open("w", encoding="utf-8") as handle:
+            json.dump(sorted(common_ingredients.keys()), handle)
+
+        print("Dataset build complete")
+        print(f"  {output / 'recipes_enhanced_gzip.json.gz'}")
+        print(f"  {output / 'recipes_enhanced.json'}")
+        print(f"  {output / 'ingredients_enhanced.json'}")
+        print(f"  {output / 'nutrition_index.json'}")
+        print(f"  {output / 'search_index.json'}")
         return enhanced_recipes
 
 
