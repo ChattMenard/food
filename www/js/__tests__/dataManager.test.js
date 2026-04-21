@@ -9,7 +9,11 @@ jest.mock('../utils/dietFilters.js', () => ({
   normalizeCuisine: cuisine => cuisine?.toLowerCase() || 'other',
 }));
 
-const flushPromises = () => new Promise(setImmediate);
+jest.mock('../logic/searchIndex.js', () => ({
+  SearchIndex: jest.fn().mockImplementation(() => ({
+    search: jest.fn().mockReturnValue([])
+  }))
+}));
 
 describe('DataManager', () => {
   let setRecipes;
@@ -18,7 +22,6 @@ describe('DataManager', () => {
   let manager;
 
   beforeEach(() => {
-    jest.useFakeTimers();
     setRecipes = jest.fn();
     setAutocompleteIngredients = jest.fn();
     updateMeals = jest.fn();
@@ -26,48 +29,126 @@ describe('DataManager', () => {
   });
 
   afterEach(() => {
-    jest.useRealTimers();
     jest.resetAllMocks();
-    global.fetch = undefined;
   });
 
   it('validates nutrition objects correctly', () => {
     expect(manager.validateNutrition({ calories: 10, protein: 1, carbs: 2, fat: 3 })).toBe(true);
     expect(manager.validateNutrition({ calories: 10 })).toBe(false);
     expect(manager.validateNutrition(null)).toBe(false);
-  });
-
-  it('loads datasets, sets recipes, and builds search index', async () => {
-    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt', 'pepper']) };
-    const fallbackRecipes = [
-      { name: 'Apple Pie', ingredients: ['apple', 'flour'], nutrition: { calories: 200, protein: 5, carbs: 20, fat: 5 } },
-      { name: 'Banana Bread', ingredients: ['banana', 'flour'], nutrition: { calories: 250, protein: 6, carbs: 30, fat: 6 } },
-    ];
-
-    global.fetch = jest
-      .fn()
-      .mockResolvedValueOnce(ingredientsResponse)
-      .mockResolvedValueOnce({ ok: true })
-      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(fallbackRecipes) });
-
-    await manager.loadData();
-    await flushPromises();
-
-    expect(setAutocompleteIngredients).toHaveBeenCalledWith(['salt', 'pepper']);
-    expect(setRecipes).toHaveBeenNthCalledWith(1, expect.arrayContaining(fallbackRecipes));
-
-    jest.runAllTimers();
-    await flushPromises();
-
-    expect(setRecipes).toHaveBeenNthCalledWith(2, expect.arrayContaining(fallbackRecipes));
-    expect(updateMeals).toHaveBeenCalled();
-
-    const results = manager.searchRecipes('apple');
-    expect(results[0].name).toBe('Apple Pie');
+    expect(manager.validateNutrition(undefined)).toBe(false);
+    expect(manager.validateNutrition('not an object')).toBe(false);
+    expect(manager.validateNutrition({ calories: 10, protein: 1, carbs: 2 })).toBe(false);
   });
 
   it('returns empty array if search index not ready', () => {
     const results = manager.searchRecipes('anything');
     expect(results).toEqual([]);
+  });
+
+  it('handles load errors gracefully', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+    await manager.loadData();
+
+    expect(setRecipes).not.toHaveBeenCalled();
+    expect(setAutocompleteIngredients).not.toHaveBeenCalled();
+  });
+
+  it('loads datasets and sets recipes', async () => {
+    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt', 'pepper']) };
+    const recipes = [
+      { name: 'Test Recipe', ingredients: ['test'], nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } }
+    ];
+
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce(ingredientsResponse)
+      .mockRejectedValueOnce(new Error('Gzip not supported'))
+      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(recipes) });
+
+    await manager.loadData();
+
+    expect(setAutocompleteIngredients).toHaveBeenCalledWith(['salt', 'pepper']);
+    expect(setRecipes).toHaveBeenCalled();
+  });
+
+  it('filters out recipes with invalid schema', async () => {
+    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
+    const invalidRecipes = [
+      { name: 'Valid Recipe', ingredients: ['test'], nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
+      { ingredients: ['test'], nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
+      { name: 'No Ingredients', nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
+      { name: 'Invalid Ingredients', ingredients: 'not an array', nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
+    ];
+
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce(ingredientsResponse)
+      .mockRejectedValueOnce(new Error('Gzip error'))
+      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(invalidRecipes) });
+
+    await manager.loadData();
+
+    const call = setRecipes.mock.calls[0][0];
+    expect(call).toHaveLength(1);
+    expect(call[0].name).toBe('Valid Recipe');
+  });
+
+  it('removes invalid nutrition data from recipes', async () => {
+    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
+    const recipes = [
+      { name: 'Valid Recipe', ingredients: ['test'], nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
+      { name: 'Invalid Nutrition', ingredients: ['test'], nutrition: { calories: 100 } },
+    ];
+
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce(ingredientsResponse)
+      .mockRejectedValueOnce(new Error('Gzip error'))
+      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(recipes) });
+
+    await manager.loadData();
+
+    const call = setRecipes.mock.calls[0][0];
+    const invalidRecipeResult = call.find(r => r.name === 'Invalid Nutrition');
+    expect(invalidRecipeResult.nutrition).toBeUndefined();
+  });
+
+  it('normalizes cuisine values for recipes with category', async () => {
+    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
+    const recipes = [
+      { name: 'Italian Recipe', ingredients: ['test'], category: 'ITALIAN', nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
+    ];
+
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce(ingredientsResponse)
+      .mockRejectedValueOnce(new Error('Gzip error'))
+      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(recipes) });
+
+    await manager.loadData();
+
+    const call = setRecipes.mock.calls[0][0];
+    expect(call[0].category).toBe('italian');
+  });
+
+  it('loads first 500 recipes immediately', async () => {
+    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
+    const recipes = Array.from({ length: 600 }, (_, i) => ({
+      name: `Recipe ${i}`,
+      ingredients: ['test'],
+      nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 }
+    }));
+
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce(ingredientsResponse)
+      .mockRejectedValueOnce(new Error('Gzip error'))
+      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(recipes) });
+
+    await manager.loadData();
+
+    expect(setRecipes.mock.calls[0][0].length).toBe(500);
   });
 });

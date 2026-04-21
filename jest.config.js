@@ -54,21 +54,45 @@ export default {
     '!www/js/**/__tests__/**',
     '!www/js/**/tests/**',
     '!www/js/config.js',
+    '!www/js/config.example.js',
     '!www/js/main.js',
+    '!www/js/app.js',
+    '!www/js/ui/**',
+    '!www/js/native/**',
+    '!www/js/advanced/**',
     '!**/node_modules/**',
     '!**/dist/**',
     '!**/platforms/**'
   ],
-  
+
   // ========================================================================
-  // Coverage thresholds - set to achievable levels
+  // Coverage thresholds - per-file for core modules only
+  // UI-heavy modules (app.js, ui/, native/, advanced/) are ignored
   // ========================================================================
   coverageThreshold: {
     global: {
-      statements: 15,
-      branches: 13,
-      functions: 16,
-      lines: 15
+      statements: 50,
+      branches: 50,
+      functions: 50,
+      lines: 50
+    },
+    './www/js/data/**/*.js': {
+      statements: 80,
+      branches: 75,
+      functions: 80,
+      lines: 80
+    },
+    './www/js/logic/**/*.js': {
+      statements: 75,
+      branches: 70,
+      functions: 75,
+      lines: 75
+    },
+    './www/js/features/plan/**/*.js': {
+      statements: 70,
+      branches: 65,
+      functions: 70,
+      lines: 70
     }
   },
   // ========================================================================

@@ -45,6 +45,10 @@ logs/
 dist/
 build/
 
+# Playwright test artifacts
+playwright-report/
+test-results/
+
 # Gradle files
 .gradle/
 

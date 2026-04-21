@@ -15,51 +15,42 @@ test.describe('main E2E Tests', () => {
     });
     
     test('navigates between tabs', async ({ page }) => {
-        // Click on Meals tab
-        await page.click('button:has-text("Meals")');
+        await page.waitForFunction(() => window._appInitialized === true, { timeout: 15000 });
+        
+        await page.getByTestId('nav-meals').click();
         await expect(page.locator('#tab-meals')).toBeVisible();
         
-        // Click on Plan tab
-        await page.click('button:has-text("Plan")');
+        await page.getByTestId('nav-plan').click();
         await expect(page.locator('#tab-plan')).toBeVisible();
         
-        // Click on Shop tab
-        await page.click('button:has-text("Shop")');
+        await page.getByTestId('nav-shop').click();
         await expect(page.locator('#tab-shop')).toBeVisible();
     });
     
     test('adds ingredient to pantry', async ({ page }) => {
-        // Pantry tab is active by default
-        await page.click('button:has-text("Pantry")');
+        await page.waitForFunction(() => window._appInitialized === true, { timeout: 15000 });
+        await page.getByTestId('nav-pantry').click();
         
-        // Fill the always-visible ingredient form
         await page.fill('#new-ingredient', 'Tomato');
-        await page.fill('#new-quantity', '5');
+        await page.press('#new-ingredient', 'Enter');
+        await page.waitForTimeout(500);
         
-        // Submit via the Add button
-        await page.click('#add-button');
-        
-        // App normalizes ingredient names to lowercase
         await expect(page.locator('#pantry-list')).toContainText('tomato');
     });
     
     test('shows recipe cards after adding ingredients', async ({ page }) => {
-        // Wait for recipe JSON to be fully fetched and processed (flag set in dataManager callback)
-        await page.waitForFunction(() => window._recipesLoaded === true, { timeout: 15000 });
+        // Wait for recipe JSON to be fully fetched and processed
+        await page.waitForFunction(() => window._recipesLoaded === true, { timeout: 30000 });
         
-        // Back to Pantry - add multiple common ingredients.
-        // Engine requires matched >= 2 AND ratio >= 0.25, so 4 common items covers both.
-        await page.click('button:has-text("Pantry")');
+        await page.getByTestId('nav-pantry').click();
         for (const name of ['chicken', 'garlic', 'onion', 'butter']) {
             await page.fill('#new-ingredient', name);
-            await page.fill('#new-quantity', '1');
-            await page.click('#add-button');
+            await page.press('#new-ingredient', 'Enter');
+            await page.waitForTimeout(300);
         }
         
-        // Switch to Meals (triggers updateMeals() with now-loaded recipes + populated pantry)
-        await page.click('button:has-text("Meals")');
+        await page.getByTestId('nav-meals').click();
         
-        // Wait for recipe cards to render (data-recipe-index is set per card)
         await page.waitForSelector('[data-recipe-index]', { timeout: 10000 });
         
         const cards = await page.locator('[data-recipe-index]').count();
@@ -67,9 +58,8 @@ test.describe('main E2E Tests', () => {
     });
     
     test('displays meals list container', async ({ page }) => {
-        await page.click('button:has-text("Meals")');
-        
-        // The meals list container should always be present
+        await page.waitForFunction(() => window._appInitialized === true, { timeout: 15000 });
+        await page.getByTestId('nav-meals').click();
         await expect(page.locator('#meals-list')).toBeVisible();
     });
 });

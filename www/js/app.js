@@ -197,6 +197,30 @@ const mealPlanner = new MealPlanner({
     persistMealPlan: () => saveMealPlanState(mealPlan)
 });
 
+// ---- Debounce Utility ----
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Debounced render functions to optimize performance
+const debouncedUpdateMeals = debounce(() => {
+    mealPlanner.updateMeals();
+    recipeEngine.buildIngredientVectors();
+}, 150);
+
+const debouncedRenderMealPlan = debounce(() => {
+    mealPlanner.renderMealPlan();
+    renderMealPrepTips();
+}, 150);
+
 // ---- Window wiring ----
 Object.assign(window, {
     showTab: uiManager.showTab.bind(uiManager),
@@ -559,30 +583,6 @@ function getDomElement(id) {
     return domCache[id];
 }
 
-// ---- Debounce Utility ----
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Debounced render functions to optimize performance
-const debouncedUpdateMeals = debounce(() => {
-    mealPlanner.updateMeals();
-    recipeEngine.buildIngredientVectors();
-}, 150);
-
-const debouncedRenderMealPlan = debounce(() => {
-    mealPlanner.renderMealPlan();
-    renderMealPrepTips();
-}, 150);
-
 // ---- Init ----
 async function init() {
     const initId = performanceMonitor.start('app-init');
@@ -633,6 +633,9 @@ async function init() {
     await updateNutritionScreen();
     
     performanceMonitor.end(initId);
+    
+    // Signal that app is initialized for E2E tests
+    window._appInitialized = true;
     
     // Log performance metrics in development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {

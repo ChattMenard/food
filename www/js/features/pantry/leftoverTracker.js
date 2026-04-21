@@ -35,8 +35,8 @@ export class LeftoverTracker {
         const leftovers = this.getLeftovers();
         if (leftovers.length === 0) return [];
 
-        const leftoverIngredients = new Set(
-            leftovers.map(item => item.name.toLowerCase().replace(/[^a-z]/g, ''))
+        const leftoverIngredients = leftovers.map(item => 
+            item.name.toLowerCase().replace(/[^a-z]/g, '')
         );
 
         const suggestions = recipes.filter(recipe => {

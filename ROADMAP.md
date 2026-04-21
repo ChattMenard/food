@@ -221,7 +221,21 @@ www/js/
 - [x] Unit test expansion
   - `recipeEngine.test.js` - 13 tests for RecipeEngine class
   - `integration.offline-sync.test.js` - 10 tests for offline sync flow
-  - 248 unit tests passing across 11 test suites
+  - `dataManager.test.js` - 8 tests for data loading and validation
+  - `appState.test.js` - 25 tests for state management
+  - `storageManager.test.js` - 13 tests for storage utilities
+  - `leftoverTracker.test.js` - 13 tests for leftover management
+  - 806 unit tests passing across 27 test suites
+- [x] E2E critical user journeys
+  - `critical-journeys.spec.js` - 6 tests for core user flows
+  - Pantry item add/edit/delete
+  - Meal plan generation
+  - Offline add and sync verification
+  - Navigation between sections
+- [x] Coverage configuration
+  - Per-file thresholds: data/*.js (80%), logic/*.js (75%), features/plan/*.js (70%)
+  - Global threshold lowered to 50%
+  - UI-heavy modules excluded (app.js, ui/, native/, advanced/)
 - [ ] CI/CD automation
   - `.github/workflows/ci.yml` pending (GitHub OAuth `workflow` scope required)
   - Enable Jest + Playwright checks on push/PR once workflow is committed
@@ -258,14 +272,16 @@ www/js/
 - All high-priority structural work is complete
 - Codebase is now maintainable and extensible
 - Project structure: 70 JS files across 12 directories (core, data, logic, features, ai, ui, utils, native, auth, advanced, __tests__)
-- Test coverage: 11 comprehensive test suites with 248 tests passing (100%)
-  - budgetMealPlanner, costTracker, deviceSyncManager, groceryDelivery, ingredientParser, ingredientVectors, mealPrepPlanner, nutritionGoals, pushNotifications, recipeEngine, integration.offline-sync
+- Test coverage: 27 comprehensive test suites with 806 tests passing (100%)
+  - budgetMealPlanner, costTracker, deviceSyncManager, groceryDelivery, ingredientParser, ingredientVectors, mealPrepPlanner, nutritionGoals, pushNotifications, recipeEngine, integration.offline-sync, dataManager, appState, storageManager, leftoverTracker
+- E2E coverage: 3 test suites with 19 tests covering critical user journeys
+  - example.spec.js (7 tests), offline.spec.js (3 tests), critical-journeys.spec.js (6 tests)
 - AI validation prevents malformed responses
 - Phase 4 (resilience) complete - system handles stress
 - Phase 5 (features) complete - comprehensive feature expansion with 11 major features
 - Phase 6 (sync) complete - cross-device sync + push notifications + auth foundation
 - Phase 7 (native platform) complete - iOS/Android widgets, Siri shortcuts, Google Assistant, native push
-- Phase 8 (testing infrastructure) in progress - unit tests expanded, CI/CD automation, code quality tools
+- Phase 8 (testing infrastructure) in progress - unit tests expanded, E2E critical journeys added, per-file coverage thresholds configured, CI/CD automation pending
 - Native platform integration with dedicated native/ and auth/ directories
 - Advanced features directory with SaaS-ready modules (barcode scanning, receipt scanning, community recipes)
 

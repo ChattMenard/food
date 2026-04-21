@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Offline Mode', () => {
   test('loads cached app shell when offline', async ({ page, context }) => {
     // First load online to populate cache
-    await page.goto('http://localhost:3000');
+    await page.goto('http://localhost:8080');
 
     // Go offline
     await context.setOffline(true);
@@ -22,12 +22,12 @@ test.describe('Offline Mode', () => {
 
   test('uses cached data when offline', async ({ page, context }) => {
     // Load and populate data
-    await page.goto('http://localhost:3000');
+    await page.goto('http://localhost:8080');
 
     // Example: add pantry item (adjust selector)
     await page.fill('#new-ingredient', 'apple');
-    await page.fill('#new-quantity', '1');
-    await page.click('#add-button');
+    await page.evaluate(() => window.addIngredient());
+    await page.waitForTimeout(1000);
 
     // Go offline
     await context.setOffline(true);
@@ -40,7 +40,7 @@ test.describe('Offline Mode', () => {
   });
 
   test('AI gracefully fails offline', async ({ page, context }) => {
-    await page.goto('http://localhost:3000');
+    await page.goto('http://localhost:8080');
 
     // Go offline before AI call
     await context.setOffline(true);

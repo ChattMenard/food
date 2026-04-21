@@ -134,5 +134,50 @@ describe('LeftoverTracker', () => {
       const suggestions = tracker.suggestLeftoverRecipes([]);
       expect(suggestions).toEqual([]);
     });
+
+    it('returns recipes that match leftover ingredients', () => {
+      mockGetPantry.mockReturnValue([
+        { name: 'pasta', quantity: 2, isLeftover: true },
+        { name: 'chicken', quantity: 1, isLeftover: true }
+      ]);
+
+      const recipes = [
+        { name: 'Pasta Carbonara', ingredients: ['pasta', 'eggs'] },
+        { name: 'Chicken Stir Fry', ingredients: ['chicken', 'vegetables'] },
+        { name: 'Salad', ingredients: ['lettuce', 'tomato'] }
+      ];
+
+      const suggestions = tracker.suggestLeftoverRecipes(recipes);
+      expect(suggestions).toHaveLength(2);
+      expect(suggestions[0].name).toBe('Pasta Carbonara');
+      expect(suggestions[1].name).toBe('Chicken Stir Fry');
+    });
+
+    it('limits suggestions to 5 recipes', () => {
+      mockGetPantry.mockReturnValue([
+        { name: 'pasta', quantity: 2, isLeftover: true }
+      ]);
+
+      const recipes = Array.from({ length: 10 }, (_, i) => ({
+        name: `Recipe ${i}`,
+        ingredients: ['pasta']
+      }));
+
+      const suggestions = tracker.suggestLeftoverRecipes(recipes);
+      expect(suggestions).toHaveLength(5);
+    });
+
+    it('handles case-insensitive ingredient matching', () => {
+      mockGetPantry.mockReturnValue([
+        { name: 'Pasta', quantity: 2, isLeftover: true }
+      ]);
+
+      const recipes = [
+        { name: 'Pasta Dish', ingredients: ['pasta'] }
+      ];
+
+      const suggestions = tracker.suggestLeftoverRecipes(recipes);
+      expect(suggestions).toHaveLength(1);
+    });
   });
 });

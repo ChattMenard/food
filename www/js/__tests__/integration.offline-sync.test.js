@@ -1,22 +1,87 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { enqueue, getPending, markSynced, markFailed, incrementRetry } from '../data/mutationQueue.js';
 import { SyncProcessor } from '../data/syncProcessor.js';
 import db from '../data/db.js';
 
+// Mock the db module
+jest.mock('../data/db.js');
+
+// Mock navigator.onLine
+Object.defineProperty(navigator, 'onLine', {
+    writable: true,
+    value: true
+});
+
 describe('Offline → Sync Integration', () => {
     let syncProcessor;
+    let mockStore;
+    let mockMutations;
 
     beforeEach(() => {
-        // Clear mock store
-        db._store.clear();
-        
+        // Setup mock store
+        mockStore = new Map();
+        mockMutations = new Map();
+
+        // Mock db methods
+        db._store = {
+            clear: jest.fn(() => {
+                mockStore.clear();
+                mockMutations.clear();
+            })
+        };
+        db._mutations = {
+            get: jest.fn((id) => mockMutations.get(id)),
+            set: jest.fn((id, data) => mockMutations.set(id, data))
+        };
+        db.addMutation = jest.fn(async (mutation) => {
+            mockMutations.set(mutation.id, mutation);
+            return mutation;
+        });
+        db.getPendingMutations = jest.fn(async () => {
+            return Array.from(mockMutations.values()).filter(m => m.status === 'pending');
+        });
+        db.markMutationSynced = jest.fn(async (id) => {
+            const mutation = mockMutations.get(id);
+            if (mutation) {
+                mutation.status = 'synced';
+                mutation.syncedAt = Date.now();
+                mockMutations.set(id, mutation);
+            }
+        });
+        db.markMutationFailed = jest.fn(async (id, error) => {
+            const mutation = mockMutations.get(id);
+            if (mutation) {
+                mutation.status = 'failed';
+                mutation.failedAt = Date.now();
+                mutation.lastError = error;
+                mockMutations.set(id, mutation);
+            }
+        });
+        db.incrementMutationRetry = jest.fn(async (id) => {
+            const mutation = mockMutations.get(id);
+            if (mutation) {
+                mutation.retryCount = (mutation.retryCount || 0) + 1;
+                mutation.lastRetryAt = Date.now();
+                mockMutations.set(id, mutation);
+                return mutation.retryCount;
+            }
+            return 0;
+        });
+
+        // Clear stores
+        mockStore.clear();
+        mockMutations.clear();
+
         // Create sync processor instance
         syncProcessor = new SyncProcessor();
     });
 
     afterEach(() => {
         // Cleanup
-        syncProcessor.stopPeriodicSync();
+        if (syncProcessor) {
+            syncProcessor.stopPeriodicSync();
+        }
+        jest.clearAllMocks();
     });
 
     describe('Mutation Queue', () => {

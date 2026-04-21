@@ -580,7 +580,7 @@
                     <h3 class="card-title">🤖 Add & Ask AI</h3>
                     <p class="card-subtitle">Add ingredients or ask anything about cooking.</p>
                     <div class="suggestions">
-                        <input type="text" id="new-ingredient" class="field"
+                        <input type="text" id="new-ingredient" data-testid="ingredient-input" class="field"
                                placeholder="add ingredients to reveal potential dishes"
                                autocomplete="off"
                                oninput="showSuggestions()"
@@ -589,7 +589,7 @@
                         <div id="ingredient-suggestions" class="hidden"></div>
                     </div>
                     <div style="display:flex; gap:8px; margin-top:10px;">
-                        <button id="add-button" class="btn btn-primary" style="flex:1;" onclick="routeInput()">Send</button>
+                        <button id="add-button" data-testid="add-button" class="btn btn-primary" style="flex:1;" onclick="routeInput()">Send</button>
                         <button class="btn btn-secondary" onclick="startSpeechRecognition()" aria-label="Voice">🎙️</button>
                     </div>
                     <div id="pantry-ai-response" class="hidden" style="margin-top:12px; padding:12px; background:white; border-radius:12px; font-size:13px;">
@@ -603,7 +603,7 @@
                 <!-- Pantry list -->
                 <div class="card">
                     <h3 class="card-title">🥫 My Ingredients</h3>
-                    <div id="pantry-list">
+                    <div id="pantry-list" data-testid="pantry-list">
                         <div class="empty">
                             <span class="empty-emoji">🫙</span>
                             Add ingredients above to begin.
@@ -614,7 +614,7 @@
                 <!-- Leftovers -->
                 <div class="card card-gradient-amber">
                     <h3 class="card-title">🍽️ Leftovers</h3>
-                    <div id="leftovers-list">
+                    <div id="leftovers-list" data-testid="leftovers-list">
                         <div class="empty" style="padding:10px;">No leftovers tracked yet.</div>
                     </div>
                 </div>
@@ -643,7 +643,7 @@
                 </div>
 
                 <!-- Meals grid -->
-                <div id="meals-list">
+                <div id="meals-list" data-testid="meals-list">
                     <div class="empty">
                         <span class="empty-emoji">🍳</span>
                         Add ingredients to your pantry to see meal ideas.
@@ -761,7 +761,7 @@
                 <!-- Week plan -->
                 <div class="card">
                     <h3 class="card-title">📅 This Week</h3>
-                    <div id="week-plan">
+                    <div id="week-plan" data-testid="week-plan">
                         <div class="empty"><span class="empty-emoji">📅</span>Drag meals here to plan your week.</div>
                     </div>
                 </div>
@@ -798,7 +798,7 @@
                 <!-- Shopping list -->
                 <div class="card">
                     <h3 class="card-title">🛒 Shopping List</h3>
-                    <div id="shopping-list">
+                    <div id="shopping-list" data-testid="shopping-list">
                         <div class="empty" style="padding:10px;">Plan meals to generate a list.</div>
                     </div>
                     <button class="btn btn-primary btn-full" style="margin-top:10px;" onclick="copyShoppingList()">Copy List</button>
@@ -914,27 +914,27 @@
 
         <!-- Bottom tab bar -->
         <nav class="tabbar">
-            <button class="tab active" data-tab="pantry" onclick="showTab('pantry')" aria-label="Pantry">
+            <button class="tab active" data-tab="pantry" data-testid="nav-pantry" onclick="showTab('pantry')" aria-label="Pantry">
                 <span class="tab-indicator"></span>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 <span class="tab-label">Pantry</span>
             </button>
-            <button class="tab" data-tab="meals" onclick="showTab('meals')" aria-label="Meals">
+            <button class="tab" data-tab="meals" data-testid="nav-meals" onclick="showTab('meals')" aria-label="Meals">
                 <span class="tab-indicator"></span>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1018 0 9 9 0 00-18 0zm9-3a3 3 0 110 6 3 3 0 010-6z"/></svg>
                 <span class="tab-label">Meals</span>
             </button>
-            <button class="tab" data-tab="plan" onclick="showTab('plan')" aria-label="Plan">
+            <button class="tab" data-tab="plan" data-testid="nav-plan" onclick="showTab('plan')" aria-label="Plan">
                 <span class="tab-indicator"></span>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 <span class="tab-label">Plan</span>
             </button>
-            <button class="tab" data-tab="shop" onclick="showTab('shop')" aria-label="Shop">
+            <button class="tab" data-tab="shop" data-testid="nav-shop" onclick="showTab('shop')" aria-label="Shop">
                 <span class="tab-indicator"></span>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 <span class="tab-label">Shop</span>
             </button>
-            <button class="tab" data-tab="nutrition" onclick="showTab('nutrition')" aria-label="Nutrition">
+            <button class="tab" data-tab="nutrition" data-testid="nav-nutrition" onclick="showTab('nutrition')" aria-label="Nutrition">
                 <span class="tab-indicator"></span>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 17l4-4 4 4 6-6"/></svg>
                 <span class="tab-label">Nutrition</span>
