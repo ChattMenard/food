@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<actions>
+    <!-- Add Ingredient Intent -->
+    <action intentName="actions.intent.ADD_INGREDIENT">
+        <parameter name="ingredient" type="Ingredient">
+            <entity-set-reference entitySetId="ingredients"/>
+        </parameter>
+        <fulfillment urlTemplate="food://addIngredient{?ingredient}">
+            <parameter-mapping intentParameter="ingredient" urlParameter="ingredient"/>
+        </fulfillment>
+    </action>
+
+    <!-- Add Meal Intent -->
+    <action intentName="actions.intent.ADD_MEAL">
+        <parameter name="meal" type="Meal">
+            <entity-set-reference entitySetId="meals"/>
+        </parameter>
+        <fulfillment urlTemplate="food://addMeal{?meal}">
+            <parameter-mapping intentParameter="meal" urlParameter="meal"/>
+        </fulfillment>
+    </action>
+
+    <!-- Check Pantry Intent -->
+    <action intentName="actions.intent.CHECK_PANTRY">
+        <fulfillment urlTemplate="food://pantry"/>
+    </action>
+
+    <!-- View Meal Plan Intent -->
+    <action intentName="actions.intent.VIEW_MEAL_PLAN">
+        <fulfillment urlTemplate="food://mealPlan"/>
+    </action>
+
+    <!-- Get Recipe Intent -->
+    <action intentName="actions.intent.GET_RECIPE">
+        <parameter name="recipe" type="Recipe">
+            <entity-set-reference entitySetId="recipes"/>
+        </parameter>
+        <fulfillment urlTemplate="food://recipe{?recipe}">
+            <parameter-mapping intentParameter="recipe" urlParameter="recipe"/>
+        </fulfillment>
+    </action>
+</actions>

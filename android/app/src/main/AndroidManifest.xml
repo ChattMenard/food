@@ -22,6 +22,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Google Assistant Actions -->
+            <meta-data
+                android:name="android.app.actions"
+                android:resource="@xml/actions" />
+
         </activity>
 
         <provider

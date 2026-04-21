@@ -28,7 +28,9 @@ export default {
     ],
     testPathIgnorePatterns: [
         '/node_modules/',
-        '/e2e/'
+        '/e2e/',
+        '/android/app/src/main/assets/',
+        '/ios/App/App/public/'
     ],
     verbose: true
 };

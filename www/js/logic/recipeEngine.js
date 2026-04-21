@@ -79,7 +79,7 @@ export class RecipeEngine {
         const data = this.getRecipeModalData(recipeName);
         if (!data) return;
 
-        this.announce(`Opened recipe details for ${recipe.name}`);
+        this.announce(`Opened recipe details for ${data.recipe.name}`);
         return data;
     }
 
