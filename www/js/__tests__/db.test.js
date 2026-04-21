@@ -1,4 +1,3 @@
-import 'fake-indexeddb/auto';
 import db from '../data/db.js';
 
 const DB_NAME = 'main-pro';

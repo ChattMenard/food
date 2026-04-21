@@ -3,6 +3,8 @@
  * Global setup for test environment
  */
 
+import 'fake-indexeddb/auto';
+
 // Polyfill structuredClone for Node.js environment
 if (!global.structuredClone) {
     global.structuredClone = (obj) => {
