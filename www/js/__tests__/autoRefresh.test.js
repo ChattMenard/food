@@ -152,4 +152,204 @@ describe('AutoRefreshManager', () => {
       expect(instance1).toBe(instance2);
     });
   });
+
+  describe('setupCustomEvents', () => {
+    it('adds pantry-updated event listener', () => {
+      const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
+      manager.setupCustomEvents();
+      expect(addEventListenerSpy).toHaveBeenCalledWith('pantry-updated', expect.any(Function));
+      addEventListenerSpy.mockRestore();
+    });
+
+    it('adds meal-plan-updated event listener', () => {
+      const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
+      manager.setupCustomEvents();
+      expect(addEventListenerSpy).toHaveBeenCalledWith('meal-plan-updated', expect.any(Function));
+      addEventListenerSpy.mockRestore();
+    });
+
+    it('adds preferences-updated event listener', () => {
+      const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
+      manager.setupCustomEvents();
+      expect(addEventListenerSpy).toHaveBeenCalledWith('preferences-updated', expect.any(Function));
+      addEventListenerSpy.mockRestore();
+    });
+
+    it('adds meal-logged event listener', () => {
+      const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
+      manager.setupCustomEvents();
+      expect(addEventListenerSpy).toHaveBeenCalledWith('meal-logged', expect.any(Function));
+      addEventListenerSpy.mockRestore();
+    });
+  });
+
+  describe('dispatchEvent', () => {
+    it('dispatches custom event with detail', () => {
+      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+      manager.dispatchEvent('test-event', { data: 'test' });
+      expect(dispatchSpy).toHaveBeenCalledWith(expect.any(CustomEvent));
+      dispatchSpy.mockRestore();
+    });
+
+    it('triggers listeners when custom event is dispatched', () => {
+      const callback = jest.fn();
+      manager.on('pantry', callback);
+      manager.setupCustomEvents();
+      
+      window.dispatchEvent(new CustomEvent('pantry-updated', { detail: { data: 'test' } }));
+      expect(callback).toHaveBeenCalledWith({ data: 'test' });
+    });
+  });
+
+  describe('setupPeriodicRefresh', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('sets up interval to fetch and trigger', async () => {
+      const fetchFn = jest.fn().mockResolvedValue({ data: 'fresh' });
+      const callback = jest.fn();
+      manager.on('test', callback);
+      
+      manager.setupPeriodicRefresh('test', fetchFn, 1000);
+      
+      jest.advanceTimersByTime(1000);
+      await Promise.resolve();
+      
+      expect(fetchFn).toHaveBeenCalled();
+      expect(callback).toHaveBeenCalledWith({ data: 'fresh' });
+    });
+
+    it('handles fetch errors gracefully', async () => {
+      const fetchFn = jest.fn().mockRejectedValue(new Error('Fetch error'));
+      const callback = jest.fn();
+      manager.on('test', callback);
+      
+      manager.setupPeriodicRefresh('test', fetchFn, 1000);
+      
+      jest.advanceTimersByTime(1000);
+      await Promise.resolve();
+      
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('uses default interval of 60 seconds if not specified', () => {
+      const fetchFn = jest.fn();
+      manager.setupPeriodicRefresh('test', fetchFn);
+      
+      jest.advanceTimersByTime(60000);
+      expect(fetchFn).toHaveBeenCalled();
+    });
+  });
+
+  describe('triggerDebounced', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('triggers after debounce interval', () => {
+      const callback = jest.fn();
+      manager.on('pantry', callback);
+      manager.triggerDebounced('pantry', { data: 'test' });
+      
+      expect(callback).not.toHaveBeenCalled();
+      
+      jest.advanceTimersByTime(1000);
+      expect(callback).toHaveBeenCalledWith({ data: 'test' });
+    });
+
+    it('resets pending refresh after trigger', () => {
+      manager.triggerDebounced('pantry', { data: 'test' });
+      expect(manager.pendingRefresh).toBe(true);
+      
+      jest.advanceTimersByTime(1000);
+      expect(manager.pendingRefresh).toBe(false);
+    });
+  });
+
+  describe('setupIndexedDBNotifications', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('triggers debounced refresh on put', async () => {
+      const db = {
+        put: jest.fn().mockResolvedValue('result'),
+        delete: jest.fn().mockResolvedValue('result')
+      };
+      const callback = jest.fn();
+      manager.on('pantry', callback);
+      
+      manager.setupIndexedDBNotifications(db);
+      await db.put('pantry', { id: 1 });
+      
+      expect(callback).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(1000);
+      expect(callback).toHaveBeenCalled();
+    });
+
+    it('triggers debounced refresh on delete', async () => {
+      const db = {
+        put: jest.fn().mockResolvedValue('result'),
+        delete: jest.fn().mockResolvedValue('result')
+      };
+      const callback = jest.fn();
+      manager.on('pantry', callback);
+      
+      manager.setupIndexedDBNotifications(db);
+      await db.delete('pantry', 1);
+      
+      expect(callback).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(1000);
+      expect(callback).toHaveBeenCalledWith({ key: 1, deleted: true });
+    });
+  });
+
+  describe('triggerPantryUpdate', () => {
+    it('dispatches pantry-updated event', () => {
+      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+      triggerPantryUpdate({ items: ['apple'] });
+      expect(dispatchSpy).toHaveBeenCalled();
+      dispatchSpy.mockRestore();
+    });
+  });
+
+  describe('triggerMealPlanUpdate', () => {
+    it('dispatches meal-plan-updated event', () => {
+      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+      triggerMealPlanUpdate({ Monday: 'Pasta' });
+      expect(dispatchSpy).toHaveBeenCalled();
+      dispatchSpy.mockRestore();
+    });
+  });
+
+  describe('triggerPreferencesUpdate', () => {
+    it('dispatches preferences-updated event', () => {
+      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+      triggerPreferencesUpdate({ diet: 'vegetarian' });
+      expect(dispatchSpy).toHaveBeenCalled();
+      dispatchSpy.mockRestore();
+    });
+  });
+
+  describe('triggerMealLogged', () => {
+    it('dispatches meal-logged event', () => {
+      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+      triggerMealLogged({ meal: 'Lunch', calories: 500 });
+      expect(dispatchSpy).toHaveBeenCalled();
+      dispatchSpy.mockRestore();
+    });
+  });
 });
