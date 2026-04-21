@@ -5,12 +5,29 @@ export class UIManager {
     }
 
     showTab(tab) {
+        // Hide all tabs
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
         document.getElementById('tab-' + tab).classList.remove('hidden');
-        document.querySelectorAll('#nav-pantry, #nav-meals, #nav-plan, #nav-shop').forEach(n => n.classList.remove('tab-active'));
-        document.getElementById('nav-' + tab).classList.add('tab-active');
+
+        // Update dropdown menu styling
+        document.querySelectorAll('.nav-dropdown-item').forEach(n => n.classList.remove('active'));
+        document.querySelector(`.nav-dropdown-item[data-tab="${tab}"]`)?.classList.add('active');
+
+        // Update dropdown label to show current tab
+        const tabLabels = { pantry: '🥫 Pantry', meals: '🍽️ Meals', plan: '📅 Plan', shop: '🛒 Shop', nutrition: '🥗 Nutrition' };
+        const labelEl = document.getElementById('current-tab-label');
+        if (labelEl && tabLabels[tab]) {
+            labelEl.textContent = tabLabels[tab];
+        }
+
+        // Close dropdown after selection
+        const menu = document.getElementById('nav-dropdown-menu');
+        if (menu) menu.classList.remove('active');
+
+        // Tab-specific updates
         if (tab === 'meals') this.updateMeals();
         if (tab === 'shop') this.updateShoppingList();
+        if (tab === 'nutrition') this.updateNutrition?.();
     }
 
     announceToScreenReader(message) {

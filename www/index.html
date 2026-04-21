@@ -4,769 +4,1052 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Main">
-    <meta name="theme-color" content="#10b981">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <link rel="manifest" href="manifest.json?v=4">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2310b981' rx='20' width='100' height='100'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>P</text></svg>">
-    <title>Main</title>
-    <link rel="stylesheet" href="css/output.css?v=4">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="main">
+    <meta name="theme-color" content="#f97316">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="screen-orientation" content="portrait">
+    <meta http-equiv="ScreenOrientation" content="autoRotate:disabled">
+    <link rel="manifest" href="manifest.json?v=5">
+    <link rel="apple-touch-icon" href="logo.png">
+    <title>main</title>
+    <link rel="stylesheet" href="css/output.css?v=5">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; background: #fef7f0; }
-        .tab-active { border-bottom: 2px solid #d97706; color: #d97706; }
-        input, select { -webkit-appearance: none; appearance: none; }
-        * { max-width: 100vw; }
-        .max-w-6xl { max-width: 100%; }
-        /* WCAG AA compliant color contrasts */
-        .text-gray-400 { color: #6b7280; } /* Increased from #9ca3af for better contrast */
-        .text-gray-500 { color: #4b5563; } /* Increased from #6b7280 for better contrast */
-        .text-orange-500 { color: #ea580c; } /* Darker orange for better contrast */
-        .text-orange-600 { color: #c2410c; } /* Darker orange for better contrast */
-        .text-orange-700 { color: #9a3412; } /* Darker orange for better contrast */
-        .text-amber-600 { color: #b45309; } /* Darker amber for better contrast */
-        .text-amber-700 { color: #92400e; } /* Darker amber for better contrast */
-        .text-amber-800 { color: #78350f; } /* Darker amber for better contrast */
-        .text-red-500 { color: #dc2626; } /* Darker red for better contrast */
-        .text-red-600 { color: #b91c1c; } /* Darker red for better contrast */
-        .text-red-700 { color: #991b1b; } /* Darker red for better contrast */
-        .text-yellow-600 { color: #ca8a04; } /* Darker yellow for better contrast */
-        .text-emerald-700 { color: #047857; } /* Darker emerald for better contrast */
-        @media (max-width: 768px) {
-            .grid.md\\:grid-cols-2 { grid-template-columns: 1fr; }
-            .grid.md\\:grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --brand: #f97316;
+            --brand-dark: #ea580c;
+            --brand-light: #ffedd5;
+            --bg: #fffbf5;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-muted: #6b7280;
+            --border: #fde4c7;
         }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overscroll-behavior-y: contain;
+            -webkit-font-smoothing: antialiased;
+        }
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        input, textarea { user-select: text; -webkit-user-select: text; }
+
+        /* Phone frame - center on desktop, fullscreen on mobile */
+        .phone-frame {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 40px rgba(0,0,0,0.05);
+        }
+
+        /* Header */
+        .app-header {
+            padding: calc(var(--safe-top) + 12px) 20px 14px;
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            border-bottom: 1px solid var(--border);
+        }
+        .app-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .app-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .app-brand img {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 2px 8px rgba(249,115,22,0.25);
+        }
+        .app-title {
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--brand-dark);
+            letter-spacing: -0.02em;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .icon-btn {
+            width: 38px; height: 38px;
+            border-radius: 12px;
+            background: white;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--brand-dark);
+            cursor: pointer;
+            transition: transform 0.15s, background 0.15s;
+        }
+        .icon-btn:active { transform: scale(0.92); background: var(--brand-light); }
+        .icon-btn svg { width: 18px; height: 18px; }
+
+        /* Main content */
+        .app-main {
+            flex: 1;
+            padding: 16px 16px calc(88px + var(--safe-bottom));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .screen { display: none; animation: fadeIn 0.25s ease-out; }
+        .screen.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .card-gradient-purple {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+            border-color: #d8b4fe;
+        }
+        .card-gradient-amber {
+            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+            border-color: #fdba74;
+        }
+        .card-gradient-green {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-color: #6ee7b7;
+        }
+        .card-gradient-teal {
+            background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+            border-color: #5eead4;
+        }
+        .card-gradient-rose {
+            background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%);
+            border-color: #fda4af;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: -6px 0 12px;
+        }
+
+        /* Screen title */
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin: 4px 4px 14px;
+        }
+        .screen-title {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            margin: 0;
+        }
+        .screen-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Inputs */
+        .field {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 15px;
+            background: white;
+            color: var(--text);
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .field:focus { outline: none; border-color: var(--brand); }
+        select.field { padding-right: 36px; background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23f97316' d='M6 8L0 0h12z'/%3E%3C/svg%3E") no-repeat right 14px center; }
+
+        .btn {
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.15s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary {
+            background: var(--brand);
+            color: white;
+            box-shadow: 0 2px 6px rgba(249,115,22,0.35);
+        }
+        .btn-primary:active { background: var(--brand-dark); }
+        .btn-secondary {
+            background: white;
+            color: var(--brand-dark);
+            border: 1.5px solid var(--border);
+        }
+        .btn-full { width: 100%; }
+
+        /* Bottom tab bar */
+        .tabbar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            padding: 8px 8px calc(8px + var(--safe-bottom));
+            display: flex;
+            justify-content: space-around;
+            z-index: 50;
+        }
+        .tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 8px 4px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.15s, transform 0.15s;
+            border-radius: 12px;
+        }
+        .tab:active { transform: scale(0.94); }
+        .tab svg { width: 22px; height: 22px; stroke-width: 2; }
+        .tab-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        .tab.active { color: var(--brand-dark); }
+        .tab.active .tab-indicator {
+            width: 24px;
+            height: 3px;
+            background: var(--brand);
+            border-radius: 999px;
+            position: absolute;
+            top: 2px;
+        }
+        .tab { position: relative; }
+
+        /* Tile grid */
+        .tile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .tile {
+            background: white;
+            border-radius: 14px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .tile-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+        .tile-value { font-size: 20px; font-weight: 700; color: var(--brand-dark); }
+
+        /* Pill filters */
+        .pill-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 2px;
+            margin: 0 -4px 14px;
+            scrollbar-width: none;
+        }
+        .pill-row::-webkit-scrollbar { display: none; }
+        .pill {
+            flex-shrink: 0;
+            padding: 8px 14px;
+            background: white;
+            border: 1.5px solid var(--border);
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .pill.active {
+            background: var(--brand);
+            color: white;
+            border-color: var(--brand);
+        }
+
+        /* List items */
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+        .list-item-body { flex: 1; min-width: 0; }
+        .list-item-title { font-size: 14px; font-weight: 600; }
+        .list-item-sub { font-size: 12px; color: var(--text-muted); }
+        .list-item-action {
+            width: 32px; height: 32px;
+            border-radius: 999px;
+            background: var(--brand-light);
+            border: none;
+            color: var(--brand-dark);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Empty states */
+        .empty {
+            text-align: center;
+            padding: 30px 10px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .empty-emoji { font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.6; }
+
+        /* Suggestions dropdown */
+        .suggestions {
+            position: relative;
+        }
+        #ingredient-suggestions {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 30;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        #ingredient-suggestions button {
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            background: white;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        #ingredient-suggestions button:hover { background: var(--brand-light); }
+        .hidden { display: none !important; }
+
+        /* Meals grid */
+        #meals-list {
+            display: grid;
+            gap: 10px;
+        }
+        .meal-card {
+            background: white;
+            border-radius: 16px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .meal-card:active { transform: scale(0.98); }
+        .meal-card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
+        .meal-card .meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Week plan */
+        #week-plan {
+            display: grid;
+            gap: 8px;
+        }
+        .day-row {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+        .day-row .day-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Modals */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .modal-backdrop.active { display: flex; }
+        .modal-sheet {
+            background: white;
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            max-width: 480px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 20px 20px calc(20px + var(--safe-bottom));
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .modal-handle {
+            width: 40px; height: 4px;
+            background: #d1d5db;
+            border-radius: 999px;
+            margin: 0 auto 14px;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0 0 12px;
+        }
+
+        /* Landscape block */
+        @media (orientation: landscape) and (max-width: 900px) {
+            .phone-frame { display: none; }
+            .landscape-lock { display: flex !important; }
+        }
+        .landscape-lock {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 20px;
+            text-align: center;
+        }
+        .landscape-lock-emoji { font-size: 64px; margin-bottom: 12px; }
+        .landscape-lock h2 { margin: 0 0 6px; color: var(--brand-dark); }
+        .landscape-lock p { margin: 0; color: var(--text-muted); }
+
+        /* Nutrition progress bars */
+        .nutri-row {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+        .nutri-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .nutri-bar {
+            height: 8px;
+            background: #f3f4f6;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .nutri-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--brand) 0%, #fb923c 100%);
+            border-radius: 999px;
+            transition: width 0.5s ease;
+        }
+
+        /* Dietary chips */
+        .diet-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .chip {
+            padding: 6px 10px;
+            background: #f9fafb;
+            border: 1.5px solid var(--border);
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+        }
+        .chip.active {
+            background: var(--brand);
+            color: white;
+            border-color: var(--brand);
+        }
+
+        /* Hide legacy nav dropdown entirely */
+        .nav-dropdown { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen">
-    <nav class="bg-amber-50 shadow-sm sticky top-0 z-50 border-b border-amber-200">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center">
-                <img src="logo.png" alt="Main" class="h-14 w-14 rounded-lg object-cover">
-            </div>
-            <div class="flex items-center gap-2 sm:gap-4 flex-wrap">
-                <button onclick="showTab('pantry')" id="nav-pantry" class="px-3 sm:px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Pantry</button>
-                <button onclick="showTab('meals')" id="nav-meals" class="relative px-3 sm:px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Meals<span id="meals-badge" class="hidden absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span></button>
-                <button onclick="showTab('plan')" id="nav-plan" class="px-3 sm:px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Plan</button>
-                <button onclick="showTab('shop')" id="nav-shop" class="px-3 sm:px-4 py-2 font-medium text-gray-700 hover:text-amber-600 transition">Shop</button>
-            </div>
-        </div>
-    </nav>
-
-    <main class="max-w-6xl mx-auto px-4 py-8">
-        <!-- Settings Bar -->
-        <div class="bg-amber-50 rounded-xl shadow-sm p-4 mb-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 border border-amber-200">
-            <div class="flex flex-col">
-                <label class="text-sm text-gray-600 font-medium">People</label>
-                <select id="people-count" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6+</option>
-                </select>
-            </div>
-            <div class="flex flex-col">
-                <label class="text-sm text-gray-600 font-medium">Diet</label>
-                <select id="diet" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
-                    <option value="none">None</option>
-                    <option value="vegetarian">Veg</option>
-                    <option value="vegan">Vegan</option>
-                    <option value="keto">Keto</option>
-                    <option value="gluten-free">Gluten-Free</option>
-                    <option value="diabetic">Diabetic</option>
-                    <option value="lowcarb">Low-Carb</option>
-                    <option value="lowsodium">Low-Sodium</option>
-                    <option value="heart">Heart</option>
-                </select>
-            </div>
-            <div class="flex flex-col">
-                <label class="text-sm text-gray-600 font-medium">Allergy</label>
-                <select id="allergy" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
-                    <option value="none">None</option>
-                    <option value="dairy">Dairy</option>
-                    <option value="gluten">Gluten</option>
-                    <option value="nuts">Nuts</option>
-                    <option value="onion">Onion</option>
-                    <option value="eggs">Eggs</option>
-                    <option value="soy">Soy</option>
-                    <option value="shellfish">Shellfish</option>
-                </select>
-            </div>
-            <div class="flex flex-col">
-                <label class="text-sm text-gray-600 font-medium">Cuisine</label>
-                <select id="cuisine" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
-                    <option value="all">All</option>
-                    <option value="american">American</option>
-                    <option value="italian">Italian</option>
-                    <option value="mexican">Mexican</option>
-                    <option value="asian">Asian</option>
-                    <option value="indian">Indian</option>
-                    <option value="mediterranean">Mediterranean</option>
-                    <option value="middle-eastern">Middle Eastern</option>
-                </select>
-            </div>
-            <div class="flex flex-col">
-                <label class="text-sm text-gray-600 font-medium">Max Time</label>
-                <select id="max-time" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
-                    <option value="9999">Any</option>
-                    <option value="15">15 min</option>
-                    <option value="30">30 min</option>
-                    <option value="45">45 min</option>
-                    <option value="60" selected>1 hour</option>
-                    <option value="90">1.5 hours</option>
-                    <option value="120">2 hours</option>
-                </select>
-            </div>
-            <div class="flex flex-col">
-                <label class="text-sm text-gray-600 font-medium">Difficulty</label>
-                <select id="difficulty" onchange="updatePreferences()" class="border rounded-lg px-2 py-2 text-sm mt-1">
-                    <option value="any">Any</option>
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- PANTRY TAB -->
-        <div id="tab-pantry" class="tab-content">
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-sm p-6 border border-purple-200">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-purple-800">🤖 AI-Powered Pantry</h2>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-3">Type ingredients to add them, or ask the AI anything about cooking, substitutions, or meal ideas.</p>
-                    <div class="flex gap-2 mb-2">
-                        <div class="relative flex-1">
-                            <input type="text" id="new-ingredient" placeholder="Add ingredients or ask the AI anything…" autocomplete="off" class="w-full border border-purple-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" oninput="showSuggestions()" onkeydown="handleIngredientKey(event)" onblur="setTimeout(hideSuggestions, 200)">
-                        </div>
-                        <button id="add-button" onclick="routeInput()" class="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 font-medium">Send</button>
-                    </div>
-                    <div id="pantry-ai-response" class="hidden mb-3 p-3 bg-white border border-purple-200 rounded-lg text-sm">
-                        <div class="flex justify-between items-start gap-2">
-                            <div id="pantry-ai-response-text" class="text-gray-800 leading-relaxed flex-1"></div>
-                            <button onclick="document.getElementById('pantry-ai-response').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 shrink-0">✕</button>
-                        </div>
-                    </div>
-                    <button onclick="startSpeechRecognition()" class="w-full mb-4 bg-purple-100 border-2 border-dashed border-purple-300 rounded-xl p-6 text-gray-600 hover:border-purple-400 hover:text-purple-700 transition">
-                        <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-                        Add by Voice
-                    </button>
-                    <div id="pantry-list" class="space-y-2 max-h-64 overflow-y-auto bg-white rounded-lg p-3 border border-purple-100">
-                        <p class="text-gray-400 text-sm text-center py-8">No ingredients yet. Add some above!</p>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl shadow-sm p-6 border border-amber-200">
-                    <h2 class="text-xl font-semibold mb-4 text-amber-800">🍽️ Leftovers</h2>
-                    <div id="leftovers-list" class="space-y-2">
-                        <p class="text-gray-400 text-sm">No leftovers tracked yet.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MEALS TAB -->
-        <div id="tab-meals" class="tab-content hidden">
-            <!-- AI Suggestions Section -->
-            <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-sm p-6 border border-purple-200 mb-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-purple-800">🤖 AI-Powered Suggestions</h2>
-                </div>
-                <div class="flex gap-2 mb-3">
-                    <button onclick="getAISuggestions()" id="ai-suggestions-btn" class="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 text-sm font-medium">
-                        Get AI Meal Ideas
-                    </button>
-                </div>
-                <div id="ai-suggestions-container" class="space-y-3">
-                    <p class="text-gray-500 text-sm text-center py-4">Click above for AI-powered suggestions, or ask anything from the Pantry tab</p>
-                </div>
-            </div>
-            
-            <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
-                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-                    <h2 class="text-xl font-semibold">All Recipes</h2>
-                    <div class="flex items-center gap-2">
-                        <select id="meals-sort" onchange="sortMeals(this.value, document.getElementById('meals-sort-dir').value)" class="text-sm border border-orange-300 rounded-lg px-2 py-1 bg-white" title="Sort by">
-                            <option value="fewest">Fewest Missing</option>
-                            <option value="best">Best Match</option>
-                            <option value="fastest">Fastest</option>
-                            <option value="difficulty">Difficulty</option>
-                            <option value="ingredients">Ingredients</option>
-                            <option value="rating">Rating</option>
-                            <option value="name">Name</option>
-                        </select>
-                        <button id="meals-sort-dir" onclick="const btn=this; const dir=btn.value==='asc'?'desc':'asc'; btn.value=dir; btn.textContent=dir==='asc'?'↑':'↓'; sortMeals(document.getElementById('meals-sort').value, dir)" value="asc" class="px-3 py-1 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-bold" title="Sort direction">↑</button>
-                    </div>
-                </div>
-                <div id="meals-list" class="grid md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <p class="text-gray-400 col-span-2 text-center py-8">Add ingredients to your pantry first!</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- PLAN TAB -->
-        <div id="tab-plan" class="tab-content hidden">
-            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-sm p-6 border border-indigo-200 mb-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-indigo-800">🤖 AI Meal Planning</h2>
-                </div>
-                <button onclick="getAIMealPlan()" id="ai-mealplan-btn" class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 text-sm font-medium">
-                    Generate AI Meal Plan
-                </button>
-                <div id="ai-mealplan-container" class="mt-4 space-y-3"></div>
-            </div>
-            <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
-                <h2 class="text-xl font-semibold mb-4">Weekly Meal Plan</h2>
-                <div class="grid md:grid-cols-7 gap-2" id="week-plan">
-                </div>
-                <div class="mt-6 p-4 bg-orange-100 rounded-xl">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="font-medium text-orange-600">Weekly Summary</span>
-                        <span id="plan-stats" class="text-sm text-orange-600"></span>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <button onclick="exportMealPlan()" class="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 text-sm">Export JSON</button>
-                        <button onclick="exportToICal()" class="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 text-sm">Export Calendar</button>
-                        <button onclick="document.getElementById('import-file').click()" class="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 text-sm">Import</button>
-                        <input type="file" id="import-file" accept=".json" class="hidden" onchange="importMealPlanFromFile(event)">
-                    </div>
-                    <div class="mt-3 pt-3 border-t border-orange-200">
-                        <label class="text-sm font-medium text-orange-700 mb-2 block">Quick Templates</label>
-                        <select id="template-select" onchange="applyTemplate(this.value)" class="w-full border rounded-lg px-2 py-1 text-sm">
-                            <option value="">Select a template...</option>
-                            <option value="Quick Week">Quick Week</option>
-                            <option value="Healthy Balanced">Healthy Balanced</option>
-                            <option value="Budget Friendly">Budget Friendly</option>
-                        </select>
-                    </div>
-                    <div class="mt-3 pt-3 border-t border-orange-200">
-                        <label class="text-sm font-medium text-orange-700 mb-2 block">🍳 Meal Prep Tips</label>
-                        <div id="meal-prep-tips" class="space-y-2">
-                            <p class="text-gray-500 text-xs">Add meals to see prep suggestions.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SHOP TAB -->
-        <div id="tab-shop" class="tab-content hidden">
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
-                    <h2 class="text-xl font-semibold mb-4">Shopping List</h2>
-                    <div id="shopping-list" class="space-y-2">
-                        <p class="text-gray-400 text-sm">Select meals to see what you need.</p>
-                    </div>
-                    <button onclick="copyShoppingList()" class="mt-4 w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600">Copy List</button>
-                </div>
-                <div class="bg-orange-50 rounded-xl shadow-sm p-6 border border-orange-200">
-                    <h2 class="text-xl font-semibold mb-4">Budget Optimizer</h2>
-                    <div id="budget-tips" class="space-y-3">
-                        <p class="text-gray-400 text-sm">Add meals to see cost-saving tips.</p>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-sm p-6 border border-green-200">
-                    <h2 class="text-xl font-semibold mb-4 text-green-800">🌱 Seasonal Suggestions</h2>
-                    <div id="seasonal-suggestions" class="space-y-2">
-                        <p class="text-gray-400 text-sm">Loading seasonal suggestions...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Speech Recognition Modal -->
-    <div id="speech-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
-            <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-            </div>
-            <p id="speech-status" class="text-gray-700 font-medium mb-4">Listening…</p>
-            <button onclick="stopSpeechRecognition()" class="px-6 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">Cancel</button>
-        </div>
+<body>
+    <!-- Landscape lock -->
+    <div class="landscape-lock">
+        <div class="landscape-lock-emoji">📱</div>
+        <h2>Rotate to Portrait</h2>
+        <p>main is designed for portrait mode.</p>
     </div>
 
-    <!-- Recipe Detail Modal -->
-    <div id="recipe-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 overflow-y-auto">
-        <div class="bg-orange-50 rounded-2xl p-6 max-w-2xl w-full mx-4 my-8">
-            <div class="flex justify-between items-start mb-4">
-                <h3 id="recipe-modal-title" class="text-xl font-semibold"></h3>
-                <button onclick="closeRecipeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    <!-- Phone frame -->
+    <div class="phone-frame">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="app-header-row">
+                <div class="app-brand">
+                    <img src="logo.png" alt="main">
+                    <span class="app-title">main</span>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="openSettings()" aria-label="Settings" title="Settings">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </button>
+                    <button class="icon-btn" onclick="signInAction()" id="auth-btn" aria-label="Sign in" title="Sign in">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    </button>
+                </div>
             </div>
-            <div id="recipe-modal-content" class="space-y-4">
-                <!-- Content will be dynamically inserted -->
-            </div>
-        </div>
-    </div>
+        </header>
 
-    <script type="module">
-        import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState } from './js/core/appState.js';
-        import { PantryManager } from './js/features/pantry/pantryManager.js';
-        import { MealPlanner } from './js/features/meals/mealPlanner.js';
-        import { RecipeEngine } from './js/logic/recipeEngine.js';
-        import { DataManager } from './js/data/dataManager.js';
-        import { UIManager } from './js/ui/uiManager.js';
-        import { PreferencesManager } from './js/features/preferencesManager.js';
-        import { getSeasonalIngredientSuggestion } from './js/features/pantry/seasonalIngredients.js';
-        import { MealPlanSharing } from './js/features/plan/mealPlanSharing.js';
-        import { MealPlanTemplates } from './js/features/plan/mealPlanTemplates.js';
-        import { LeftoverTracker } from './js/features/pantry/leftoverTracker.js';
-        import { MealPrep } from './js/features/mealPrep.js';
-        import { GeminiAI } from './js/ai/geminiAI.js';
-        import syncProcessor from './js/data/syncProcessor.js';
-        import { registerAllHandlers } from './js/data/mutationHandlers.js';
-        import nutritionGoalsManager from './js/features/nutrition/nutritionGoals.js';
-        import budgetMealPlanner from './js/features/plan/budgetMealPlanner.js';
-        import mealPrepPlanner from './js/features/plan/mealPrepPlanner.js';
-        import groceryDelivery from './js/features/grocery/groceryDelivery.js';
-        import deviceSyncManager from './js/data/deviceSyncManager.js';
-        import pushNotifications from './js/utils/pushNotifications.js';
-        // Data
-        let pantry = [];
-        let mealPlan = {};
-        let preferences = { people: 1, diet: 'none', diets: [], allergy: 'none', cuisine: 'all', maxTime: 60, difficulty: 'any' };
-        let editingIndex = null;
-        let recipeRatings = {};
+        <!-- Main -->
+        <main class="app-main">
 
-        // Recipes + ingredient vocabulary loaded from bundled dataset
-        let recipes = [];
-        let autocompleteIngredients = [];
+            <!-- PANTRY SCREEN -->
+            <section class="screen active" id="tab-pantry">
+                <div class="screen-header">
+                    <h1 class="screen-title">Pantry</h1>
+                    <span class="screen-sub" id="pantry-count">0 items</span>
+                </div>
 
-        const uiManager = new UIManager({
-            updateMeals: () => updateMeals(),
-            updateShoppingList: () => updateShoppingList()
-        });
+                <!-- AI input -->
+                <div class="card card-gradient-purple">
+                    <h3 class="card-title">🤖 Add & Ask AI</h3>
+                    <p class="card-subtitle">Add ingredients or ask anything about cooking.</p>
+                    <div class="suggestions">
+                        <input type="text" id="new-ingredient" class="field"
+                               placeholder="add ingredients to reveal potential dishes"
+                               autocomplete="off"
+                               oninput="showSuggestions()"
+                               onkeydown="handleIngredientKey(event)"
+                               onblur="setTimeout(hideSuggestions, 200)">
+                        <div id="ingredient-suggestions" class="hidden"></div>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button id="add-button" class="btn btn-primary" style="flex:1;" onclick="routeInput()">Send</button>
+                        <button class="btn btn-secondary" onclick="startSpeechRecognition()" aria-label="Voice">🎙️</button>
+                    </div>
+                    <div id="pantry-ai-response" class="hidden" style="margin-top:12px; padding:12px; background:white; border-radius:12px; font-size:13px;">
+                        <div style="display:flex; justify-content:space-between; gap:8px;">
+                            <div id="pantry-ai-response-text" style="flex:1;"></div>
+                            <button onclick="document.getElementById('pantry-ai-response').classList.add('hidden')" style="border:none; background:none; color:#9ca3af; cursor:pointer;">✕</button>
+                        </div>
+                    </div>
+                </div>
 
-        const pantryManager = new PantryManager({
-            getPantry: () => pantry,
-            persistPantry: async () => { await savePantryState(pantry); },
-            announce: message => uiManager.announceToScreenReader(message),
-            getAutocompleteIngredients: () => autocompleteIngredients,
-            getEditingIndex: () => editingIndex,
-            setEditingIndex: value => { editingIndex = value; },
-            onPantryChange: () => { renderSeasonalSuggestions(); renderLeftovers(); }
-        });
+                <!-- Pantry list -->
+                <div class="card">
+                    <h3 class="card-title">🥫 My Ingredients</h3>
+                    <div id="pantry-list">
+                        <div class="empty">
+                            <span class="empty-emoji">🫙</span>
+                            Add ingredients above to begin.
+                        </div>
+                    </div>
+                </div>
 
-        const recipeEngine = new RecipeEngine({
-            getRecipes: () => recipes,
-            getRecipeRatings: () => recipeRatings,
-            persistRecipeRatings: async () => { await saveRecipeRatingsState(recipeRatings); },
-            announce: message => uiManager.announceToScreenReader(message)
-        });
+                <!-- Leftovers -->
+                <div class="card card-gradient-amber">
+                    <h3 class="card-title">🍽️ Leftovers</h3>
+                    <div id="leftovers-list">
+                        <div class="empty" style="padding:10px;">No leftovers tracked yet.</div>
+                    </div>
+                </div>
+            </section>
 
-        const dataManager = new DataManager({
-            setRecipes: value => { recipes = value; },
-            setAutocompleteIngredients: value => { autocompleteIngredients = value; },
-            updateMeals: () => { updateMeals(); window._recipesLoaded = true; }
-        });
+            <!-- MEALS SCREEN -->
+            <section class="screen" id="tab-meals">
+                <div class="screen-header">
+                    <h1 class="screen-title">Meals</h1>
+                    <span class="screen-sub"><span id="meals-badge">0</span> matches</span>
+                </div>
 
-        // Initialize sync system
-        registerAllHandlers(syncProcessor);
-        console.log('[App] Sync processor initialized:', syncProcessor.getStatus());
+                <!-- Filter pills -->
+                <div class="pill-row">
+                    <button class="pill active" onclick="sortMeals('match')">Best Match</button>
+                    <button class="pill" onclick="sortMeals('time')">Quickest</button>
+                    <button class="pill" onclick="sortMeals('rating')">Top Rated</button>
+                    <button class="pill" onclick="sortMeals('calories')">Lightest</button>
+                </div>
 
-        // Initialize nutrition goals
-        try { await nutritionGoalsManager.loadGoals(); console.log('[App] Nutrition goals loaded'); } catch(e) { console.error('[App] Nutrition goals failed:', e); }
+                <!-- AI suggestions -->
+                <div class="card card-gradient-purple">
+                    <h3 class="card-title">✨ AI Meal Ideas</h3>
+                    <button class="btn btn-primary btn-full" id="ai-suggestions-btn" onclick="getAISuggestions()">Get AI Suggestions</button>
+                    <div id="ai-suggestions-container" style="margin-top:12px;"></div>
+                </div>
 
-        // Initialize budget meal planner
-        try { await budgetMealPlanner.loadTier(); console.log('[App] Budget tier loaded'); } catch(e) { console.error('[App] Budget tier failed:', e); }
+                <!-- Meals grid -->
+                <div id="meals-list">
+                    <div class="empty">
+                        <span class="empty-emoji">🍳</span>
+                        Add ingredients to your pantry to see meal ideas.
+                    </div>
+                </div>
+            </section>
 
-        // Initialize meal prep planner
-        try { await mealPrepPlanner.loadSettings(); console.log('[App] Meal prep settings loaded'); } catch(e) { console.error('[App] Meal prep settings failed:', e); }
+            <!-- PLAN SCREEN -->
+            <section class="screen" id="tab-plan">
+                <div class="screen-header">
+                    <h1 class="screen-title">Plan</h1>
+                    <span class="screen-sub" id="plan-stats">0 meals</span>
+                </div>
 
-        // Initialize grocery delivery
-        try { await groceryDelivery.loadPreferences(); console.log('[App] Grocery preferences loaded'); } catch(e) { console.error('[App] Grocery preferences failed:', e); }
+                <!-- Meal Randomizer -->
+                <div class="card card-gradient-purple">
+                    <h3 class="card-title">🎲 Ingredient-Based Randomizer</h3>
+                    <p class="card-subtitle">Generate a week of meals using shared ingredients.</p>
+                    
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:12px; color:#6b7280; font-weight:500;">Ingredient Source</label>
+                        <select id="randomizer-source" class="field" style="margin-top:4px;">
+                            <option value="pantry">🥫 Use Pantry Ingredients</option>
+                            <option value="random">🎲 All Random (for shopping list)</option>
+                        </select>
+                    </div>
 
-        // Initialize device sync
-        try { await deviceSyncManager.init(); console.log('[App] Device sync initialized'); } catch(e) { console.error('[App] Device sync failed:', e); }
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:12px; color:#6b7280; font-weight:500;">Number of Ingredients</label>
+                        <input type="number" id="randomizer-ingredients" class="field" value="5" min="1" max="20" style="margin-top:4px;">
+                    </div>
 
-        // Initialize push notifications
-        try { await pushNotifications.init(); console.log('[App] Push notifications initialized'); pushNotifications.scheduleAllEnabled(); } catch(e) { console.error('[App] Push notifications failed:', e); }
-
-        const preferencesManager = new PreferencesManager({
-            getPreferences: () => preferences,
-            savePreferencesState: async (prefs) => { await savePreferencesState(prefs); },
-            updateMeals: () => updateMeals()
-        });
-
-        const mealPlanSharing = new MealPlanSharing({
-            getMealPlan: () => mealPlan,
-            setMealPlan: value => { mealPlan = value; },
-            persistMealPlan: async () => { await saveMealPlanState(mealPlan); },
-            announce: message => uiManager.announceToScreenReader(message)
-        });
-
-        const mealPlanTemplates = new MealPlanTemplates({
-            getMealPlan: () => mealPlan,
-            setMealPlan: value => { mealPlan = value; },
-            persistMealPlan: async () => { await saveMealPlanState(mealPlan); },
-            getRecipes: () => recipes,
-            announce: message => uiManager.announceToScreenReader(message)
-        });
-
-        const leftoverTracker = new LeftoverTracker({
-            getPantry: () => pantry,
-            setPantry: value => { pantry = value; },
-            persistPantry: async () => { await savePantryState(pantry); },
-            announce: message => uiManager.announceToScreenReader(message)
-        });
-
-        const mealPrep = new MealPrep({
-            getMealPlan: () => mealPlan,
-            getRecipes: () => recipes,
-            getPreferences: () => preferences,
-            announce: message => uiManager.announceToScreenReader(message)
-        });
-
-        const geminiAI = new GeminiAI({
-            getPantry: () => pantry,
-            getPreferences: () => preferences,
-            getRecipes: () => recipes,
-            announce: message => uiManager.announceToScreenReader(message)
-        });
-
-        Object.assign(window, {
-            showSuggestions: pantryManager.showSuggestions.bind(pantryManager),
-            hideSuggestions: pantryManager.hideSuggestions.bind(pantryManager),
-            selectSuggestion: pantryManager.selectSuggestion.bind(pantryManager),
-            handleIngredientKey: pantryManager.handleIngredientKey.bind(pantryManager),
-            addIngredient: pantryManager.addIngredient.bind(pantryManager),
-            editIngredient: pantryManager.editIngredient.bind(pantryManager),
-            saveEditedIngredient: pantryManager.saveEditedIngredient.bind(pantryManager),
-            removeIngredient: pantryManager.removeIngredient.bind(pantryManager),
-            startSpeechRecognition: pantryManager.startSpeechRecognition.bind(pantryManager),
-            stopSpeechRecognition: pantryManager.stopSpeechRecognition.bind(pantryManager),
-            openRecipeModal: recipeEngine.openRecipeModal.bind(recipeEngine),
-            closeRecipeModal: recipeEngine.closeRecipeModal.bind(recipeEngine),
-            rateRecipe: recipeEngine.rateRecipe.bind(recipeEngine),
-            showTab: uiManager.showTab.bind(uiManager),
-            updatePreferences: preferencesManager.updatePreferences.bind(preferencesManager),
-            exportMealPlan: mealPlanSharing.exportMealPlan.bind(mealPlanSharing),
-            exportToICal: mealPlanSharing.exportToICal.bind(mealPlanSharing),
-            importMealPlanFromFile: (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    mealPlanSharing.importMealPlan(file).then(() => {
-                        renderMealPlan();
-                    }).catch(err => {
-                        console.error('Import failed:', err);
-                    });
-                }
-                event.target.value = '';
-            },
-            applyTemplate: (templateName) => {
-                if (templateName) {
-                    mealPlanTemplates.applyTemplate(templateName);
-                    renderMealPlan();
-                    document.getElementById('template-select').value = '';
-                }
-            },
-            markAsLeftover: (name) => {
-                const currentPantry = pantryManager.getPantry ? pantryManager.getPantry() : pantry;
-                const index = currentPantry.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
-                if (index !== -1) {
-                    leftoverTracker.markAsLeftover(index);
-                    renderLeftovers();
-                }
-            }
-        });
-
-        function renderSeasonalSuggestions() {
-            const suggestions = getSeasonalIngredientSuggestion(pantry);
-            const container = document.getElementById('seasonal-suggestions');
-            
-            if (suggestions.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm">You have all seasonal ingredients in your pantry!</p>';
-                return;
-            }
-
-            container.innerHTML = suggestions.map(ing => `
-                <button onclick="document.getElementById('new-ingredient').value='${ing}'; addIngredient();" class="w-full text-left p-2 bg-white rounded-lg hover:bg-green-100 transition text-sm border border-green-200">
-                    <span class="font-medium text-green-700">+ ${ing}</span>
-                    <span class="text-gray-500 text-xs ml-2">Click to add</span>
-                </button>
-            `).join('');
-        }
-
-        function renderLeftovers() {
-            const leftovers = leftoverTracker.getLeftovers();
-            const container = document.getElementById('leftovers-list');
-            
-            if (leftovers.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-sm">No leftovers tracked yet.</p>';
-                return;
-            }
-
-            container.innerHTML = leftovers.map(item => `
-                <div class="p-2 bg-white rounded-lg text-sm border border-amber-200">
-                    <div class="flex justify-between items-center">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:10px;">
                         <div>
-                            <div class="font-medium text-amber-800">${item.name}</div>
-                            <div class="text-gray-500 text-xs">${item.quantity} ${item.unit} · Since ${item.leftoverDate}</div>
+                            <label style="font-size:12px; color:#6b7280; font-weight:500;">Max Calories</label>
+                            <select id="randomizer-calories" class="field" style="margin-top:4px;">
+                                <option value="">Any</option>
+                                <option value="300">≤300</option>
+                                <option value="400">≤400</option>
+                                <option value="500">≤500</option>
+                                <option value="600">≤600</option>
+                                <option value="700">≤700</option>
+                                <option value="800">≤800</option>
+                            </select>
                         </div>
-                        <button onclick="markAsLeftover('${item.name}')" class="text-xs text-amber-600 hover:text-amber-800">Clear</button>
+                        <div>
+                            <label style="font-size:12px; color:#6b7280; font-weight:500;">Min Protein</label>
+                            <select id="randomizer-protein" class="field" style="margin-top:4px;">
+                                <option value="">Any</option>
+                                <option value="10">≥10g</option>
+                                <option value="20">≥20g</option>
+                                <option value="30">≥30g</option>
+                                <option value="40">≥40g</option>
+                                <option value="50">≥50g</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:#6b7280; font-weight:500;">Max Carbs</label>
+                            <select id="randomizer-carbs" class="field" style="margin-top:4px;">
+                                <option value="">Any</option>
+                                <option value="20">≤20g</option>
+                                <option value="30">≤30g</option>
+                                <option value="40">≤40g</option>
+                                <option value="50">≤50g</option>
+                                <option value="60">≤60g</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:#6b7280; font-weight:500;">Max Fat</label>
+                            <select id="randomizer-fat" class="field" style="margin-top:4px;">
+                                <option value="">Any</option>
+                                <option value="10">≤10g</option>
+                                <option value="15">≤15g</option>
+                                <option value="20">≤20g</option>
+                                <option value="25">≤25g</option>
+                                <option value="30">≤30g</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:#6b7280; font-weight:500;">Max Time</label>
+                            <select id="randomizer-time" class="field" style="margin-top:4px;">
+                                <option value="">Any</option>
+                                <option value="15">≤15 min</option>
+                                <option value="30">≤30 min</option>
+                                <option value="45">≤45 min</option>
+                                <option value="60">≤60 min</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:#6b7280; font-weight:500;">Difficulty</label>
+                            <select id="randomizer-difficulty" class="field" style="margin-top:4px;">
+                                <option value="">Any</option>
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-full" onclick="generateRandomMealPlan()">🎲 Generate Week Plan</button>
+                </div>
+
+                <!-- Templates -->
+                <div class="card card-gradient-rose">
+                    <h3 class="card-title">📋 Quick Templates</h3>
+                    <select id="template-select" class="field" onchange="applyTemplate(this.value)" title="Apply template">
+                        <option value="">Apply a template…</option>
+                        <option value="healthy-week">🥗 Healthy Week</option>
+                        <option value="budget-week">💰 Budget Week</option>
+                        <option value="quick-meals">⚡ Quick Meals</option>
+                        <option value="family-week">👨‍👩‍👧 Family Week</option>
+                    </select>
+                </div>
+
+                <!-- Week plan -->
+                <div class="card">
+                    <h3 class="card-title">📅 This Week</h3>
+                    <div id="week-plan">
+                        <div class="empty"><span class="empty-emoji">📅</span>Drag meals here to plan your week.</div>
                     </div>
                 </div>
-            `).join('');
-        }
 
-        function renderMealPrepTips() {
-            const prepOpportunities = mealPrep.calculatePrepSchedule();
-            const prepDay = mealPrep.suggestPrepDay();
-            const container = document.getElementById('meal-prep-tips');
-            
-            if (prepOpportunities.length === 0) {
-                container.innerHTML = `<p class="text-gray-500 text-xs">Add more meals to unlock prep suggestions. Suggested prep day: ${prepDay}</p>`;
-                return;
-            }
-
-            container.innerHTML = `
-                <p class="text-xs text-orange-600 font-medium">💡 Suggested prep day: ${prepDay}</p>
-                ${prepOpportunities.slice(0, 2).map(({ recipe, count, savings }) => `
-                    <div class="p-2 bg-white rounded-lg text-xs border border-orange-200">
-                        <div class="font-medium text-orange-800">${recipe.name}</div>
-                        <div class="text-gray-500">Used ${count}x · Good for batch cooking (${recipe.servings} servings)</div>
+                <!-- Meal prep -->
+                <div class="card card-gradient-amber">
+                    <h3 class="card-title">👨‍🍳 Meal Prep Tips</h3>
+                    <div id="meal-prep-tips">
+                        <div class="empty" style="padding:10px;">Plan meals to unlock prep suggestions.</div>
                     </div>
-                `).join('')}
-            `;
-        }
-
-        const mealPlanner = new MealPlanner({
-            getPantry: () => pantry,
-            getMealPlan: () => mealPlan,
-            getPreferences: () => preferences,
-            getRecipes: () => recipes,
-            persistMealPlan: () => saveMealPlanState(mealPlan)
-        });
-
-        window.updateMeals = function() {
-            mealPlanner.updateMeals();
-            recipeEngine.buildIngredientVectors();
-        };
-        window.sortMeals = mealPlanner.sortMeals.bind(mealPlanner);
-        window.addToPlanByName = mealPlanner.addToPlanByName.bind(mealPlanner);
-        window.renderMealPlan = function() {
-            mealPlanner.renderMealPlan();
-            renderMealPrepTips();
-        };
-        window.updateShoppingList = mealPlanner.updateShoppingList.bind(mealPlanner);
-        window.copyShoppingList = mealPlanner.copyShoppingList.bind(mealPlanner);
-
-        /**
-         * Add ingredient from Shop tab suggestions
-         * @param {string} name - Ingredient name
-         */
-        window.addShopItem = function(name) {
-            document.getElementById('new-ingredient').value = name;
-            pantryManager.addIngredient();
-        };
-
-        /**
-         * Initialize the application state and UI
-         * @returns {Promise<void>}
-         */
-        async function init() {
-            // Load state from IndexedDB (single source of truth)
-            const loadedState = await loadState();
-            pantry = loadedState.pantry;
-            mealPlan = loadedState.mealPlan;
-            preferences = loadedState.preferences;
-            recipeRatings = loadedState.recipeRatings;
-
-            // Run one-time migration from localStorage if needed
-            await db.migrateFromLocalStorage();
-
-            preferences.people = preferences.people || 1;
-            document.getElementById('people-count').value = preferences.people;
-            
-            // Handle diet preference (supports single-select dropdown or multi-select checkboxes)
-            const diets = preferences.diets || (preferences.diet && preferences.diet !== 'none' ? [preferences.diet] : []);
-            const dietSelect = document.getElementById('diet');
-            if (dietSelect) {
-                dietSelect.value = diets[0] || preferences.diet || 'none';
-            }
-            const dietCheckboxIds = {
-                'diet-vegetarian': 'vegetarian',
-                'diet-vegan': 'vegan',
-                'diet-keto': 'keto',
-                'diet-glutenfree': 'gluten-free',
-                'diet-diabetic': 'diabetic',
-                'diet-lowcarb': 'lowcarb',
-                'diet-lowsodium': 'lowsodium',
-                'diet-heart': 'heart'
-            };
-            for (const [id, value] of Object.entries(dietCheckboxIds)) {
-                const el = document.getElementById(id);
-                if (el) el.checked = diets.includes(value);
-            }
-            
-            document.getElementById('allergy').value = preferences.allergy || 'none';
-            document.getElementById('cuisine').value = preferences.cuisine || 'all';
-            document.getElementById('max-time').value = preferences.maxTime || 60;
-            document.getElementById('difficulty').value = preferences.difficulty || 'any';
-            pantryManager.renderPantry();
-            renderMealPlan();
-            pantryManager.resetIngredientForm();
-            renderSeasonalSuggestions();
-            renderLeftovers();
-            try {
-                await dataManager.loadData();
-            } catch (e) {
-                console.error('Failed to load dataset', e);
-            }
-            updateMeals();
-        }
-        init();
-
-        window.getAISuggestions = async function() {
-            const container = document.getElementById('ai-suggestions-container');
-            const btn = document.getElementById('ai-suggestions-btn');
-            
-            if (geminiAI.isLoading) return;
-            
-            container.innerHTML = '<p class="text-purple-600 text-sm text-center py-4">🤖 Thinking... Getting AI suggestions based on your pantry</p>';
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
-            
-            const suggestions = await geminiAI.generateAISuggestions();
-            
-            btn.disabled = false;
-            btn.classList.remove('opacity-50');
-            
-            if (!suggestions) {
-                container.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Failed to get AI suggestions. Please try again.</p>';
-                return;
-            }
-            
-            container.innerHTML = suggestions.map(s => `
-                <div class="p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
-                    <div class="font-semibold text-purple-800 mb-1">${s.name}</div>
-                    <div class="text-sm text-gray-600 mb-2">${s.description}</div>
-                    <div class="text-xs text-green-600 mb-1">
-                        <span class="font-medium">From pantry:</span> ${s.pantryIngredients.join(', ')}
-                    </div>
-                    ${s.neededIngredients && s.neededIngredients.length > 0 ? `
-                        <div class="text-xs text-orange-600">
-                            <span class="font-medium">Need to buy:</span> ${s.neededIngredients.join(', ')}
-                        </div>
-                    ` : ''}
                 </div>
-            `).join('');
-        };
 
-        window.getAIMealPlan = async function() {
-            const container = document.getElementById('ai-mealplan-container');
-            const btn = document.getElementById('ai-mealplan-btn');
-            
-            if (geminiAI.isLoading) return;
-            
-            container.innerHTML = '<p class="text-indigo-600 text-sm text-center py-4">🤖 Generating your personalized meal plan...</p>';
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
-            
-            const plan = await geminiAI.getSmartMealPlan();
-            
-            btn.disabled = false;
-            btn.classList.remove('opacity-50');
-            
-            if (!plan) {
-                container.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Failed to generate meal plan. Please try again.</p>';
-                return;
-            }
-            
-            // Apply the meal plan
-            if (plan.mealPlan) {
-                Object.assign(mealPlan, plan.mealPlan);
-                saveMealPlanState(mealPlan);
-                renderMealPlan();
-            }
-            
-            // Display shopping list if provided
-            let html = '<p class="text-green-600 text-sm font-medium mb-3">✅ Meal plan applied! Check your Plan tab.</p>';
-            
-            if (plan.shoppingList && plan.shoppingList.length > 0) {
-                html += `
-                    <div class="mt-3">
-                        <div class="font-medium text-orange-700 text-sm mb-2">🛒 Suggested Shopping List:</div>
-                        <div class="flex flex-wrap gap-1">
-                            ${plan.shoppingList.map(item => `
-                                <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">${item}</span>
-                            `).join('')}
+                <!-- Share / Export -->
+                <div class="card">
+                    <h3 class="card-title">📤 Share Plan</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <button class="btn btn-secondary" onclick="exportMealPlan()">Export JSON</button>
+                        <button class="btn btn-secondary" onclick="exportToICal()">Export iCal</button>
+                    </div>
+                    <label class="btn btn-secondary btn-full" style="margin-top:8px; display:block; text-align:center;">
+                        Import Plan
+                        <input type="file" accept=".json" onchange="importMealPlanFromFile(event)" style="display:none;">
+                    </label>
+                </div>
+            </section>
+
+            <!-- SHOP SCREEN -->
+            <section class="screen" id="tab-shop">
+                <div class="screen-header">
+                    <h1 class="screen-title">Shop</h1>
+                    <span class="screen-sub">Budget friendly</span>
+                </div>
+
+                <!-- Shopping list -->
+                <div class="card">
+                    <h3 class="card-title">🛒 Shopping List</h3>
+                    <div id="shopping-list">
+                        <div class="empty" style="padding:10px;">Plan meals to generate a list.</div>
+                    </div>
+                    <button class="btn btn-primary btn-full" style="margin-top:10px;" onclick="copyShoppingList()">Copy List</button>
+                </div>
+
+                <!-- Budget tips -->
+                <div class="card card-gradient-teal">
+                    <h3 class="card-title">💰 Budget Optimizer</h3>
+                    <div id="budget-tips">
+                        <div class="empty" style="padding:10px;">Add meals to see cost-saving tips.</div>
+                    </div>
+                </div>
+
+                <!-- Seasonal -->
+                <div class="card card-gradient-green">
+                    <h3 class="card-title">🌱 Seasonal Suggestions</h3>
+                    <div id="seasonal-suggestions">
+                        <div class="empty" style="padding:10px;">Loading…</div>
+                    </div>
+                </div>
+
+                <!-- Delivery -->
+                <div class="card card-gradient-rose">
+                    <h3 class="card-title">🚚 Grocery Delivery</h3>
+                    <p class="card-subtitle">Send list to your preferred service.</p>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <button class="btn btn-secondary" onclick="sendToDelivery('instacart')">Instacart</button>
+                        <button class="btn btn-secondary" onclick="sendToDelivery('amazon-fresh')">Amazon Fresh</button>
+                        <button class="btn btn-secondary" onclick="sendToDelivery('walmart')">Walmart</button>
+                        <button class="btn btn-secondary" onclick="sendToDelivery('doordash')">DoorDash</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- NUTRITION SCREEN -->
+            <section class="screen" id="tab-nutrition">
+                <div class="screen-header">
+                    <h1 class="screen-title">Nutrition</h1>
+                    <span class="screen-sub" id="nutrition-date"></span>
+                </div>
+
+                <!-- Goals summary tiles -->
+                <div class="tile-grid" style="margin-bottom:14px;">
+                    <div class="tile">
+                        <span class="tile-label">Calories</span>
+                        <span class="tile-value" id="tile-calories">0</span>
+                        <span class="tile-label" id="tile-calories-goal">of --</span>
+                    </div>
+                    <div class="tile">
+                        <span class="tile-label">Protein</span>
+                        <span class="tile-value" id="tile-protein">0g</span>
+                        <span class="tile-label" id="tile-protein-goal">of --</span>
+                    </div>
+                    <div class="tile">
+                        <span class="tile-label">Carbs</span>
+                        <span class="tile-value" id="tile-carbs">0g</span>
+                        <span class="tile-label" id="tile-carbs-goal">of --</span>
+                    </div>
+                    <div class="tile">
+                        <span class="tile-label">Fat</span>
+                        <span class="tile-value" id="tile-fat">0g</span>
+                        <span class="tile-label" id="tile-fat-goal">of --</span>
+                    </div>
+                </div>
+
+                <!-- Goals picker -->
+                <div class="card card-gradient-green">
+                    <h3 class="card-title">🎯 Daily Goal</h3>
+                    <select id="nutrition-goal-preset" class="field" onchange="applyNutritionPreset(this.value)" title="Nutrition preset">
+                        <option value="">Choose a preset…</option>
+                        <option value="balanced">Balanced Diet</option>
+                        <option value="lowCarb">Low Carb</option>
+                        <option value="highProtein">High Protein</option>
+                        <option value="weightLoss">Weight Loss</option>
+                        <option value="keto">Keto</option>
+                    </select>
+                    <div id="nutrition-goals-display" style="margin-top:10px;"></div>
+                </div>
+
+                <!-- Progress bars -->
+                <div class="card">
+                    <h3 class="card-title">📊 Today's Progress</h3>
+                    <div id="nutrition-progress">
+                        <div class="nutri-row">
+                            <div class="nutri-label"><span>Calories</span><span id="today-calories">0 / --</span></div>
+                            <div class="nutri-bar"><div class="nutri-fill" id="bar-calories" style="width:0%"></div></div>
+                        </div>
+                        <div class="nutri-row">
+                            <div class="nutri-label"><span>Protein</span><span id="today-protein">0g / --</span></div>
+                            <div class="nutri-bar"><div class="nutri-fill" id="bar-protein" style="width:0%"></div></div>
+                        </div>
+                        <div class="nutri-row">
+                            <div class="nutri-label"><span>Carbs</span><span id="today-carbs">0g / --</span></div>
+                            <div class="nutri-bar"><div class="nutri-fill" id="bar-carbs" style="width:0%"></div></div>
+                        </div>
+                        <div class="nutri-row">
+                            <div class="nutri-label"><span>Fat</span><span id="today-fat">0g / --</span></div>
+                            <div class="nutri-bar"><div class="nutri-fill" id="bar-fat" style="width:0%"></div></div>
                         </div>
                     </div>
-                `;
-            }
-            
-            container.innerHTML = html;
-        };
+                </div>
 
-        function isAIQuery(text) {
-            return /\b(what|how|can i|could|would|should|suggest|recommend|recipe|make|cook|substitute|instead|without|replace|swap|idea|ideas|help|tell me|explain|why|when|where|which|do you|is there|are there)\b|\?/i.test(text);
-        }
+                <!-- History -->
+                <div class="card card-gradient-teal">
+                    <h3 class="card-title">📈 Meal History</h3>
+                    <div id="meal-history-container">
+                        <div class="empty" style="padding:10px;">Log meals to build analytics.</div>
+                    </div>
+                </div>
+            </section>
 
-        window.routeInput = async function() {
-            const input = document.getElementById('new-ingredient');
-            const btn = document.getElementById('add-button');
-            const text = input.value.trim();
-            if (!text) return;
+        </main>
 
-            if (isAIQuery(text)) {
-                if (geminiAI.isLoading) return;
-                const responseBox = document.getElementById('pantry-ai-response');
-                const responseText = document.getElementById('pantry-ai-response-text');
-                responseBox.classList.remove('hidden');
-                responseText.innerHTML = '🤖 Thinking…';
-                btn.disabled = true;
-                btn.classList.add('opacity-50');
-                input.disabled = true;
+        <!-- Bottom tab bar -->
+        <nav class="tabbar">
+            <button class="tab active" data-tab="pantry" onclick="showTab('pantry')" aria-label="Pantry">
+                <span class="tab-indicator"></span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <span class="tab-label">Pantry</span>
+            </button>
+            <button class="tab" data-tab="meals" onclick="showTab('meals')" aria-label="Meals">
+                <span class="tab-indicator"></span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1018 0 9 9 0 00-18 0zm9-3a3 3 0 110 6 3 3 0 010-6z"/></svg>
+                <span class="tab-label">Meals</span>
+            </button>
+            <button class="tab" data-tab="plan" onclick="showTab('plan')" aria-label="Plan">
+                <span class="tab-indicator"></span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span class="tab-label">Plan</span>
+            </button>
+            <button class="tab" data-tab="shop" onclick="showTab('shop')" aria-label="Shop">
+                <span class="tab-indicator"></span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span class="tab-label">Shop</span>
+            </button>
+            <button class="tab" data-tab="nutrition" onclick="showTab('nutrition')" aria-label="Nutrition">
+                <span class="tab-indicator"></span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 17l4-4 4 4 6-6"/></svg>
+                <span class="tab-label">Nutrition</span>
+            </button>
+        </nav>
+    </div>
 
-                const reply = await geminiAI.askAI(text);
+    <!-- Settings sheet -->
+    <div class="modal-backdrop" id="settings-modal" onclick="closeSettings(event)">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <div class="modal-handle"></div>
+            <h2 class="modal-title">Preferences</h2>
 
-                btn.disabled = false;
-                btn.classList.remove('opacity-50');
-                input.disabled = false;
-                input.value = '';
+            <label style="display:block; font-size:13px; font-weight:600; margin:10px 0 6px;">People</label>
+            <select id="people-count" class="field" onchange="updatePreferences()" title="People count">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6+</option>
+            </select>
 
-                if (!reply) {
-                    responseText.innerHTML = '<span class="text-red-500">No response. Check your API key or try again.</span>';
-                    return;
-                }
-                const escaped = reply.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-                responseText.innerHTML = `<span class="text-xs text-purple-500 font-medium block mb-1">You asked: ${text}</span>${escaped}`;
-            } else {
-                addIngredient();
-            }
-        };
-    </script>
+            <label style="display:block; font-size:13px; font-weight:600; margin:14px 0 6px;">Dietary</label>
+            <div class="diet-chips">
+                <label class="chip"><input type="checkbox" id="diet-vegetarian" onchange="updatePreferences()" style="display:none;"> 🥬 Vegetarian</label>
+                <label class="chip"><input type="checkbox" id="diet-vegan" onchange="updatePreferences()" style="display:none;"> 🌱 Vegan</label>
+                <label class="chip"><input type="checkbox" id="diet-keto" onchange="updatePreferences()" style="display:none;"> 🥑 Keto</label>
+                <label class="chip"><input type="checkbox" id="diet-glutenfree" onchange="updatePreferences()" style="display:none;"> 🌾 Gluten-Free</label>
+                <label class="chip"><input type="checkbox" id="diet-diabetic" onchange="updatePreferences()" style="display:none;"> 💉 Diabetic</label>
+                <label class="chip"><input type="checkbox" id="diet-lowcarb" onchange="updatePreferences()" style="display:none;"> 🍞 Low-Carb</label>
+                <label class="chip"><input type="checkbox" id="diet-lowsodium" onchange="updatePreferences()" style="display:none;"> 🧂 Low-Sodium</label>
+                <label class="chip"><input type="checkbox" id="diet-heart" onchange="updatePreferences()" style="display:none;"> ❤️ Heart</label>
+            </div>
+            <select id="diet" class="field hidden" onchange="updatePreferences()" title="Diet"><option value="none">none</option></select>
+
+            <label style="display:block; font-size:13px; font-weight:600; margin:14px 0 6px;">Allergy</label>
+            <select id="allergy" class="field" onchange="updatePreferences()" title="Allergy">
+                <option value="none">None</option>
+                <option value="dairy">Dairy</option>
+                <option value="gluten">Gluten</option>
+                <option value="nuts">Nuts</option>
+                <option value="onion">Onion</option>
+                <option value="eggs">Eggs</option>
+                <option value="soy">Soy</option>
+                <option value="shellfish">Shellfish</option>
+            </select>
+
+            <label style="display:block; font-size:13px; font-weight:600; margin:14px 0 6px;">Cuisine</label>
+            <select id="cuisine" class="field" onchange="updatePreferences()" title="Cuisine">
+                <option value="all">All</option>
+                <option value="american">American</option>
+                <option value="italian">Italian</option>
+                <option value="mexican">Mexican</option>
+                <option value="asian">Asian</option>
+                <option value="indian">Indian</option>
+                <option value="mediterranean">Mediterranean</option>
+                <option value="middle-eastern">Middle Eastern</option>
+            </select>
+
+            <label style="display:block; font-size:13px; font-weight:600; margin:14px 0 6px;">Max Time</label>
+            <select id="max-time" class="field" onchange="updatePreferences()" title="Max time">
+                <option value="9999">Any</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60" selected>1 hour</option>
+                <option value="90">1.5 hours</option>
+                <option value="120">2 hours</option>
+            </select>
+
+            <label style="display:block; font-size:13px; font-weight:600; margin:14px 0 6px;">Difficulty</label>
+            <select id="difficulty" class="field" onchange="updatePreferences()" title="Difficulty">
+                <option value="any">Any</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+
+            <button class="btn btn-primary btn-full" style="margin-top:16px;" onclick="closeSettings()">Done</button>
+        </div>
+    </div>
+
+    <!-- Speech modal -->
+    <div class="modal-backdrop" id="speech-modal" style="align-items:center;">
+        <div class="modal-sheet" style="max-width:320px; border-radius:24px; text-align:center; padding:28px;">
+            <div style="width:64px; height:64px; margin:0 auto 16px; border-radius:999px; background:var(--brand-light); display:flex; align-items:center; justify-content:center; font-size:30px;">🎙️</div>
+            <p id="speech-status" style="font-weight:600;">Listening…</p>
+            <button class="btn btn-secondary btn-full" style="margin-top:14px;" onclick="stopSpeechRecognition()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Recipe modal -->
+    <div class="modal-backdrop" id="recipe-modal" onclick="closeRecipeModal(event)">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <div class="modal-handle"></div>
+            <h2 class="modal-title" id="recipe-modal-title"></h2>
+            <div id="recipe-modal-content"></div>
+            <button class="btn btn-secondary btn-full" style="margin-top:14px;" onclick="closeRecipeModal()">Close</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+
+    <!-- Diet chip click handling (toggle hidden checkboxes) -->
     <script>
-        // NUCLEAR OPTION: Set to true to completely disable Service Worker
-        const DISABLE_SW = true;
-        
-        if ('serviceWorker' in navigator && !DISABLE_SW) {
-            // Force update: unregister old SW, then register new
-            navigator.serviceWorker.getRegistrations().then(regs => {
-                return Promise.all(regs.map(r => r.unregister()));
-            }).then(() => {
-                console.log('[SW] Old service workers cleared');
-                // Register new service worker
-                return navigator.serviceWorker.register('sw.js');
-            }).then(reg => {
-                console.log('[SW] New service worker registered:', reg.scope);
-            }).catch(err => {
-                console.error('[SW] Registration failed:', err);
+        document.querySelectorAll('.diet-chips .chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const cb = chip.querySelector('input');
+                if (!cb) return;
+                cb.checked = !cb.checked;
+                chip.classList.toggle('active', cb.checked);
+                window.updatePreferences?.();
             });
-        } else if (DISABLE_SW) {
-            // Nuclear option: unregister ALL service workers
-            navigator.serviceWorker.getRegistrations().then(regs => {
-                return Promise.all(regs.map(r => r.unregister()));
-            }).then(() => {
-                console.log('[SW] SERVICE WORKER DISABLED - Fresh loads only');
-            });
-        }
+        });
     </script>
 </body>
 </html>
