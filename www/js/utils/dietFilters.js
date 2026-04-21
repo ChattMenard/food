@@ -49,7 +49,7 @@ export function getAllergensInRecipe(recipe, selectedAllergies) {
 export function passesCuisine(recipe, cuisine) {
     if (!cuisine || cuisine === 'all') return true;
     const text = ((recipe.category || '') + ' ' + recipe.name).toLowerCase();
-    return text.includes(cuisine.replace('-', ' '));
+    return text.includes(cuisine.toLowerCase().replace('-', ' '));
 }
 
 export function normalizeCuisine(cuisine) {
