@@ -76,3 +76,4 @@ google-services.json
 *.hprof
 .vercel
 .env*.local
+coverage/
