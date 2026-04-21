@@ -3,6 +3,14 @@ export class PreferencesManager {
         this.getPreferences = getPreferences;
         this.savePreferencesState = savePreferencesState;
         this.updateMeals = updateMeals;
+        this.domCache = {};
+    }
+
+    getDomElement(id) {
+        if (!this.domCache[id]) {
+            this.domCache[id] = document.getElementById(id);
+        }
+        return this.domCache[id];
     }
 
     updatePreferences() {
@@ -18,22 +26,22 @@ export class PreferencesManager {
             'diet-heart': 'heart'
         };
         for (const [id, value] of Object.entries(dietCheckboxIds)) {
-            const el = document.getElementById(id);
+            const el = this.getDomElement(id);
             if (el && el.checked) diets.push(value);
         }
-        const dietSelect = document.getElementById('diet');
+        const dietSelect = this.getDomElement('diet');
         if (dietSelect && dietSelect.value && dietSelect.value !== 'none' && !diets.includes(dietSelect.value)) {
             diets.push(dietSelect.value);
         }
 
         const preferences = {
-            people: parseInt(document.getElementById('people-count').value),
+            people: parseInt(this.getDomElement('people-count').value),
             diets: diets,
             diet: diets.length > 0 ? diets[0] : 'none',
-            allergy: document.getElementById('allergy').value,
-            maxTime: parseInt(document.getElementById('max-time').value),
-            cuisine: document.getElementById('cuisine').value,
-            difficulty: document.getElementById('difficulty').value
+            allergy: this.getDomElement('allergy').value,
+            maxTime: parseInt(this.getDomElement('max-time').value),
+            cuisine: this.getDomElement('cuisine').value,
+            difficulty: this.getDomElement('difficulty').value
         };
         this.savePreferencesState(preferences);
         this.updateMeals();

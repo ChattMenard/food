@@ -14,6 +14,14 @@ export class MealPlanner {
         this.mealCache = new Map();
         this.lastPantryHash = '';
         this.isLoadingMore = false;
+        this.domCache = {};
+    }
+
+    getDomElement(id) {
+        if (!this.domCache[id]) {
+            this.domCache[id] = document.getElementById(id);
+        }
+        return this.domCache[id];
     }
 
     getPantryHash() {
@@ -112,7 +120,7 @@ export class MealPlanner {
     }
 
     renderMeals(scored) {
-        const list = document.getElementById('meals-list');
+        const list = this.getDomElement('meals-list');
         const pantryNames = this.getPantry().map(i => i.name.toLowerCase());
 
         if (scored.length === 0) {
@@ -162,7 +170,7 @@ export class MealPlanner {
 
     loadMoreRecipes() {
         if (this.isLoadingMore) return;
-        const list = document.getElementById('meals-list');
+        const list = this.getDomElement('meals-list');
         const remainingRecipes = JSON.parse(list.dataset.remainingRecipes || '[]');
         const renderedCount = parseInt(list.dataset.renderedCount || '0', 10);
         if (remainingRecipes.length === 0) return;
@@ -192,7 +200,7 @@ export class MealPlanner {
     }
 
     renderMealPlan() {
-        const plan = document.getElementById('week-plan');
+        const plan = this.getDomElement('week-plan');
         const mealPlan = this.getMealPlan();
         const recipes = this.getRecipes();
 
@@ -217,7 +225,7 @@ export class MealPlanner {
             return sum + (recipe ? recipe.time : 0);
         }, 0);
 
-        document.getElementById('plan-stats').textContent = `${Object.keys(mealPlan).length} meals · ~${totalMin} min total`;
+        this.getDomElement('plan-stats').textContent = `${Object.keys(mealPlan).length} meals · ~${totalMin} min total`;
     }
 
     handleDragStart(e) {
@@ -251,8 +259,8 @@ export class MealPlanner {
     }
 
     updateShoppingList() {
-        const list = document.getElementById('shopping-list');
-        const tips = document.getElementById('budget-tips');
+        const list = this.getDomElement('shopping-list');
+        const tips = this.getDomElement('budget-tips');
         const pantry = this.getPantry();
         const mealPlan = this.getMealPlan();
         const recipes = this.getRecipes();

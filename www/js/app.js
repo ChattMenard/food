@@ -468,7 +468,7 @@ function renderMealPrepTips() {
 async function renderNutritionGoals() {
     const goalsMgr = await getNutritionGoalsManager();
     const goals = goalsMgr.getCurrentGoals?.();
-    const display = document.getElementById('nutrition-goals-display');
+    const display = getDomElement('nutrition-goals-display');
     if (!display) return;
     if (goals) {
         display.innerHTML = `
@@ -484,7 +484,7 @@ async function renderNutritionGoals() {
 }
 
 async function updateNutritionScreen() {
-    const dateEl = document.getElementById('nutrition-date');
+    const dateEl = getDomElement('nutrition-date');
     if (dateEl) dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
 
     const analytics = await getMealHistoryAnalytics();
@@ -495,7 +495,7 @@ async function updateNutritionScreen() {
     const cal = today.calories || 0, pro = today.protein || 0, car = today.carbs || 0, fat = today.fat || 0;
     const gCal = goals.calories, gPro = goals.protein, gCar = goals.carbs, gFat = goals.fat;
 
-    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const setText = (id, v) => { const el = getDomElement(id); if (el) el.textContent = v; };
     setText('tile-calories', cal);
     setText('tile-protein', pro + 'g');
     setText('tile-carbs', car + 'g');
@@ -511,15 +511,15 @@ async function updateNutritionScreen() {
     setText('today-fat', `${fat}g / ${gFat || '--'}g`);
 
     const pct = (v, g) => g ? Math.min(100, Math.round(v/g*100)) : 0;
-    document.getElementById('bar-calories').style.width = pct(cal, gCal) + '%';
-    document.getElementById('bar-protein').style.width = pct(pro, gPro) + '%';
-    document.getElementById('bar-carbs').style.width = pct(car, gCar) + '%';
-    document.getElementById('bar-fat').style.width = pct(fat, gFat) + '%';
+    getDomElement('bar-calories').style.width = pct(cal, gCal) + '%';
+    getDomElement('bar-protein').style.width = pct(pro, gPro) + '%';
+    getDomElement('bar-carbs').style.width = pct(car, gCar) + '%';
+    getDomElement('bar-fat').style.width = pct(fat, gFat) + '%';
 
-    renderNutritionGoals();
+    await renderNutritionGoals();
 
     const history = analytics.getHistory?.() || [];
-    const hist = document.getElementById('meal-history-container');
+    const hist = getDomElement('meal-history-container');
     if (hist) {
         if (!history.length) {
             hist.innerHTML = '<p style="color:#6b7280; font-size:13px; padding:6px;">Log meals to build analytics.</p>';
