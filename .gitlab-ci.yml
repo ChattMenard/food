@@ -1,0 +1,85 @@
+# GitLab CI/CD Pipeline
+# Triggers: push to main/develop branches, merge requests
+
+stages:
+  - test
+  - e2e
+  - lint
+  - build
+  - security
+
+# Unit & Integration Tests
+unit-tests:
+  stage: test
+  image: node:18
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run test:coverage
+  artifacts:
+    paths:
+      - coverage/
+    expire_in: 7 days
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+
+# E2E Tests (Playwright)
+e2e-tests:
+  stage: e2e
+  image: node:18
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+  services:
+    - name: selenium/standalone-chrome
+      alias: chrome
+  script:
+    - npm ci
+    - npx playwright install --with-deps
+    - npm run test:e2e
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+    expire_in: 7 days
+
+# Lint & Format Check
+lint:
+  stage: lint
+  image: node:18
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run lint
+    - npm run format:check
+  allow_failure: true
+
+# Build Verification
+build:
+  stage: build
+  image: node:18
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run build --if-present
+  artifacts:
+    paths:
+      - www/dist/
+    expire_in: 7 days
+
+# Security Audit
+security:
+  stage: security
+  image: node:18
+  script:
+    - npm audit --production
+  allow_failure: true
