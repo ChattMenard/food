@@ -3,6 +3,13 @@
   "appName": "Main",
   "webDir": "www",
   "bundledWebRuntime": false,
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["email", "profile"],
+      "serverClientId": "593330232333-ibpbcc7qme63ku7a3e67i2dg33n9f1en.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  },
   "ios": {
     "scheme": "Main"
   },

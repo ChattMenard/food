@@ -5,7 +5,6 @@
  */
 
 import db from '../../data/db.js';
-import { savePreferencesState } from '../../core/appState.js';
 
 // Default nutrition goals (USDA/HHS guidelines for average adult)
 const DEFAULT_GOALS = {

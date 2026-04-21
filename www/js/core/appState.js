@@ -1,4 +1,5 @@
 import db from '../data/db.js';
+import authManager from '../auth/authManager.js';
 
 const DEFAULT_PREFERENCES = {
     people: 1,
@@ -15,11 +16,33 @@ let stateCache = {
     pantry: [],
     mealPlan: {},
     preferences: { ...DEFAULT_PREFERENCES },
-    recipeRatings: {}
+    recipeRatings: {},
+    user: null
 };
 
 // Pub-sub listeners
 const listeners = [];
+
+function normalizePreferences(preferences = {}) {
+    const normalizedPreferences = {
+        ...DEFAULT_PREFERENCES,
+        ...preferences,
+        diets: Array.isArray(preferences.diets) ? preferences.diets : []
+    };
+
+    if (!normalizedPreferences.diet && normalizedPreferences.diets.length > 0) {
+        normalizedPreferences.diet = normalizedPreferences.diets[0];
+    }
+
+    return normalizedPreferences;
+}
+
+function setState(partialState) {
+    stateCache = {
+        ...stateCache,
+        ...partialState
+    };
+}
 
 /**
  * Subscribe to state changes
@@ -48,29 +71,25 @@ function notify() {
 export async function loadState() {
     await db.ready;
     
-    const [pantry, mealPlan, preferences, recipeRatings] = await Promise.all([
+    const userPromise = authManager.loadSession().catch(error => {
+        console.error('[AppState] Failed to load auth session:', error);
+        return null;
+    });
+    
+    const [pantry, mealPlan, preferences, recipeRatings, user] = await Promise.all([
         db.getPantry(),
         db.getMealPlan(),
         db.getPreferences(),
-        db.get('preferences', 'recipeRatings').then(r => r || {})
+        db.get('preferences', 'recipeRatings').then(r => r || {}),
+        userPromise
     ]);
-
-    // Normalize preferences with defaults
-    const normalizedPreferences = {
-        ...DEFAULT_PREFERENCES,
-        ...preferences,
-        diets: Array.isArray(preferences.diets) ? preferences.diets : []
-    };
-
-    if (!normalizedPreferences.diet && normalizedPreferences.diets.length > 0) {
-        normalizedPreferences.diet = normalizedPreferences.diets[0];
-    }
 
     stateCache = {
         pantry,
         mealPlan,
-        preferences: normalizedPreferences,
-        recipeRatings
+        preferences: normalizePreferences(preferences),
+        recipeRatings,
+        user
     };
 
     return stateCache;
@@ -83,7 +102,7 @@ export async function loadState() {
 export async function savePantryState(pantry) {
     await db.ready;
     await db.setPantry(pantry);
-    stateCache.pantry = pantry;
+    setState({ pantry });
     notify();
 }
 
@@ -94,7 +113,7 @@ export async function savePantryState(pantry) {
 export async function saveMealPlanState(mealPlan) {
     await db.ready;
     await db.setMealPlan(mealPlan);
-    stateCache.mealPlan = mealPlan;
+    setState({ mealPlan });
     notify();
 }
 
@@ -105,7 +124,7 @@ export async function saveMealPlanState(mealPlan) {
 export async function savePreferencesState(preferences) {
     await db.ready;
     await db.setPreferences(preferences);
-    stateCache.preferences = preferences;
+    setState({ preferences: normalizePreferences(preferences) });
     notify();
 }
 
@@ -116,8 +135,36 @@ export async function savePreferencesState(preferences) {
 export async function saveRecipeRatingsState(recipeRatings) {
     await db.ready;
     await db.put('preferences', { ...recipeRatings, key: 'recipeRatings' });
-    stateCache.recipeRatings = recipeRatings;
+    setState({ recipeRatings });
     notify();
+}
+
+/**
+ * Save user state
+ * @param {Object} user - User object
+ */
+export async function saveUserState(user) {
+    setState({ user });
+    notify();
+}
+
+/**
+ * Sign in user
+ * @returns {Promise<Object>} User object
+ */
+export async function signInUser() {
+    const user = await authManager.signIn();
+    await saveUserState(user);
+    return user;
+}
+
+/**
+ * Sign out user
+ * @returns {Promise<void>}
+ */
+export async function signOutUser() {
+    await authManager.signOut();
+    await saveUserState(null);
 }
 
 /**
