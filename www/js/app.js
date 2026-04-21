@@ -14,6 +14,7 @@ import { MealPrep } from './features/mealPrep.js';
 import syncProcessor from './data/syncProcessor.js';
 import { registerAllHandlers } from './data/mutationHandlers.js';
 import db from './data/db.js';
+import { performanceMonitor, withPerformanceTiming } from './utils/performanceMonitor.js';
 
 // Lazy-loaded modules
 let geminiAI = null;
@@ -584,11 +585,15 @@ const debouncedRenderMealPlan = debounce(() => {
 
 // ---- Init ----
 async function init() {
+    const initId = performanceMonitor.start('app-init');
+    
     const loaded = await loadState();
     pantry = loaded.pantry; mealPlan = loaded.mealPlan;
     preferences = loaded.preferences; recipeRatings = loaded.recipeRatings;
 
+    const migrationId = performanceMonitor.start('db-migration');
     await db.migrateFromLocalStorage();
+    performanceMonitor.end(migrationId);
 
     preferences.people = preferences.people || 1;
     getDomElement('people-count').value = preferences.people;
@@ -626,5 +631,12 @@ async function init() {
 
     window.updateMeals();
     await updateNutritionScreen();
+    
+    performanceMonitor.end(initId);
+    
+    // Log performance metrics in development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        setTimeout(() => performanceMonitor.logSummary(), 1000);
+    }
 }
 init();
