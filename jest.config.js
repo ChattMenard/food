@@ -107,5 +107,5 @@ export default {
   testTimeout: 10000,
   detectOpenHandles: true,
   forceExit: false,
-  maxWorkers: '50%'
+  maxWorkers: '100%'
 };
