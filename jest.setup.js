@@ -3,6 +3,13 @@
  * Global setup for test environment
  */
 
+// Polyfill structuredClone for Node.js environment
+if (!global.structuredClone) {
+    global.structuredClone = (obj) => {
+        return JSON.parse(JSON.stringify(obj));
+    };
+}
+
 // Mock IndexedDB
 class MockDB {
     constructor(name, version) {
@@ -51,96 +58,9 @@ global.fetch = jest.fn(() =>
     })
 );
 
-// Mock db.js module with state tracking
-const mockDbStore = new Map();
-const mockMutations = new Map();
-
-jest.mock('./www/js/data/db.js', () => ({
-    __esModule: true,
-    default: {
-        ready: Promise.resolve(),
-        get: jest.fn((store, key) => {
-            // Handle mutations store specially
-            if (store === 'queuedMutations') {
-                return Promise.resolve(mockMutations.get(key) || null);
-            }
-            // Handle cost-savings specially for costTracker tests
-            if (key === 'cost-savings') {
-                const value = mockDbStore.get(key);
-                return Promise.resolve(value || null);
-            }
-            return Promise.resolve(mockDbStore.get(key) || null);
-        }),
-        put: jest.fn((store, item) => {
-            // Handle mutations store specially
-            if (store === 'queuedMutations' && item) {
-                mockMutations.set(item.id, item);
-                return Promise.resolve();
-            }
-            // Handle cost-savings specially
-            if (item && item.key === 'cost-savings') {
-                mockDbStore.set(item.key, item);
-            } else if (item && item.key) {
-                mockDbStore.set(item.key, item);
-            }
-            return Promise.resolve();
-        }),
-        add: jest.fn(() => Promise.resolve()),
-        delete: jest.fn(() => Promise.resolve()),
-        getPantry: jest.fn(() => Promise.resolve([])),
-        setPantry: jest.fn(() => Promise.resolve()),
-        getMealPlan: jest.fn(() => Promise.resolve({})),
-        setMealPlan: jest.fn(() => Promise.resolve()),
-        getPreferences: jest.fn(() => Promise.resolve({})),
-        setPreferences: jest.fn(() => Promise.resolve()),
-        addMutation: jest.fn((mutation) => {
-            mockMutations.set(mutation.id, mutation);
-            return Promise.resolve();
-        }),
-        getPendingMutations: jest.fn(() => {
-            return Promise.resolve(
-                Array.from(mockMutations.values()).filter(m => m.status === 'pending')
-            );
-        }),
-        markMutationSynced: jest.fn((id) => {
-            const mutation = mockMutations.get(id);
-            if (mutation) {
-                mutation.status = 'synced';
-                mutation.syncedAt = Date.now();
-                mockMutations.set(id, mutation);
-            }
-            return Promise.resolve();
-        }),
-        markMutationFailed: jest.fn((id, error) => {
-            const mutation = mockMutations.get(id);
-            if (mutation) {
-                mutation.status = 'failed';
-                mutation.failedAt = Date.now();
-                mutation.lastError = error;
-                mockMutations.set(id, mutation);
-            }
-            return Promise.resolve();
-        }),
-        incrementMutationRetry: jest.fn((id) => {
-            const mutation = mockMutations.get(id);
-            if (mutation) {
-                mutation.retryCount = (mutation.retryCount || 0) + 1;
-                mutation.lastRetryAt = Date.now();
-                mockMutations.set(id, mutation);
-                return Promise.resolve(mutation.retryCount);
-            }
-            return Promise.resolve(0);
-        }),
-        // Expose stores for test inspection
-        _store: mockDbStore,
-        _mutations: mockMutations
-    }
-}));
 
 // Reset mocks before each test
 beforeEach(() => {
     localStorageMock.clear();
-    mockDbStore.clear();
-    mockMutations.clear();
     fetch.mockClear();
 });
