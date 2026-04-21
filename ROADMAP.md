@@ -1,7 +1,7 @@
 # Main - Living Roadmap
 
 > This document tracks the current state and future direction of the Main project.
-> Last updated: April 20, 2026
+> Last updated: April 21, 2026
 
 ---
 
@@ -222,10 +222,9 @@ www/js/
   - `recipeEngine.test.js` - 13 tests for RecipeEngine class
   - `integration.offline-sync.test.js` - 10 tests for offline sync flow
   - 248 unit tests passing across 11 test suites
-- [x] CI/CD automation
-  - `.github/workflows/ci.yml` - Automated testing on push/PR
-  - Jest with coverage reporting
-  - Playwright E2E test integration
+- [ ] CI/CD automation
+  - `.github/workflows/ci.yml` pending (GitHub OAuth `workflow` scope required)
+  - Enable Jest + Playwright checks on push/PR once workflow is committed
 - [x] Code quality tools
   - ESLint configuration (.eslintrc.json)
   - Prettier configuration (.prettierrc)
@@ -239,6 +238,13 @@ www/js/
   - Add data-testid attributes to HTML elements
   - Update E2E tests to use getByTestId() selectors
   - Run E2E tests 3x consecutively for stability
+
+#### Remaining Tasks (Dependency Order)
+1. Add missing `data-testid` attributes in UI.
+2. Refactor E2E tests to `getByTestId()`.
+3. Run E2E suite 3 times consecutively with zero failures.
+4. Re-add `.github/workflows/ci.yml` after enabling GitHub `workflow` scope.
+5. Verify PR pipeline runs unit + E2E checks successfully.
 
 ### Phase 9: Community (Post-MVP)
 - [ ] **Community recipes** (requires backend + auth)
@@ -262,6 +268,15 @@ www/js/
 - Phase 8 (testing infrastructure) in progress - unit tests expanded, CI/CD automation, code quality tools
 - Native platform integration with dedicated native/ and auth/ directories
 - Advanced features directory with SaaS-ready modules (barcode scanning, receipt scanning, community recipes)
+
+### Recent Updates (April 21, 2026)
+- **Rebranding**: Complete migration from "PantryAI" to "main" brand across all files (index.html, README.md, build_dataset.py, e2e tests)
+- **Mobile UI Refactor**: Portrait-only mobile app with bottom navigation bar (5 tabs: Pantry, Meals, Plan, Shop, Nutrition)
+- **Meal Randomizer**: New ingredient-based meal plan generator with:
+  - Pantry vs random ingredient source selector
+  - 6 nutrition filters (calories, protein, carbs, fat, time, difficulty)
+  - Configurable ingredient count for variety
+  - Week-long meal plan generation
 
 ---
 

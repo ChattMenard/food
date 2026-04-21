@@ -1,17 +1,17 @@
 /**
  * Example Playwright E2E Test
- * Basic end-to-end test for PantryAI
+ * Basic end-to-end test for main
  */
 
 import { test, expect } from '@playwright/test';
 
-test.describe('PantryAI E2E Tests', () => {
+test.describe('main E2E Tests', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
     });
     
     test('loads homepage', async ({ page }) => {
-        await expect(page).toHaveTitle(/PantryAI/);
+        await expect(page).toHaveTitle(/main/);
     });
     
     test('navigates between tabs', async ({ page }) => {

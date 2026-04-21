@@ -1,9 +1,11 @@
-⚠️ Testing Gaps (because of course there are):
+⚠️ Remaining Work (Dependency Order):
 
-- recipeEngine not fully unit tested
-- Integration tests for full data flow incomplete
-- E2E selector stability not guaranteed
-- Coverage exists but doesn't yet guide future work with confidence
+1. Fix E2E selectors in HTML/UI
+2. Update Playwright tests to use `getByTestId()` selectors
+3. Run E2E suite 3x consecutively and stabilize failures
+4. Add `.github/workflows/ci.yml` (currently blocked by GitHub `workflow` OAuth scope)
+5. Enable CI gating for Jest + Playwright on push/PR
+6. Post-MVP: backend-backed community recipes + social features
 
 
 🏗️ Current Architecture
@@ -131,7 +133,7 @@ You now have resilience maturity. The system handles stress, not just functional
 🧪 Testing Infrastructure (IN PROGRESS)
 - ✅ Created recipeEngine.test.js (13 tests passing)
 - ✅ Created integration.offline-sync.test.js (10 tests passing)
-- ✅ Created .github/workflows/ci.yml for CI/CD automation
+- ⏳ Add .github/workflows/ci.yml for CI/CD automation (blocked by GitHub OAuth `workflow` scope)
 - ✅ Installed dependencies: @jest/globals, fake-indexeddb, prettier, eslint
 - ✅ Updated package.json with test scripts (test:coverage, test:watch, lint, format)
 - ✅ Created ESLint/Prettier configs (.eslintrc.json, .prettierrc, .eslintignore, .prettierignore)
@@ -139,6 +141,13 @@ You now have resilience maturity. The system handles stress, not just functional
 - ✅ Fixed bug in recipeEngine.js (recipe.name → data.recipe.name)
 - ✅ All 248 unit tests passing across 11 test suites
 - ⏳ E2E selector fixes (add data-testid attributes, update E2E tests to use getByTestId())
+
+📌 Next Actions (Strict Dependency Order):
+1. Add missing `data-testid` attributes in UI templates/components.
+2. Refactor E2E tests to use `getByTestId()` only.
+3. Run `npm run test:e2e` three consecutive times with zero failures.
+4. Re-add `.github/workflows/ci.yml` after upgrading token/app scope (`workflow`).
+5. Validate CI runs Jest + E2E successfully on PR.
 
 
 📊 Current Stats:
