@@ -311,85 +311,90 @@ Object.assign(window, {
         const maxTime = parseInt(document.getElementById('randomizer-time')?.value) || null;
         const difficulty = document.getElementById('randomizer-difficulty')?.value || null;
 
-        // Get ingredients based on source selector
-        let ingredients;
-        if (source === 'random') {
-            // Pick random ingredients from autocomplete list
-            const shuffled = [...autocompleteIngredients].sort(() => 0.5 - Math.random());
-            ingredients = shuffled.slice(0, Math.min(numIngredients, shuffled.length)).map(i => i.toLowerCase());
-        } else {
-            // Use pantry ingredients
-            ingredients = pantry.map(i => i.name.toLowerCase());
-            if (ingredients.length < numIngredients) {
-                // If pantry doesn't have enough, supplement with autocomplete
-                const extraIngredients = autocompleteIngredients
-                    .filter(i => !ingredients.includes(i.toLowerCase()))
-                    .slice(0, numIngredients - ingredients.length);
-                ingredients = [...ingredients, ...extraIngredients];
+        // Use requestIdleCallback for non-blocking computation
+        const generate = () => {
+            // Get ingredients based on source selector
+            let ingredients;
+            if (source === 'random') {
+                const shuffled = [...autocompleteIngredients].sort(() => 0.5 - Math.random());
+                ingredients = shuffled.slice(0, Math.min(numIngredients, shuffled.length)).map(i => i.toLowerCase());
+            } else {
+                ingredients = pantry.map(i => i.name.toLowerCase());
+                if (ingredients.length < numIngredients) {
+                    const extraIngredients = autocompleteIngredients
+                        .filter(i => !ingredients.includes(i.toLowerCase()))
+                        .slice(0, numIngredients - ingredients.length);
+                    ingredients = [...ingredients, ...extraIngredients];
+                }
+                ingredients = ingredients.slice(0, numIngredients);
             }
-            ingredients = ingredients.slice(0, numIngredients);
-        }
 
-        // Filter recipes by nutrition criteria
-        let filteredRecipes = recipes.filter(recipe => {
-            const nutr = recipe.nutrition || {};
-            if (maxCalories && nutr.calories > maxCalories) return false;
-            if (minProtein && (nutr.protein || 0) < minProtein) return false;
-            if (maxCarbs && (nutr.carbs || 0) > maxCarbs) return false;
-            if (maxFat && (nutr.fat || 0) > maxFat) return false;
-            if (maxTime && (recipe.minutes || 0) > maxTime) return false;
-            if (difficulty && recipe.difficulty !== difficulty) return false;
-            return true;
-        });
+            // Filter recipes by nutrition criteria
+            let filteredRecipes = recipes.filter(recipe => {
+                const nutr = recipe.nutrition || {};
+                if (maxCalories && nutr.calories > maxCalories) return false;
+                if (minProtein && (nutr.protein || 0) < minProtein) return false;
+                if (maxCarbs && (nutr.carbs || 0) > maxCarbs) return false;
+                if (maxFat && (nutr.fat || 0) > maxFat) return false;
+                if (maxTime && (recipe.minutes || 0) > maxTime) return false;
+                if (difficulty && recipe.difficulty !== difficulty) return false;
+                return true;
+            });
 
-        // Find recipes that use the selected ingredients
-        const recipesWithIngredients = filteredRecipes.map(recipe => {
-            const recipeIngredients = (recipe.ingredients || []).map(i => i.toLowerCase());
-            const matchCount = ingredients.filter(ing => 
-                recipeIngredients.some(ri => ri.includes(ing) || ing.includes(ri))
-            ).length;
-            return { recipe, matchCount };
-        }).filter(r => r.matchCount > 0);
+            // Find recipes that use the selected ingredients
+            const recipesWithIngredients = filteredRecipes.map(recipe => {
+                const recipeIngredients = (recipe.ingredients || []).map(i => i.toLowerCase());
+                const matchCount = ingredients.filter(ing => 
+                    recipeIngredients.some(ri => ri.includes(ing) || ing.includes(ri))
+                ).length;
+                return { recipe, matchCount };
+            }).filter(r => r.matchCount > 0);
 
-        // Sort by match count (recipes with more shared ingredients first)
-        recipesWithIngredients.sort((a, b) => b.matchCount - a.matchCount);
+            // Sort by match count
+            recipesWithIngredients.sort((a, b) => b.matchCount - a.matchCount);
 
-        // Select 7 meals for the week (avoiding duplicates)
-        const selectedRecipes = [];
-        const usedIds = new Set();
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            // Select 7 meals for the week
+            const selectedRecipes = [];
+            const usedIds = new Set();
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-        for (let i = 0; i < 7 && i < recipesWithIngredients.length; i++) {
-            const candidate = recipesWithIngredients[i];
-            if (!usedIds.has(candidate.recipe.id)) {
-                selectedRecipes.push(candidate.recipe);
-                usedIds.add(candidate.recipe.id);
-            }
-        }
-
-        // If we don't have enough, add more from filtered recipes
-        if (selectedRecipes.length < 7) {
-            for (const recipe of filteredRecipes) {
-                if (selectedRecipes.length >= 7) break;
-                if (!usedIds.has(recipe.id)) {
-                    selectedRecipes.push(recipe);
-                    usedIds.add(recipe.id);
+            for (let i = 0; i < 7 && i < recipesWithIngredients.length; i++) {
+                const candidate = recipesWithIngredients[i];
+                if (!usedIds.has(candidate.recipe.id)) {
+                    selectedRecipes.push(candidate.recipe);
+                    usedIds.add(candidate.recipe.id);
                 }
             }
+
+            if (selectedRecipes.length < 7) {
+                for (const recipe of filteredRecipes) {
+                    if (selectedRecipes.length >= 7) break;
+                    if (!usedIds.has(recipe.id)) {
+                        selectedRecipes.push(recipe);
+                        usedIds.add(recipe.id);
+                    }
+                }
+            }
+
+            // Clear existing meal plan and add new meals
+            mealPlan = {};
+            selectedRecipes.forEach((recipe, index) => {
+                const date = days[index];
+                const key = `${date}-dinner`;
+                mealPlan[key] = { date, type: 'dinner', recipeId: recipe.id, servings: preferences.people };
+            });
+
+            saveMealPlanState(mealPlan);
+            window.renderMealPlan();
+            renderMealPrepTips();
+            alert(`Generated ${selectedRecipes.length} meals using ${ingredients.length} ingredients!`);
+        };
+
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(generate, { timeout: 2000 });
+        } else {
+            setTimeout(generate, 0);
         }
-
-        // Clear existing meal plan and add new meals
-        mealPlan = {};
-        selectedRecipes.forEach((recipe, index) => {
-            const date = days[index];
-            const key = `${date}-dinner`;
-            mealPlan[key] = { date, type: 'dinner', recipeId: recipe.id, servings: preferences.people };
-        });
-
-        saveMealPlanState(mealPlan);
-        window.renderMealPlan();
-        renderMealPrepTips();
-        alert(`Generated ${selectedRecipes.length} meals using ${ingredients.length} ingredients!`);
     }
 });
 
