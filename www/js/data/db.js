@@ -235,26 +235,25 @@ class PantryDB {
             ids.forEach(id => matches.add(id));
         });
 
-        const recipes = [];
+        // Batch fetch all matching recipes for better performance
+        const recipeIds = Array.from(matches);
+        const recipes = await Promise.all(
+            recipeIds.map(id => this.get('recipes', id))
+        );
 
-        for (const id of matches) {
-            const recipe = await this.get('recipes', id);
-            if (!recipe) continue;
-
-            if (filters.maxTime && recipe.minutes > filters.maxTime) continue;
-            if (filters.maxCalories && recipe.nutrition.calories > filters.maxCalories) continue;
-            if (filters.diet && !recipe.dietary_flags[filters.diet]) continue;
-            if (filters.cuisine && recipe.cuisine !== filters.cuisine) continue;
-
-            recipes.push(recipe);
-        }
-
-        recipes.sort((a, b) => this.calculateRelevanceScore(b, tokens) - this.calculateRelevanceScore(a, tokens));
-        return recipes.slice(0, 50);
+        return recipes
+            .filter(recipe => recipe !== undefined)
+            .filter(recipe => {
+                if (filters.maxTime && recipe.minutes > filters.maxTime) return false;
+                if (filters.maxCalories && recipe.nutrition.calories > filters.maxCalories) return false;
+                if (filters.diet && !recipe.dietary_flags[filters.diet]) return false;
+                if (filters.cuisine && recipe.cuisine !== filters.cuisine) return false;
+                return true;
+            });
     }
 
     /**
-     * Calculate relevance score for recipe based on search tokens
+     * Calculate relevance score for search results
      * @param {Object} recipe - Recipe object
      * @param {Array} tokens - Search tokens
      * @returns {number} Relevance score
@@ -680,47 +679,63 @@ class PantryDB {
     async migrateFromLocalStorage() {
         const migrated = { pantry: false, mealPlan: false, preferences: false };
 
+        // Run migrations in parallel for faster startup
+        const migrations = [];
+
         const legacyPantry = localStorage.getItem('pantry');
         if (legacyPantry) {
-            try {
-                const items = JSON.parse(legacyPantry);
-                if (Array.isArray(items) && items.length > 0) {
-                    const tx = this.db.transaction('pantry', 'readwrite');
-                    const store = tx.objectStore('pantry');
-                    for (const item of items) {
-                        store.put(item);
-                    }
-                    await this.transactionDone(tx);
-                    localStorage.removeItem('pantry');
-                    migrated.pantry = true;
-                }
-            } catch (_) {}
+            migrations.push(
+                (async () => {
+                    try {
+                        const items = JSON.parse(legacyPantry);
+                        if (Array.isArray(items) && items.length > 0) {
+                            const tx = this.db.transaction('pantry', 'readwrite');
+                            const store = tx.objectStore('pantry');
+                            for (const item of items) {
+                                store.put(item);
+                            }
+                            await this.transactionDone(tx);
+                            localStorage.removeItem('pantry');
+                            migrated.pantry = true;
+                        }
+                    } catch (_) {}
+                })()
+            );
         }
 
         const legacyMealPlan = localStorage.getItem('mealPlan');
         if (legacyMealPlan) {
-            try {
-                const plan = JSON.parse(legacyMealPlan);
-                if (plan && typeof plan === 'object') {
-                    await this.setMealPlan(plan);
-                    localStorage.removeItem('mealPlan');
-                    migrated.mealPlan = true;
-                }
-            } catch (_) {}
+            migrations.push(
+                (async () => {
+                    try {
+                        const plan = JSON.parse(legacyMealPlan);
+                        if (plan && typeof plan === 'object') {
+                            await this.setMealPlan(plan);
+                            localStorage.removeItem('mealPlan');
+                            migrated.mealPlan = true;
+                        }
+                    } catch (_) {}
+                })()
+            );
         }
 
         const legacyPrefs = localStorage.getItem('preferences');
         if (legacyPrefs) {
-            try {
-                const prefs = JSON.parse(legacyPrefs);
-                if (prefs && typeof prefs === 'object') {
-                    await this.setPreferences(prefs);
-                    localStorage.removeItem('preferences');
-                    migrated.preferences = true;
-                }
-            } catch (_) {}
+            migrations.push(
+                (async () => {
+                    try {
+                        const prefs = JSON.parse(legacyPrefs);
+                        if (prefs && typeof prefs === 'object') {
+                            await this.setPreferences(prefs);
+                            localStorage.removeItem('preferences');
+                            migrated.preferences = true;
+                        }
+                    } catch (_) {}
+                })()
+            );
         }
 
+        await Promise.all(migrations);
         return migrated;
     }
 

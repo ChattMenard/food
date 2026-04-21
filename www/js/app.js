@@ -11,17 +11,19 @@ import { MealPlanSharing } from './features/plan/mealPlanSharing.js';
 import { MealPlanTemplates } from './features/plan/mealPlanTemplates.js';
 import { LeftoverTracker } from './features/pantry/leftoverTracker.js';
 import { MealPrep } from './features/mealPrep.js';
-import { GeminiAI } from './ai/geminiAI.js';
 import syncProcessor from './data/syncProcessor.js';
 import { registerAllHandlers } from './data/mutationHandlers.js';
-import nutritionGoalsManager from './features/nutrition/nutritionGoals.js';
-import mealHistoryAnalytics from './features/nutrition/mealHistoryAnalytics.js';
-import budgetMealPlanner from './features/plan/budgetMealPlanner.js';
-import mealPrepPlanner from './features/plan/mealPrepPlanner.js';
-import groceryDelivery from './features/grocery/groceryDelivery.js';
-import deviceSyncManager from './data/deviceSyncManager.js';
-import pushNotifications from './utils/pushNotifications.js';
 import db from './data/db.js';
+
+// Lazy-loaded modules
+let geminiAI = null;
+let nutritionGoalsManager = null;
+let mealHistoryAnalytics = null;
+let budgetMealPlanner = null;
+let mealPrepPlanner = null;
+let groceryDelivery = null;
+let deviceSyncManager = null;
+let pushNotifications = null;
 
 // Data
 let pantry = [];
@@ -76,14 +78,14 @@ const dataManager = new DataManager({
 
 registerAllHandlers(syncProcessor);
 
-// Kick off lazy-loaded managers
+// Kick off lazy-loaded managers in background
 (async () => {
-    try { await nutritionGoalsManager.loadGoals(); } catch(e){}
-    try { await budgetMealPlanner.loadTier(); } catch(e){}
-    try { await mealPrepPlanner.loadSettings(); } catch(e){}
-    try { await groceryDelivery.loadPreferences(); } catch(e){}
-    try { await deviceSyncManager.init(); } catch(e){}
-    try { await pushNotifications.init(); pushNotifications.scheduleAllEnabled(); } catch(e){}
+    try { const mgr = await getNutritionGoalsManager(); await mgr.loadGoals(); } catch(e){}
+    try { const mgr = await getBudgetMealPlanner(); await mgr.loadTier(); } catch(e){}
+    try { const mgr = await getMealPrepPlanner(); await mgr.loadSettings(); } catch(e){}
+    try { const mgr = await getGroceryDelivery(); await mgr.loadPreferences(); } catch(e){}
+    try { const mgr = await getDeviceSyncManager(); await mgr.init(); } catch(e){}
+    try { const mgr = await getPushNotifications(); await mgr.init(); mgr.scheduleAllEnabled(); } catch(e){}
 })();
 
 const preferencesManager = new PreferencesManager({
@@ -121,12 +123,68 @@ const mealPrep = new MealPrep({
     announce: m => uiManager.announceToScreenReader(m)
 });
 
-const geminiAI = new GeminiAI({
-    getPantry: () => pantry,
-    getPreferences: () => preferences,
-    getRecipes: () => recipes,
-    announce: m => uiManager.announceToScreenReader(m)
-});
+// Lazy loading functions for heavy modules
+async function getGeminiAI() {
+    if (!geminiAI) {
+        const { GeminiAI } = await import('./ai/geminiAI.js');
+        geminiAI = new GeminiAI({
+            getPantry: () => pantry,
+            getPreferences: () => preferences,
+            getRecipes: () => recipes,
+            announce: m => uiManager.announceToScreenReader(m)
+        });
+    }
+    return geminiAI;
+}
+
+async function getNutritionGoalsManager() {
+    if (!nutritionGoalsManager) {
+        nutritionGoalsManager = (await import('./features/nutrition/nutritionGoals.js')).default;
+    }
+    return nutritionGoalsManager;
+}
+
+async function getMealHistoryAnalytics() {
+    if (!mealHistoryAnalytics) {
+        mealHistoryAnalytics = (await import('./features/nutrition/mealHistoryAnalytics.js')).default;
+    }
+    return mealHistoryAnalytics;
+}
+
+async function getBudgetMealPlanner() {
+    if (!budgetMealPlanner) {
+        budgetMealPlanner = (await import('./features/plan/budgetMealPlanner.js')).default;
+    }
+    return budgetMealPlanner;
+}
+
+async function getMealPrepPlanner() {
+    if (!mealPrepPlanner) {
+        mealPrepPlanner = (await import('./features/plan/mealPrepPlanner.js')).default;
+    }
+    return mealPrepPlanner;
+}
+
+async function getGroceryDelivery() {
+    if (!groceryDelivery) {
+        groceryDelivery = (await import('./features/grocery/groceryDelivery.js')).default;
+    }
+    return groceryDelivery;
+}
+
+async function getDeviceSyncManager() {
+    if (!deviceSyncManager) {
+        deviceSyncManager = (await import('./data/deviceSyncManager.js')).default;
+    }
+    return deviceSyncManager;
+}
+
+async function getPushNotifications() {
+    if (!pushNotifications) {
+        pushNotifications = (await import('./utils/pushNotifications.js')).default;
+    }
+    return pushNotifications;
+}
 
 const mealPlanner = new MealPlanner({
     getPantry: () => pantry,
@@ -189,10 +247,11 @@ Object.assign(window, {
         if (e && e.target && e.target !== e.currentTarget && !e.currentTarget.classList?.contains('modal-backdrop')) return;
         document.getElementById('settings-modal').classList.remove('active');
     },
-    sendToDelivery: (service) => {
+    sendToDelivery: async (service) => {
         try {
             const items = mealPlanner.getShoppingListItems?.() || [];
-            groceryDelivery.sendToService(service, items);
+            const delivery = await getGroceryDelivery();
+            delivery.sendToService(service, items);
         } catch(e) { alert('Please add meals to your plan first.'); }
     },
     signInAction: async () => {
@@ -202,10 +261,11 @@ Object.assign(window, {
     getAISuggestions: async () => {
         const container = document.getElementById('ai-suggestions-container');
         const btn = document.getElementById('ai-suggestions-btn');
-        if (geminiAI.isLoading) return;
+        const ai = await getGeminiAI();
+        if (ai.isLoading) return;
         container.innerHTML = '<p style="color:#6b21a8; font-size:13px; text-align:center; padding:10px;">🤖 Thinking…</p>';
         btn.disabled = true;
-        const suggestions = await geminiAI.generateAISuggestions();
+        const suggestions = await ai.generateAISuggestions();
         btn.disabled = false;
         if (Array.isArray(suggestions) && suggestions.length) {
             container.innerHTML = suggestions.map(s => `<div class="list-item"><div class="list-item-body"><div class="list-item-title">${s.name || s}</div><div class="list-item-sub">${s.description || ''}</div></div></div>`).join('');
@@ -223,7 +283,8 @@ Object.assign(window, {
             responseText.textContent = '🤖 Thinking…';
             responseBox.classList.remove('hidden');
             try {
-                const answer = await geminiAI.answerQuestion(text);
+                const ai = await getGeminiAI();
+                const answer = await ai.answerQuestion(text);
                 responseText.textContent = answer || 'No answer.';
             } catch(e) { responseText.textContent = 'AI unavailable.'; }
             input.value = '';
@@ -231,10 +292,11 @@ Object.assign(window, {
             pantryManager.addIngredient();
         }
     },
-    applyNutritionPreset: (preset) => {
+    applyNutritionPreset: async (preset) => {
         if (!preset) return;
-        const goals = nutritionGoalsManager.getPresets?.()?.[preset];
-        if (goals) { nutritionGoalsManager.setGoals(goals); renderNutritionGoals(); updateNutritionScreen(); }
+        const mgr = await getNutritionGoalsManager();
+        const goals = mgr.getPresets?.()?.[preset];
+        if (goals) { mgr.setGoals(goals); renderNutritionGoals(); updateNutritionScreen(); }
     },
     isAIQuery: (text) => /\?$|^(how|what|why|can|should|is|are|does|do|tell|explain|suggest|recommend|give me)\b/i.test(text),
     generateRandomMealPlan: () => {
@@ -401,8 +463,9 @@ function renderMealPrepTips() {
         `).join('');
 }
 
-function renderNutritionGoals() {
-    const goals = nutritionGoalsManager.getCurrentGoals?.();
+async function renderNutritionGoals() {
+    const goalsMgr = await getNutritionGoalsManager();
+    const goals = goalsMgr.getCurrentGoals?.();
     const display = document.getElementById('nutrition-goals-display');
     if (!display) return;
     if (goals) {
@@ -418,12 +481,14 @@ function renderNutritionGoals() {
     }
 }
 
-function updateNutritionScreen() {
+async function updateNutritionScreen() {
     const dateEl = document.getElementById('nutrition-date');
     if (dateEl) dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
 
-    const today = (mealHistoryAnalytics.getTodaySummary?.() || {}) ;
-    const goals = nutritionGoalsManager.getCurrentGoals?.() || {};
+    const analytics = await getMealHistoryAnalytics();
+    const goalsMgr = await getNutritionGoalsManager();
+    const today = (analytics.getTodaySummary?.() || {}) ;
+    const goals = goalsMgr.getCurrentGoals?.() || {};
 
     const cal = today.calories || 0, pro = today.protein || 0, car = today.carbs || 0, fat = today.fat || 0;
     const gCal = goals.calories, gPro = goals.protein, gCar = goals.carbs, gFat = goals.fat;
@@ -451,7 +516,7 @@ function updateNutritionScreen() {
 
     renderNutritionGoals();
 
-    const history = mealHistoryAnalytics.getHistory?.() || [];
+    const history = analytics.getHistory?.() || [];
     const hist = document.getElementById('meal-history-container');
     if (hist) {
         if (!history.length) {
@@ -512,6 +577,6 @@ async function init() {
     try { await dataManager.loadData(); } catch(e) { console.error('Dataset load failed', e); }
 
     window.updateMeals();
-    updateNutritionScreen();
+    await updateNutritionScreen();
 }
 init();
