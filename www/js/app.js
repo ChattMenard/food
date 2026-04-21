@@ -237,9 +237,9 @@ Object.assign(window, {
     },
     addToPlanByName: mealPlanner.addToPlanByName.bind(mealPlanner),
     copyShoppingList: mealPlanner.copyShoppingList.bind(mealPlanner),
-    updateMeals: () => { mealPlanner.updateMeals(); recipeEngine.buildIngredientVectors(); },
+    updateMeals: debouncedUpdateMeals,
     updateShoppingList: () => mealPlanner.updateShoppingList(),
-    renderMealPlan: () => { mealPlanner.renderMealPlan(); renderMealPrepTips(); },
+    renderMealPlan: debouncedRenderMealPlan,
     closeRecipeModal: (e) => {
         if (e && e.target !== e.currentTarget && !e.currentTarget.classList.contains('modal-backdrop')) return;
         document.getElementById('recipe-modal').classList.remove('active');
@@ -552,6 +552,30 @@ function getDomElement(id) {
     }
     return domCache[id];
 }
+
+// ---- Debounce Utility ----
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Debounced render functions to optimize performance
+const debouncedUpdateMeals = debounce(() => {
+    mealPlanner.updateMeals();
+    recipeEngine.buildIngredientVectors();
+}, 150);
+
+const debouncedRenderMealPlan = debounce(() => {
+    mealPlanner.renderMealPlan();
+    renderMealPrepTips();
+}, 150);
 
 // ---- Init ----
 async function init() {
