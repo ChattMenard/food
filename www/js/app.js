@@ -78,14 +78,16 @@ const dataManager = new DataManager({
 
 registerAllHandlers(syncProcessor);
 
-// Kick off lazy-loaded managers in background
+// Kick off lazy-loaded managers in background (parallel for faster startup)
 (async () => {
-    try { const mgr = await getNutritionGoalsManager(); await mgr.loadGoals(); } catch(e){}
-    try { const mgr = await getBudgetMealPlanner(); await mgr.loadTier(); } catch(e){}
-    try { const mgr = await getMealPrepPlanner(); await mgr.loadSettings(); } catch(e){}
-    try { const mgr = await getGroceryDelivery(); await mgr.loadPreferences(); } catch(e){}
-    try { const mgr = await getDeviceSyncManager(); await mgr.init(); } catch(e){}
-    try { const mgr = await getPushNotifications(); await mgr.init(); mgr.scheduleAllEnabled(); } catch(e){}
+    await Promise.all([
+        (async () => { try { const mgr = await getNutritionGoalsManager(); await mgr.loadGoals(); } catch(e){} })(),
+        (async () => { try { const mgr = await getBudgetMealPlanner(); await mgr.loadTier(); } catch(e){} })(),
+        (async () => { try { const mgr = await getMealPrepPlanner(); await mgr.loadSettings(); } catch(e){} })(),
+        (async () => { try { const mgr = await getGroceryDelivery(); await mgr.loadPreferences(); } catch(e){} })(),
+        (async () => { try { const mgr = await getDeviceSyncManager(); await mgr.init(); } catch(e){} })(),
+        (async () => { try { const mgr = await getPushNotifications(); await mgr.init(); mgr.scheduleAllEnabled(); } catch(e){} })()
+    ]);
 })();
 
 const preferencesManager = new PreferencesManager({
@@ -534,6 +536,23 @@ async function updateNutritionScreen() {
 window.updateTodayNutrition = updateNutritionScreen;
 window.renderNutritionGoals = renderNutritionGoals;
 
+// ---- DOM Element Cache ----
+const domCache = {
+    peopleCount: null,
+    dietChips: {},
+    allergy: null,
+    cuisine: null,
+    maxTime: null,
+    difficulty: null
+};
+
+function getDomElement(id) {
+    if (!domCache[id]) {
+        domCache[id] = document.getElementById(id);
+    }
+    return domCache[id];
+}
+
 // ---- Init ----
 async function init() {
     const loaded = await loadState();
@@ -543,7 +562,7 @@ async function init() {
     await db.migrateFromLocalStorage();
 
     preferences.people = preferences.people || 1;
-    document.getElementById('people-count').value = preferences.people;
+    getDomElement('people-count').value = preferences.people;
     const diets = preferences.diets || (preferences.diet && preferences.diet !== 'none' ? [preferences.diet] : []);
     const map = {
         'diet-vegetarian': 'vegetarian',
@@ -556,16 +575,16 @@ async function init() {
         'diet-heart': 'heart'
     };
     for (const [id, v] of Object.entries(map)) {
-        const el = document.getElementById(id);
+        const el = getDomElement(id);
         if (el) {
             el.checked = diets.includes(v);
             el.parentElement.classList.toggle('active', el.checked);
         }
     }
-    document.getElementById('allergy').value = preferences.allergy || 'none';
-    document.getElementById('cuisine').value = preferences.cuisine || 'all';
-    document.getElementById('max-time').value = preferences.maxTime || 60;
-    document.getElementById('difficulty').value = preferences.difficulty || 'any';
+    getDomElement('allergy').value = preferences.allergy || 'none';
+    getDomElement('cuisine').value = preferences.cuisine || 'all';
+    getDomElement('max-time').value = preferences.maxTime || 60;
+    getDomElement('difficulty').value = preferences.difficulty || 'any';
 
     pantryManager.renderPantry();
     updatePantryCount();
