@@ -55,13 +55,13 @@ export class MealPlanner {
             if (selectedDiets.length > 0 && !passesDiet(r, selectedDiets)) continue;
             if (!passesAllergy(r, preferences.allergy)) continue;
             if (!passesCuisine(r, preferences.cuisine)) continue;
-            if (r.time > (preferences.maxTime || 9999)) continue;
+            if (r.minutes > (preferences.maxTime || 9999)) continue;
 
             const difficulty = preferences.difficulty || 'any';
             if (difficulty !== 'any') {
-                if (difficulty === 'easy' && r.time > 30) continue;
-                if (difficulty === 'medium' && (r.time < 15 || r.time > 60)) continue;
-                if (difficulty === 'hard' && r.time < 45) continue;
+                if (difficulty === 'easy' && r.minutes > 30) continue;
+                if (difficulty === 'medium' && (r.minutes < 15 || r.minutes > 60)) continue;
+                if (difficulty === 'hard' && r.minutes < 45) continue;
             }
 
             const matched = r.ingredients.filter(ing => pantryNames.some(p => ing.includes(p) || p.includes(ing))).length;
@@ -91,7 +91,7 @@ export class MealPlanner {
                 scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (b.ratio - a.ratio) || (a.missing - b.missing)));
                 break;
             case 'fastest':
-                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.r.time - b.r.time)));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.r.minutes - b.r.minutes)));
                 break;
             case 'difficulty':
                 const diffOrder = { easy: 1, medium: 2, hard: 3 };
@@ -123,6 +123,8 @@ export class MealPlanner {
     renderMeals(scored) {
         const list = this.getDomElement('meals-list');
         const pantryNames = this.getPantry().map(i => i.name.toLowerCase());
+        const badge = document.getElementById('meals-badge');
+        if (badge) badge.textContent = scored.length;
 
         if (scored.length === 0) {
             list.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-8">Add ingredients to your pantry to see recipe matches!</p>';
@@ -153,7 +155,7 @@ export class MealPlanner {
                     <span class="text-sm text-orange-600">★${recipe.rating || '-'}</span>
                 </div>
                 ${recipe.image ? `<img src="${recipe.image}" alt="${recipe.name}" class="w-full h-32 object-cover rounded-lg mb-2" loading="lazy">` : ''}
-                <p class="text-sm text-gray-500 mb-2">${recipe.time} min${recipe.servings ? ' · ' + recipe.servings + ' servings' : ''}${recipe.difficulty ? ' · ' + recipe.difficulty : ''}</p>
+                <p class="text-sm text-gray-500 mb-2">${recipe.minutes} min${recipe.servings ? ' · ' + recipe.servings + ' servings' : ''}${recipe.difficulty ? ' · ' + recipe.difficulty : ''}</p>
                 <div class="flex flex-wrap gap-1">
                     ${recipe.ingredients.map(ing => `
                         <span class="text-xs px-2 py-1 rounded-full ${pantryNames.some(p => ing.includes(p) || p.includes(ing)) ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-600'}">
