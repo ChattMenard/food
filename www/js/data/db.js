@@ -689,14 +689,18 @@ class PantryDB {
                     try {
                         const items = JSON.parse(legacyPantry);
                         if (Array.isArray(items) && items.length > 0) {
-                            const tx = this.db.transaction('pantry', 'readwrite');
-                            const store = tx.objectStore('pantry');
-                            for (const item of items) {
-                                store.put(item);
+                            // Only migrate if IndexedDB pantry is empty (first-time user)
+                            const existingCount = await this.count('pantry');
+                            if (existingCount === 0) {
+                                const tx = this.db.transaction('pantry', 'readwrite');
+                                const store = tx.objectStore('pantry');
+                                for (const item of items) {
+                                    store.put(item);
+                                }
+                                await this.transactionDone(tx);
+                                migrated.pantry = true;
                             }
-                            await this.transactionDone(tx);
                             localStorage.removeItem('pantry');
-                            migrated.pantry = true;
                         }
                     } catch (_) {}
                 })()
@@ -710,9 +714,13 @@ class PantryDB {
                     try {
                         const plan = JSON.parse(legacyMealPlan);
                         if (plan && typeof plan === 'object') {
-                            await this.setMealPlan(plan);
+                            // Only migrate if IndexedDB meal plan is empty
+                            const existingItems = await this.getAll('mealPlan');
+                            if (existingItems.length === 0) {
+                                await this.setMealPlan(plan);
+                                migrated.mealPlan = true;
+                            }
                             localStorage.removeItem('mealPlan');
-                            migrated.mealPlan = true;
                         }
                     } catch (_) {}
                 })()
@@ -726,9 +734,13 @@ class PantryDB {
                     try {
                         const prefs = JSON.parse(legacyPrefs);
                         if (prefs && typeof prefs === 'object') {
-                            await this.setPreferences(prefs);
+                            // Only migrate if IndexedDB preferences is empty
+                            const existingPrefs = await this.get('preferences', 'main');
+                            if (!existingPrefs) {
+                                await this.setPreferences(prefs);
+                                migrated.preferences = true;
+                            }
                             localStorage.removeItem('preferences');
-                            migrated.preferences = true;
                         }
                     } catch (_) {}
                 })()
