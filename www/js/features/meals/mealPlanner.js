@@ -84,8 +84,8 @@ export class MealPlanner {
         const dir = sortDir === 'desc' ? -1 : 1;
         switch (sortBy) {
             case 'fewest':
-                // Prioritize recipes with all ingredients available, then by missing count, then by ratio
-                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.missing - b.missing) || (b.ratio - a.ratio)));
+                // Prioritize recipes with all ingredients available, then by simplest (fewest ingredients), then by missing count
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.ingredientCount - b.ingredientCount) || (a.missing - b.missing)));
                 break;
             case 'best':
                 scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (b.ratio - a.ratio) || (a.missing - b.missing)));
