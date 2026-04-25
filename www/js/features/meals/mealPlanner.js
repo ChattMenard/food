@@ -84,29 +84,30 @@ export class MealPlanner {
         const dir = sortDir === 'desc' ? -1 : 1;
         switch (sortBy) {
             case 'fewest':
-                scored.sort((a, b) => dir * (a.missing - b.missing || b.ratio - a.ratio));
+                // Prioritize recipes with all ingredients available, then by missing count, then by ratio
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.missing - b.missing) || (b.ratio - a.ratio)));
                 break;
             case 'best':
-                scored.sort((a, b) => dir * (b.ratio - a.ratio || a.missing - b.missing));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (b.ratio - a.ratio) || (a.missing - b.missing)));
                 break;
             case 'fastest':
-                scored.sort((a, b) => dir * (a.r.time - b.r.time));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.r.time - b.r.time)));
                 break;
             case 'difficulty':
                 const diffOrder = { easy: 1, medium: 2, hard: 3 };
-                scored.sort((a, b) => dir * ((diffOrder[a.r.difficulty] || 2) - (diffOrder[b.r.difficulty] || 2)));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || ((diffOrder[a.r.difficulty] || 2) - (diffOrder[b.r.difficulty] || 2))));
                 break;
             case 'ingredients':
-                scored.sort((a, b) => dir * (a.ingredientCount - b.ingredientCount));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.ingredientCount - b.ingredientCount)));
                 break;
             case 'rating':
-                scored.sort((a, b) => dir * ((a.r.rating || 0) - (b.r.rating || 0)));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || ((a.r.rating || 0) - (b.r.rating || 0))));
                 break;
             case 'name':
-                scored.sort((a, b) => dir * a.r.name.localeCompare(b.r.name));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || a.r.name.localeCompare(b.r.name)));
                 break;
             default:
-                scored.sort((a, b) => dir * (a.missing - b.missing));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.missing - b.missing)));
         }
     }
 
