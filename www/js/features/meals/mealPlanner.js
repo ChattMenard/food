@@ -52,9 +52,9 @@ export class MealPlanner {
         const scored = [];
         for (const r of recipes) {
             const selectedDiets = preferences.diets || [];
-            if (selectedDiets.length > 0 && !this.passesDiet(r, selectedDiets)) continue;
-            if (!this.passesAllergy(r, preferences.allergy)) continue;
-            if (!this.passesCuisine(r, preferences.cuisine)) continue;
+            if (selectedDiets.length > 0 && !passesDiet(r, selectedDiets)) continue;
+            if (!passesAllergy(r, preferences.allergy)) continue;
+            if (!passesCuisine(r, preferences.cuisine)) continue;
             if (r.time > (preferences.maxTime || 9999)) continue;
 
             const difficulty = preferences.difficulty || 'any';
