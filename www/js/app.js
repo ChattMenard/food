@@ -61,7 +61,7 @@ const pantryManager = new PantryManager({
     getAutocompleteIngredients: () => autocompleteIngredients,
     getEditingIndex: () => editingIndex,
     setEditingIndex: value => { editingIndex = value; },
-    onPantryChange: () => { renderSeasonalSuggestions(); renderLeftovers(); updatePantryCount(); }
+    onPantryChange: () => { renderSeasonalSuggestions(); renderLeftovers(); updatePantryCount(); updateMeals(); }
 });
 
 const recipeEngine = new RecipeEngine({
