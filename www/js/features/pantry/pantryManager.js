@@ -1,4 +1,5 @@
 import { parseIngredients } from '../../utils/ingredientParser.js';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 const INGREDIENT_CATEGORIES = {
     'Produce': ['lettuce', 'spinach', 'kale', 'cabbage', 'broccoli', 'carrots', 'potatoes', 'onions', 'garlic', 'tomatoes', 'peppers', 'cucumber', 'zucchini', 'bananas', 'apples', 'oranges', 'berries', 'mushrooms', 'avocado', 'lemon', 'lime', 'herbs', 'parsley', 'cilantro', 'basil', 'thyme', 'rosemary'],
@@ -163,19 +164,72 @@ export class PantryManager {
         return parseIngredients(transcript);
     }
 
-    startSpeechRecognition() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert('Speech recognition is not supported in this browser.');
-            return;
-        }
+    async startSpeechRecognition() {
         const modal = document.getElementById('speech-modal');
         const status = document.getElementById('speech-status');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         status.textContent = 'Listening…';
 
-        const recognition = new SpeechRecognition();
+        try {
+            // Check if running on Android (Capacitor)
+            if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() === 'android') {
+                await this.startCapacitorSpeechRecognition();
+            } else {
+                this.startWebSpeechRecognition();
+            }
+        } catch (error) {
+            console.error('Speech recognition error:', error);
+            status.textContent = 'Error: Speech recognition failed';
+            setTimeout(() => this.stopSpeechRecognition(), 1500);
+        }
+    }
+
+    async startCapacitorSpeechRecognition() {
+        const status = document.getElementById('speech-status');
+        
+        try {
+            const { available } = await SpeechRecognition.available();
+            if (!available) {
+                status.textContent = 'Error: Speech recognition not available';
+                setTimeout(() => this.stopSpeechRecognition(), 1500);
+                return;
+            }
+
+            await SpeechRecognition.requestPermissions();
+            await SpeechRecognition.start({
+                language: 'en-US',
+                partialResults: false,
+                maxAlternatives: 1
+            });
+
+            this._capacitorListener = SpeechRecognition.addListener('result', (data) => {
+                const transcript = data.matches?.[0]?.toLowerCase().trim() || '';
+                this.handleSpeechResult(transcript, status);
+            });
+
+            this._capacitorErrorListener = SpeechRecognition.addListener('error', (data) => {
+                status.textContent = `Error: ${data.error}`;
+                setTimeout(() => this.stopSpeechRecognition(), 1500);
+            });
+        } catch (error) {
+            console.error('Capacitor speech recognition error:', error);
+            status.textContent = 'Error: Speech recognition failed';
+            setTimeout(() => this.stopSpeechRecognition(), 1500);
+        }
+    }
+
+    startWebSpeechRecognition() {
+        const WebSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const status = document.getElementById('speech-status');
+        
+        if (!WebSpeechRecognition) {
+            status.textContent = 'Error: Speech not supported';
+            setTimeout(() => this.stopSpeechRecognition(), 1500);
+            return;
+        }
+
+        const recognition = new WebSpeechRecognition();
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
@@ -183,29 +237,7 @@ export class PantryManager {
 
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript.toLowerCase().trim();
-
-            if (window.isAIQuery && window.isAIQuery(transcript)) {
-                document.getElementById('new-ingredient').value = transcript;
-                status.textContent = 'Asking AI…';
-                setTimeout(() => {
-                    this.stopSpeechRecognition();
-                    window.routeInput && window.routeInput();
-                }, 400);
-                return;
-            }
-
-            const ingredients = this._parseIngredients(transcript);
-            if (ingredients.length > 1) {
-                for (const name of ingredients) {
-                    document.getElementById('new-ingredient').value = name;
-                    this.addIngredient();
-                }
-                status.textContent = `Added ${ingredients.length} ingredients`;
-            } else {
-                document.getElementById('new-ingredient').value = ingredients[0] || transcript;
-                status.textContent = `"${ingredients[0] || transcript}"`;
-            }
-            setTimeout(() => this.stopSpeechRecognition(), 900);
+            this.handleSpeechResult(transcript, status);
         };
 
         recognition.onerror = (event) => {
@@ -218,11 +250,52 @@ export class PantryManager {
         recognition.start();
     }
 
-    stopSpeechRecognition() {
+    handleSpeechResult(transcript, status) {
+        if (window.isAIQuery && window.isAIQuery(transcript)) {
+            document.getElementById('new-ingredient').value = transcript;
+            status.textContent = 'Asking AI…';
+            setTimeout(() => {
+                this.stopSpeechRecognition();
+                window.routeInput && window.routeInput();
+            }, 400);
+            return;
+        }
+
+        const ingredients = this._parseIngredients(transcript);
+        if (ingredients.length > 1) {
+            for (const name of ingredients) {
+                document.getElementById('new-ingredient').value = name;
+                this.addIngredient();
+            }
+            status.textContent = `Added ${ingredients.length} ingredients`;
+        } else {
+            document.getElementById('new-ingredient').value = ingredients[0] || transcript;
+            status.textContent = `"${ingredients[0] || transcript}"`;
+        }
+        setTimeout(() => this.stopSpeechRecognition(), 900);
+    }
+
+    async stopSpeechRecognition() {
+        // Stop web speech recognition
         if (this._recognition) {
             try { this._recognition.stop(); } catch (e) {}
             this._recognition = null;
         }
+
+        // Stop Capacitor speech recognition
+        if (this._capacitorListener) {
+            await this._capacitorListener.remove();
+            this._capacitorListener = null;
+        }
+        if (this._capacitorErrorListener) {
+            await this._capacitorErrorListener.remove();
+            this._capacitorErrorListener = null;
+        }
+
+        try {
+            await SpeechRecognition.stop();
+        } catch (e) {}
+
         const modal = document.getElementById('speech-modal');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
