@@ -263,6 +263,10 @@ Object.assign(window, {
         mealPlanner.sortMeals(mode);
     },
     addToPlanByName: mealPlanner.addToPlanByName.bind(mealPlanner),
+    addRecipeToMealPlan: (name) => {
+        mealPlanner.addToPlanByName(name);
+        document.getElementById('recipe-modal').classList.remove('active');
+    },
     copyShoppingList: mealPlanner.copyShoppingList.bind(mealPlanner),
     updateMeals: debouncedUpdateMeals,
     updateShoppingList: () => mealPlanner.updateShoppingList(),

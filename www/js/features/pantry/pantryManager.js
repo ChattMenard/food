@@ -188,29 +188,39 @@ export class PantryManager {
         const status = document.getElementById('speech-status');
         
         try {
+            console.log('[Speech] Starting Capacitor speech recognition...');
             // Dynamically import Capacitor plugin (only available in native apps)
             const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+            console.log('[Speech] Plugin imported successfully');
             
             const { available } = await SpeechRecognition.available();
+            console.log('[Speech] Available:', available);
             if (!available) {
                 status.textContent = 'Error: Speech recognition not available';
                 setTimeout(() => this.stopSpeechRecognition(), 1500);
                 return;
             }
 
-            await SpeechRecognition.requestPermissions();
+            console.log('[Speech] Requesting permissions...');
+            const permResult = await SpeechRecognition.requestPermissions();
+            console.log('[Speech] Permission result:', permResult);
+            
+            console.log('[Speech] Starting recognition...');
             await SpeechRecognition.start({
                 language: 'en-US',
                 partialResults: false,
                 maxAlternatives: 1
             });
+            console.log('[Speech] Recognition started');
 
             this._capacitorListener = SpeechRecognition.addListener('result', (data) => {
+                console.log('[Speech] Result received:', data);
                 const transcript = data.matches?.[0]?.toLowerCase().trim() || '';
                 this.handleSpeechResult(transcript, status);
             });
 
             this._capacitorErrorListener = SpeechRecognition.addListener('error', (data) => {
+                console.error('[Speech] Error received:', data);
                 status.textContent = `Error: ${data.error}`;
                 setTimeout(() => this.stopSpeechRecognition(), 1500);
             });
@@ -218,8 +228,8 @@ export class PantryManager {
             // Store reference for cleanup
             this._SpeechRecognition = SpeechRecognition;
         } catch (error) {
-            console.error('Capacitor speech recognition error:', error);
-            status.textContent = 'Error: Speech recognition failed';
+            console.error('[Speech] Capacitor speech recognition error:', error);
+            status.textContent = `Error: ${error.message || 'Speech recognition failed'}`;
             setTimeout(() => this.stopSpeechRecognition(), 1500);
         }
     }

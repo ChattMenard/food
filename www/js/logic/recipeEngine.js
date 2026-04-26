@@ -94,7 +94,75 @@ export class RecipeEngine {
     const data = this.getRecipeModalData(recipeName);
     if (!data) return;
 
-    this.announce(`Opened recipe details for ${data.recipe.name}`);
+    const { recipe, currentRating, similarRecipes } = data;
+    
+    // Populate modal
+    document.getElementById('recipe-modal-title').textContent = recipe.name;
+    
+    // Build rating stars
+    const ratingStars = [1,2,3,4,5].map(star => {
+      const color = star <= currentRating ? 'text-orange-500' : 'text-gray-300';
+      const escapedName = recipe.name.replace(/'/g, '\\\'');
+      return `<button onclick="rateRecipe('${escapedName}', ${star})" class="text-2xl ${color}">★</button>`;
+    }).join('');
+    
+    // Build similar recipes
+    const similarHtml = similarRecipes.slice(0, 3).map(r => {
+      const escapedName = r.name.replace(/'/g, '\\\'');
+      return `<div class="text-sm text-orange-600 cursor-pointer hover:underline" onclick="openRecipeModal('${escapedName}')">${r.name}</div>`;
+    }).join('');
+    
+    const escapedRecipeName = recipe.name.replace(/'/g, '\\\'');
+    
+    const content = `
+      ${recipe.image ? `<img src="${recipe.image}" alt="${recipe.name}" class="w-full h-48 object-cover rounded-lg mb-4">` : ''}
+      
+      <div class="mb-4">
+        <h3 class="font-semibold mb-2">Ingredients</h3>
+        <ul class="list-disc pl-5 space-y-1">
+          ${recipe.ingredients.map(ing => `<li class="text-sm">${ing}</li>`).join('')}
+        </ul>
+      </div>
+      
+      ${recipe.instructions ? `
+        <div class="mb-4">
+          <h3 class="font-semibold mb-2">Instructions</h3>
+          <p class="text-sm whitespace-pre-line">${recipe.instructions}</p>
+        </div>
+      ` : ''}
+      
+      ${recipe.link ? `
+        <div class="mb-4">
+          <a href="${recipe.link}" target="_blank" class="text-orange-600 hover:underline text-sm">View full recipe →</a>
+        </div>
+      ` : ''}
+      
+      <div class="mb-4">
+        <h3 class="font-semibold mb-2">Rate this recipe</h3>
+        <div class="flex gap-2">
+          ${ratingStars}
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <button onclick="addRecipeToMealPlan('${escapedRecipeName}')" 
+                class="btn btn-primary btn-full">Add to Meal Plan</button>
+      </div>
+      
+      ${similarRecipes.length > 0 ? `
+        <div>
+          <h3 class="font-semibold mb-2">Similar recipes</h3>
+          <div class="space-y-2">
+            ${similarHtml}
+          </div>
+        </div>
+      ` : ''}
+    `;
+    
+    document.getElementById('recipe-modal-content').innerHTML = content;
+    document.getElementById('recipe-modal').classList.add('active');
+    
+    this.announce(`Opened recipe details for ${recipe.name}`);
     return data;
   }
 
