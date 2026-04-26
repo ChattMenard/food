@@ -3,6 +3,19 @@ import { addImagesToRecipes } from '../advanced/recipeImages.js';
 import { SearchIndex } from '../logic/searchIndex.js';
 
 const INITIAL_RECIPE_RENDER_COUNT = 500;
+
+let _Filesystem = null;
+async function getFilesystem() {
+  if (!_Filesystem && typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform?.()) {
+    try {
+      const module = await import('@capacitor/filesystem');
+      _Filesystem = module.Filesystem;
+    } catch (_e) {
+      // Filesystem plugin not installed
+    }
+  }
+  return _Filesystem;
+}
 const SIMPLE_STAPLES = [
   'rice',
   'beans',
@@ -66,6 +79,28 @@ export class DataManager {
   }
 
   async fetchGzipJson(path) {
+    // On native platforms, use Filesystem API to avoid WebView fetch size limits
+    const fs = await getFilesystem();
+    if (fs) {
+      try {
+        const nativePath = path.replace('data/', 'public/data/');
+        const { data } = await fs.readFile({
+          path: nativePath,
+          directory: 'Assets',
+        });
+        const binary = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+        const blob = new Blob([binary]);
+        const decompressed = blob
+          .stream()
+          .pipeThrough(new DecompressionStream('gzip'));
+        const text = await new Response(decompressed).text();
+        return JSON.parse(text);
+      } catch (fsError) {
+        console.warn('Filesystem read failed, falling back to fetch:', fsError);
+      }
+    }
+
+    // Web fallback: use fetch + DecompressionStream
     const response = await fetch(path);
     if (!response || response.ok === false) {
       const statusText = response ? ` (${response.status})` : '';

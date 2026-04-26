@@ -117,10 +117,31 @@ def safe_number(value, default=0):
         return default
 
 
+TITLE_INGREDIENT_KEYWORDS = {
+    "chicken", "beef", "pork", "salmon", "shrimp", "turkey", "lamb",
+    "butternut squash", "acorn squash", "spaghetti squash",
+    "peanut butter", "almond butter", "apple butter",
+    "chocolate", "banana", "blueberry", "strawberry", "raspberry",
+    "avocado", "mango", "pineapple", "coconut", "lemon", "lime",
+}
+
+
+def check_title_ingredients(recipe):
+    """Flag recipes where the title mentions a key ingredient not found in the ingredients list."""
+    title = recipe.get("name", "").lower()
+    ingredients_str = " ".join(recipe.get("ingredients_clean", recipe.get("ingredients", []))).lower()
+
+    for keyword in TITLE_INGREDIENT_KEYWORDS:
+        if keyword in title and keyword not in ingredients_str:
+            return False, keyword
+    return True, None
+
+
 def validate_dataset(recipes, strict=False):
     """Basic validation of built recipe dataset."""
     assert len(recipes) > 0, "Dataset is empty"
     required_keys = {"id", "name", "ingredients", "minutes"}
+    mismatch_count = 0
     for i, recipe in enumerate(recipes[:100]):
         missing = required_keys - set(recipe.keys())
         if missing:
@@ -128,6 +149,14 @@ def validate_dataset(recipes, strict=False):
             if strict:
                 raise ValueError(msg)
             print(f"  WARNING: {msg}")
+
+    for recipe in recipes:
+        ok, keyword = check_title_ingredients(recipe)
+        if not ok:
+            mismatch_count += 1
+
+    if mismatch_count:
+        print(f"  WARNING: {mismatch_count:,} recipes have title-ingredient mismatches")
     print(f"  Validation passed: {len(recipes):,} recipes")
 
 
@@ -433,6 +462,10 @@ class MainDataBuilder:
         with (output / "search_index.json").open("w", encoding="utf-8") as handle:
             json.dump(search_index, handle)
 
+        # Mobile-friendly recipes.json: cap at 20K highest-rated recipes to
+        # avoid crashing WebView on Android/iOS (full dataset is in the gzip).
+        MOBILE_CAP = 20000
+        top_recipes = sorted(enhanced_recipes, key=lambda r: (r["rating"], r["review_count"]), reverse=True)[:MOBILE_CAP]
         legacy_recipes = [
             {
                 "id": recipe["id"],
@@ -443,10 +476,11 @@ class MainDataBuilder:
                 "category": recipe["cuisine"],
                 "rating": round(recipe["rating"], 1),
             }
-            for recipe in enhanced_recipes
+            for recipe in top_recipes
         ]
         with (output / "recipes.json").open("w", encoding="utf-8") as handle:
             json.dump(legacy_recipes, handle)
+        print(f"  recipes.json: {len(legacy_recipes):,} recipes (mobile-friendly subset)")
 
         with (output / "ingredients.json").open("w", encoding="utf-8") as handle:
             json.dump(sorted(common_ingredients.keys()), handle)

@@ -4,6 +4,29 @@ const INITIAL_RENDER_COUNT = 20;
 const LOAD_BATCH_SIZE = 10;
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+// Compound food names where individual words should NOT match separately.
+// e.g. pantry "butter" should NOT match recipe "peanut butter".
+const COMPOUND_FOODS = new Set([
+    'peanut butter', 'almond butter', 'apple butter', 'cashew butter',
+    'cookie butter', 'cocoa butter', 'sun butter', 'sunflower butter',
+    'chicken broth', 'beef broth', 'vegetable broth', 'bone broth',
+    'soy sauce', 'fish sauce', 'hot sauce', 'oyster sauce',
+    'worcestershire sauce', 'hoisin sauce', 'teriyaki sauce',
+    'cream cheese', 'cottage cheese', 'goat cheese', 'ricotta cheese',
+    'coconut milk', 'almond milk', 'oat milk', 'soy milk', 'buttermilk',
+    'coconut oil', 'sesame oil', 'avocado oil', 'vegetable oil', 'canola oil',
+    'baking soda', 'baking powder',
+    'brown sugar', 'powdered sugar', 'coconut sugar', 'cane sugar',
+    'green onion', 'red onion', 'green beans', 'kidney beans', 'black beans',
+    'bell pepper', 'cayenne pepper', 'black pepper', 'chili pepper',
+    'tomato paste', 'tomato sauce', 'tomato soup',
+    'ice cream', 'sour cream', 'whipped cream', 'heavy cream',
+    'corn starch', 'corn syrup', 'corn flour',
+    'lime juice', 'lemon juice', 'orange juice', 'apple juice',
+    'rice vinegar', 'apple cider vinegar', 'balsamic vinegar', 'white vinegar',
+    'vanilla extract', 'almond extract',
+]);
+
 export class MealPlanner {
     constructor({ getPantry, getMealPlan, getPreferences, getRecipes, persistMealPlan }) {
         this.getPantry = getPantry;
@@ -75,14 +98,27 @@ export class MealPlanner {
             }
 
             const matched = r.ingredients.filter(ing => {
-                const ingWords = ing.toLowerCase().split(/\s+/);
+                const ingLower = ing.toLowerCase();
+                const ingWords = ingLower.split(/\s+/);
                 return pantryNames.some(p => {
                     const pantryWords = p.split(/\s+/);
-                    // Check if all pantry words are in ingredient (e.g., "peanut butter" matches "peanut butter")
-                    // OR if all ingredient words are in pantry (e.g., "butter" matches "unsalted butter")
-                    const pantryMatchesIng = pantryWords.every(pw => ingWords.includes(pw));
-                    const ingMatchesPantry = ingWords.every(iw => pantryWords.includes(iw));
-                    return pantryMatchesIng || ingMatchesPantry;
+                    if (ingLower === p) return true;
+                    // Multi-word pantry item: all words must appear in ingredient
+                    if (pantryWords.length > 1) {
+                        return pantryWords.every(pw => ingWords.includes(pw));
+                    }
+                    // Single-word pantry item: prevent false positives like
+                    // "butter" matching "peanut butter" while allowing
+                    // "squash" to match "butternut squash"
+                    if (ingWords.includes(p)) {
+                        if (ingWords.length === 1) return true;
+                        // Block match if ingredient is a known compound food
+                        if (COMPOUND_FOODS.has(ingLower)) return false;
+                        return true;
+                    }
+                    // Check reverse: "butter" in pantry, "unsalted butter" ingredient
+                    if (ingWords.every(iw => pantryWords.includes(iw))) return true;
+                    return false;
                 });
             }).length;
             const ratio = matched / r.ingredients.length;
