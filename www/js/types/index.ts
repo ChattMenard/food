@@ -31,6 +31,14 @@ export interface Recipe {
   rating?: number;
   tags?: string[];
   cuisine?: string;
+  nutrition?: NutritionData;
+  dietary_flags?: {
+    vegetarian?: boolean;
+    vegan?: boolean;
+    gluten_free?: boolean;
+    dairy_free?: boolean;
+    nut_free?: boolean;
+  };
 }
 
 export interface PantryItem extends Ingredient {

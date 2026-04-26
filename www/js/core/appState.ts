@@ -82,7 +82,7 @@ function notify(previousState: AppState): void {
 export async function loadState(): Promise<AppState> {
   await db.ready;
 
-  const userPromise = authManager.loadSession().catch((error) => {
+  const userPromise = authManager.loadSession().catch((error: Error) => {
     console.error('[AppState] Failed to load auth session:', error);
     return null;
   });
@@ -92,7 +92,7 @@ export async function loadState(): Promise<AppState> {
       db.getPantry(),
       db.getMealPlan(),
       db.getPreferences(),
-      db.get('preferences', 'recipeRatings').then((r: RecipeRatings | undefined) => r || {}),
+      db.get('preferences', 'recipeRatings').then((r: unknown) => (r as RecipeRatings) || {}),
       userPromise,
     ]);
 
@@ -131,7 +131,7 @@ export async function saveMealPlanState(mealPlan: MealPlan): Promise<void> {
  * Save preferences state to IndexedDB
  * @param preferences - Preferences object
  */
-export async function savePreferencesState(preferences: Partial<UserPreferences>): Promise<void> {
+export async function savePreferencesState(preferences: UserPreferences): Promise<void> {
   await db.ready;
   await db.setPreferences(preferences);
   setState({ preferences: normalizePreferences(preferences) });
