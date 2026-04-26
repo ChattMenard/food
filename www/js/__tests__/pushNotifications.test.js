@@ -147,6 +147,8 @@ describe('PushNotificationManager', () => {
         });
 
         it('should schedule all enabled types', () => {
+            notificationManager.scheduledNotifications.clear();
+            notificationManager.typeSettings = notificationManager.getDefaultSettings();
             notificationManager.typeSettings.mealPrep.enabled = true;
             notificationManager.typeSettings.expiration.enabled = true;
             

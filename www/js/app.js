@@ -34,8 +34,8 @@ let autocompleteIngredients = [];
 
 // Core managers
 const uiManager = new UIManager({
-    updateMeals: () => updateMeals(),
-    updateShoppingList: () => updateShoppingList()
+    updateMeals: () => window.updateMeals(),
+    updateShoppingList: () => window.updateShoppingList()
 });
 
 // Override showTab for bottom-nav bar
@@ -45,8 +45,8 @@ uiManager.showTab = function(tab) {
     if (el) el.classList.add('active');
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelector(`.tab[data-tab="${tab}"]`)?.classList.add('active');
-    if (tab === 'meals') updateMeals();
-    if (tab === 'shop') updateShoppingList();
+    if (tab === 'meals') window.updateMeals();
+    if (tab === 'shop') window.updateShoppingList();
     if (tab === 'nutrition') updateNutritionScreen();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -71,7 +71,7 @@ const recipeEngine = new RecipeEngine({
 const dataManager = new DataManager({
     setRecipes: v => { recipes = v; },
     setAutocompleteIngredients: v => { autocompleteIngredients = v; },
-    updateMeals: () => { updateMeals(); window._recipesLoaded = true; }
+    updateMeals: () => { window.updateMeals(); window._recipesLoaded = true; }
 });
 
 registerAllHandlers(syncProcessor);
@@ -89,7 +89,7 @@ registerAllHandlers(syncProcessor);
 const preferencesManager = new PreferencesManager({
     getPreferences: () => preferences,
     savePreferencesState: async prefs => { await savePreferencesState(prefs); },
-    updateMeals: () => updateMeals()
+    updateMeals: () => window.updateMeals()
 });
 
 const mealPlanSharing = new MealPlanSharing({

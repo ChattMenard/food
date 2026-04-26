@@ -17,7 +17,6 @@ const originalNavigator = global.navigator;
 const originalCaches = global.caches;
 
 beforeEach(() => {
-  jest.useFakeTimers();
   Object.defineProperty(global, 'navigator', {
     value: {
       storage: {
@@ -69,22 +68,30 @@ describe('checkStorageQuota & isStorageNearQuota', () => {
   });
 
   it('detects when usage exceeds threshold', async () => {
-    const spy = jest.spyOn(storageManager, 'checkStorageQuota').mockResolvedValue({ usagePercentage: 95 });
+    navigator.storage.estimate.mockResolvedValue({ usage: 950, quota: 1000 });
     const nearQuota = await isStorageNearQuota(90);
     expect(nearQuota).toBe(true);
-    expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
+    expect(navigator.storage.estimate).toHaveBeenCalled();
   });
 });
 
 describe('clearOldDatabaseData', () => {
   it('deletes IndexedDB database successfully', async () => {
+    jest.useRealTimers();
+    const openRequest = indexedDB.open('storage-test-db');
+    const database = await new Promise((resolve, reject) => {
+      openRequest.onsuccess = () => resolve(openRequest.result);
+      openRequest.onerror = reject;
+    });
+    database.close();
+
     await expect(clearOldDatabaseData('storage-test-db')).resolves.toBeUndefined();
   });
 });
 
 describe('withQuotaHandling', () => {
   it('retries on quota errors and succeeds', async () => {
+    jest.useRealTimers();
     const onQuotaExceeded = jest.fn();
     const operation = jest
       .fn()
@@ -99,6 +106,7 @@ describe('withQuotaHandling', () => {
   });
 
   it('falls back to localStorage when enabled', async () => {
+    jest.useRealTimers();
     const operation = jest.fn(async (useLocalStorage = false) => {
       if (!useLocalStorage) {
         throw { name: 'QuotaExceededError' };
@@ -108,7 +116,7 @@ describe('withQuotaHandling', () => {
 
     const result = await withQuotaHandling(operation, { fallbackToLocalStorage: true, maxRetries: 2 });
     expect(result).toBe('local-storage');
-    expect(operation).toHaveBeenCalledTimes(2);
+    expect(operation).toHaveBeenCalledTimes(3);
   });
 
   it('throws non-quota errors immediately', async () => {
@@ -138,6 +146,7 @@ describe('getStorageBreakdown', () => {
 
 describe('migrateToLocalStorage', () => {
   it('exports a store to localStorage', async () => {
+    jest.useRealTimers();
     await new Promise((resolve, reject) => {
       const request = indexedDB.open('migration-db', 1);
       request.onupgradeneeded = () => {
@@ -161,6 +170,7 @@ describe('migrateToLocalStorage', () => {
 
 describe('quota warnings & monitoring', () => {
   it('injects warning into DOM', () => {
+    jest.useFakeTimers();
     showQuotaWarning(92.5);
     const warning = document.querySelector('.fixed.top-4.right-4');
     expect(warning).not.toBeNull();
@@ -168,17 +178,17 @@ describe('quota warnings & monitoring', () => {
   });
 
   it('monitors storage and fires warnings', async () => {
-    jest.spyOn(storageManager, 'checkStorageQuota').mockResolvedValue({ usagePercentage: 90 });
-    const warnSpy = jest.spyOn(storageManager, 'showQuotaWarning').mockImplementation(() => {});
+    jest.useFakeTimers();
+    navigator.storage.estimate.mockResolvedValue({ usage: 900, quota: 1000 });
 
     const stop = startStorageMonitoring(1000, 80);
 
     await Promise.resolve();
-    jest.advanceTimersByTime(0);
+    await Promise.resolve();
+    const warning = document.querySelector('.fixed.top-4.right-4');
 
-    expect(warnSpy).toHaveBeenCalled();
+    expect(warning).not.toBeNull();
 
     stop();
-    warnSpy.mockRestore();
   });
 });

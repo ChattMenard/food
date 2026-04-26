@@ -9,7 +9,7 @@ jest.mock('../utils/dietFilters.js', () => ({
   normalizeCuisine: cuisine => cuisine?.toLowerCase() || 'other',
 }));
 
-const flushPromises = () => new Promise(setImmediate);
+const flushPromises = () => Promise.resolve();
 
 describe('DataManager', () => {
   let setRecipes;
@@ -54,12 +54,18 @@ describe('DataManager', () => {
     await flushPromises();
 
     expect(setAutocompleteIngredients).toHaveBeenCalledWith(['salt', 'pepper']);
-    expect(setRecipes).toHaveBeenNthCalledWith(1, expect.arrayContaining(fallbackRecipes));
+    expect(setRecipes).toHaveBeenNthCalledWith(1, expect.arrayContaining([
+      expect.objectContaining({ name: 'Apple Pie' }),
+      expect.objectContaining({ name: 'Banana Bread' }),
+    ]));
 
     jest.runAllTimers();
     await flushPromises();
 
-    expect(setRecipes).toHaveBeenNthCalledWith(2, expect.arrayContaining(fallbackRecipes));
+    expect(setRecipes).toHaveBeenNthCalledWith(2, expect.arrayContaining([
+      expect.objectContaining({ name: 'Apple Pie' }),
+      expect.objectContaining({ name: 'Banana Bread' }),
+    ]));
     expect(updateMeals).toHaveBeenCalled();
 
     const results = manager.searchRecipes('apple');

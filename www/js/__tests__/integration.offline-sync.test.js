@@ -6,11 +6,15 @@ import db from '../data/db.js';
 describe('Offline → Sync Integration', () => {
     let syncProcessor;
 
-    beforeEach(() => {
-        // Clear mock store
-        db._store.clear();
-        
-        // Create sync processor instance
+    beforeEach(async () => {
+        await db.ready;
+        const transaction = db.db.transaction('queuedMutations', 'readwrite');
+        await new Promise((resolve, reject) => {
+            const request = transaction.objectStore('queuedMutations').clear();
+            request.onsuccess = resolve;
+            request.onerror = reject;
+        });
+
         syncProcessor = new SyncProcessor();
     });
 
@@ -75,8 +79,7 @@ describe('Offline → Sync Integration', () => {
 
             await markFailed(mutation.id, 'Network error');
 
-            // Check mutations store directly since failed mutations aren't in pending
-            const failedMutation = db._mutations.get(mutation.id);
+            const failedMutation = await db.get('queuedMutations', mutation.id);
             expect(failedMutation).toBeDefined();
             expect(failedMutation.status).toBe('failed');
             expect(failedMutation.lastError).toBe('Network error');

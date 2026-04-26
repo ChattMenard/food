@@ -3,6 +3,16 @@
  * Global setup for test environment
  */
 
+import 'fake-indexeddb/auto';
+
+const fetchMock = jest.fn(() =>
+    Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+        text: () => Promise.resolve('{}')
+    })
+);
+
 // Polyfill structuredClone for Node.js environment
 if (!global.structuredClone) {
     global.structuredClone = (obj) => {
@@ -49,18 +59,9 @@ const localStorageMock = (() => {
 
 global.localStorage = localStorageMock;
 
-// Mock fetch
-global.fetch = jest.fn(() =>
-    Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
-        text: () => Promise.resolve('{}')
-    })
-);
-
-
 // Reset mocks before each test
 beforeEach(() => {
     localStorageMock.clear();
-    fetch.mockClear();
+    fetchMock.mockClear();
+    global.fetch = fetchMock;
 });
