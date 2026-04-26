@@ -8,6 +8,8 @@
     "stop": "lsof -ti :8080 | xargs -r kill",
     "build:css": "./node_modules/.bin/tailwindcss -i www/css/tailwind.css -o www/css/output.css --watch",
     "build:css:once": "./node_modules/.bin/tailwindcss -i www/css/tailwind.css -o www/css/output.css",
+    "build:ts": "tsc",
+    "build:ts:watch": "tsc --watch",
     "build:data": "python3 scripts/build_dataset.py",
     "test": "jest",
     "test:ci": "jest --runInBand",
@@ -15,10 +17,10 @@
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "test:e2e:ci": "playwright test --project=chromium --reporter=line",
-    "lint": "eslint www/js --ext .js",
-    "lint:fix": "eslint www/js --ext .js --fix",
-    "format": "prettier --write www/js/**/*.js",
-    "format:check": "prettier --check www/js/**/*.js",
+    "lint": "eslint www/js --ext .js,.ts",
+    "lint:fix": "eslint www/js --ext .js,.ts --fix",
+    "format": "prettier --write www/js/**/*.{js,ts}",
+    "format:check": "prettier --check www/js/**/*.{js,ts}",
     "validate-dataset": "python3 scripts/build_dataset.py --validate-only",
     "android": "npm run sync && CAPACITOR_ANDROID_STUDIO_PATH=/home/x99/Downloads/android-studio/bin/studio.sh npx cap open android",
     "android:build": "JAVA_HOME=/home/x99/Downloads/android-studio/jbr PATH=/home/x99/Downloads/android-studio/jbr/bin:$PATH ./android/gradlew -p android :app:assembleDebug",
@@ -40,6 +42,7 @@
     "@jest/globals": "^30.3.0",
     "@playwright/test": "^1.50.0",
     "@tailwindcss/cli": "^4.2.2",
+    "@types/node": "^25.6.0",
     "babel-jest": "^30.3.0",
     "esbuild": "^0.25.0",
     "eslint": "^10.2.1",
@@ -49,6 +52,8 @@
     "jest-environment-jsdom": "^30.3.0",
     "prettier": "^3.8.3",
     "serve": "^14.2.4",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.2.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
   }
 }
