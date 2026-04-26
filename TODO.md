@@ -1,458 +1,63 @@
-⚠️ Remaining Work (Dependency Order):
+# TODO
 
-1. Fix E2E selectors in HTML/UI
-2. Update Playwright tests to use `getByTestId()` selectors
-3. Run E2E suite 3x consecutively and stabilize failures
-4. Add `.github/workflows/ci.yml` (currently blocked by GitHub `workflow` OAuth scope)
-5. Enable CI gating for Jest + Playwright on push/PR
-6. Post-MVP: backend-backed community recipes + social features
+Last audited: 2026-04-26
 
+## Audit scope
 
-🏗️ Current Architecture
+- Reviewed project docs, package scripts, CI workflows, app structure, tests, and obvious dependency/security risks.
+- No product code was changed during this audit.
+- Existing roadmap/todo claims were reconciled with the current repository state.
 
+## Current state
+
+- The app is a static PWA/Capacitor meal planner served from `www/`.
+- Core app state is IndexedDB-backed via `www/js/data/db.js` and `www/js/core/appState.js`.
+- The JavaScript app is organized into `core`, `data`, `logic`, `features`, `ai`, `ui`, `utils`, `native`, `auth`, and `advanced` modules.
+- The repository currently has 75 tracked JavaScript files under `www/js`, including 14 unit/integration test files, plus 2 Playwright E2E specs.
+- `.github/workflows/ci.yml` already exists, so older notes saying CI is blocked by missing `workflow` OAuth scope are stale.
+
+## Highest-priority work
+
+| Priority | Task | Why it matters | Acceptance criteria |
+| --- | --- | --- | --- |
+| P0 | Fix npm dependency resolution | `npm install` and `npm ci` fail unless `--legacy-peer-deps` is used because `@codetrix-studio/capacitor-google-auth@3.4.0-rc.4` peers on Capacitor 6 while the app uses Capacitor 8. | A clean `npm ci` succeeds without workaround flags on a fresh checkout. |
+| P0 | Make CI installable and current | The current GitHub Actions workflow uses `npm ci`, so it is likely blocked by the same peer conflict. It also uses older `checkout`, `setup-node`, and `upload-artifact` action versions. | CI installs dependencies, runs lint/tests/build/security jobs, and uses supported action versions. |
+| P0 | Resolve dependency audit finding | `npm audit --production` reports 1 high-severity vulnerability in `@xmldom/xmldom`. | `npm audit --omit=dev` passes or the remaining finding is explicitly documented as accepted with a mitigation. |
+| P0 | Remove committed dependency artifacts | `node_modules` is tracked in git, which makes reviews noisy and risks stale/broken installs. | `node_modules/` is removed from version control while `package-lock.json` remains the source of dependency truth. |
+| P1 | Stabilize Playwright E2E tests | E2E selectors still rely on text/id selectors, and `offline.spec.js` navigates to `http://localhost:3000` while Playwright is configured for port 8080. | Add stable `data-testid` selectors, update specs to use them, use `page.goto('/')`, and pass `npm run test:e2e` three times consecutively. |
+| P1 | Verify offline/PWA behavior | `manifest.json` is linked, but no service worker registration was found in `index.html` or app startup code. Offline E2E tests depend on cached app shell behavior. | Register `sw.js`, verify first-load caching, and pass offline E2E coverage. |
+| P1 | Align documentation with actual repo layout | `README.md` still describes `/saas`, while the repo root and `www/` are the real app locations. | README setup, scripts, and project structure match the current repo. |
+| P1 | Reconcile test and coverage claims | Existing docs claim 248 tests, while the repository currently contains 14 unit/integration test files and 376 tracked `describe`/`test`/`it` declarations. | Docs report verifiable counts or avoid exact counts unless generated. |
+| P1 | Add missing IndexedDB stores/migrations for advanced modules | `advanced/communityRecipes.js` uses `communitySubmissions` and `savedRecipes`, but the current DB upgrade path does not create those object stores. | DB version/migrations include every store used by shipped modules, with tests. |
+| P2 | Define backend contracts for sync/community/push | Background sync, community recipes, cross-device sync, and push token storage are still placeholders without server APIs. | API contracts exist for sync, community recipes, push token storage, and conflict handling. |
+| P2 | Harden dynamic HTML rendering | Several modules render dynamic strings through `innerHTML`/`insertAdjacentHTML`, including recipe/AI/user-facing content paths. | User- or AI-sourced content is escaped or rendered with DOM APIs. |
+| P2 | Make native scripts portable | Android scripts hard-code `/home/x99/...` paths. | Native scripts use environment variables, documented defaults, or local config files. |
+| P2 | Consolidate persistence boundaries | IndexedDB is the intended source of truth, but auth/session/cache/analytics/sync helpers still use `localStorage` for several data paths. | Critical app data is IndexedDB-backed; localStorage usage is limited to non-critical cache/session metadata and documented. |
+| P3 | Start gradual TypeScript adoption | The codebase is large enough that state/data/API contracts would benefit from type checks. | Add `// @ts-check` or TypeScript for core/data/logic modules first. |
+
+## Recently completed / confirmed
+
+- Code is already split into the intended architecture directories.
+- IndexedDB stores exist for recipes, pantry, meal plans, preferences, nutrition logs, search index, and queued mutations.
+- Jest, Playwright, ESLint, Prettier, and GitHub Actions configs exist.
+- `npm ci --legacy-peer-deps` installs locally, but emits engine warnings for ESLint packages under Node 22.12.0.
+- `npm audit --production` identifies one high-severity production dependency issue.
+
+## Verification commands
+
+Run these after dependency resolution is fixed:
+
+```bash
+npm ci
+npm run lint
+npm run format:check
+npm run test -- --runInBand
+npm run test:e2e
+npm audit --omit=dev
 ```
-UI → appState → db.js → IndexedDB
-        ↓
-     pub-sub
+
+Temporary local workaround used during this audit:
+
+```bash
+npm ci --legacy-peer-deps
 ```
-
-```
-www/js/
-├── core/        # State layer
-├── data/        # Persistence + loading
-├── logic/       # Pure computation (testable)
-├── features/    # Domain modules
-├── ai/          # External intelligence layer
-├── ui/          # Rendering + interaction
-├── utils/       # Shared helpers
-├── native/      # Native platform integration
-├── auth/        # Authentication
-└── advanced/    # Non-core / SaaS features
-```
-
-✅ Phase 4: Stability & Resilience (COMPLETE)
-
-You now have resilience maturity. The system handles stress, not just functionality.
-
-- ✅ Advanced caching strategy
-  - TTL + LRU eviction in `cacheManager.js`
-  - `aiCache` (30min) and `apiCache` (5min) instances
-  - Clear boundary: cache NEVER overrides IndexedDB state
-
-- ✅ Background sync
-  - `mutationQueue.js` - durable enqueue/getPending
-  - `syncProcessor.js` - auto-sync every 30s when online
-  - Exponential backoff: 1s, 2s, 4s, 8s, 16s (max 30s)
-  - Max 5 retries, then marks failed
-  - Online/offline event listeners
-
-- ✅ Data migration utilities
-  - `migrationManager.js` - schema evolution tracking
-  - Rollback capabilities for failed migrations
-  - v3 → v4 migration registered
-
-- ✅ AI fallback logic
-  - `recipeEngine.js` fallback when offline/rate-limited
-  - User feedback: "Rate limit reached. Using offline suggestions."
-  - Validation prevents malformed responses
-
-
-🎯 Phase 5: Feature Expansion (COMPLETE)
-
-- ✅ Nutrition goals + macro tracking
-  - `nutritionGoals.js` - Persistent goal management
-  - 5 presets: balanced, lowCarb, highProtein, weightLoss, keto
-  - Progress calculation with status (good/warning/under/over)
-  - Pub-sub for reactive updates
-  - 15 unit tests
-- ✅ Budget meal planning
-  - `budgetMealPlanner.js` - Multi-tier budget planning
-  - 3 tiers: low ($3/serving), medium ($6/serving), high ($10/serving)
-  - Recipe cost estimation with substitutions
-  - 40+ budget-friendly ingredient swaps
-  - Weekly plan generation with budget tracking
-  - 23 unit tests
-- ✅ Meal prep planning system
-  - `mealPrepPlanner.js` - Batch cooking & portion planning
-  - 3 strategies: component, batch-meals, hybrid
-  - Storage guidelines (fridge 3-5 days, freezer 60-90 days)
-  - Reheating guides with method auto-selection
-  - 33 unit tests
-- ✅ Grocery delivery integration
-  - `groceryDelivery.js` - Multi-provider cart export
-  - 5 providers: Instacart, Amazon Fresh, Walmart+, Target, Kroger
-  - Price comparison across providers
-  - Ingredient search term optimization
-  - CSV/text export formats
-  - 34 unit tests
-- ✅ Personalized recommendations
-  - `personalizedRecommendations.js` - AI-powered meal suggestions
-- ✅ Meal history analytics
-  - `mealHistoryAnalytics.js` - Nutrition tracking over time
-- ✅ Waste reduction
-  - `wasteReduction.js` - Track and reduce food waste
-- ✅ Seasonal ingredients
-  - `seasonalIngredients.js` - Seasonal ingredient suggestions
-- ✅ Leftover tracking
-  - `leftoverTracker.js` - Manage leftovers
-- ✅ Meal plan sharing
-  - `mealPlanSharing.js` - Share meal plans
-- ✅ Meal plan templates
-  - `mealPlanTemplates.js` - Reusable meal plan templates
-- ⏳ Community recipes (requires backend) - POST-MVP
-
-
-✅ Phase 6: Cross-Device Sync (COMPLETE)
-- `deviceSyncManager.js` - Sync engine with conflict resolution
-  - Device registration with unique IDs and vector clocks
-  - 5 conflict strategies: last-write-wins, merge-arrays, max-value, etc.
-  - Export/import for backup and migration
-  - 35 unit tests
-- `pushNotifications.js` - Push notification scheduling
-  - 5 notification types: meal prep, expiration, grocery, nutrition, sync
-  - Permission handling and Service Worker integration
-  - 31 unit tests
-- Auth foundation
-  - `authManager.js` - Authentication management
-  - `googleAuthProvider.js` - Google authentication provider
-  - QR code pairing for new devices
-  - Recovery codes for device loss
-- Offline queue with background sync (via syncProcessor)
-
-✅ Phase 7: Native Platform (COMPLETE)
-- iOS widget support (iOS 14+) + Siri shortcuts
-  - `siriShortcuts.js` - Siri integration for adding ingredients/meals
-- Android widget support (Android 12+) + intents
-  - `androidIntents.js` - Android intents integration
-  - Google Assistant intents (actions.xml, deep link handling)
-- Push notification scheduling enhancements
-  - `nativePush.js` - Native push notifications
-  - `widgetManager.js` - Widget management
-  - Platform-specific scheduling for precise timing
-
-🧪 Testing Infrastructure (IN PROGRESS)
-- ✅ Created recipeEngine.test.js (13 tests passing)
-- ✅ Created integration.offline-sync.test.js (10 tests passing)
-- ⏳ Add .github/workflows/ci.yml for CI/CD automation (blocked by GitHub OAuth `workflow` scope)
-- ✅ Installed dependencies: @jest/globals, fake-indexeddb, prettier, eslint
-- ✅ Updated package.json with test scripts (test:coverage, test:watch, lint, format)
-- ✅ Created ESLint/Prettier configs (.eslintrc.json, .prettierrc, .eslintignore, .prettierignore)
-- ✅ Updated jest.setup.js with mockMutations Map for mutation queue operations
-- ✅ Fixed bug in recipeEngine.js (recipe.name → data.recipe.name)
-- ✅ All 248 unit tests passing across 11 test suites
-- ⏳ E2E selector fixes (add data-testid attributes, update E2E tests to use getByTestId())
-
-📌 Next Actions (Strict Dependency Order):
-1. Add missing `data-testid` attributes in UI templates/components.
-2. Refactor E2E tests to use `getByTestId()` only.
-3. Run `npm run test:e2e` three consecutive times with zero failures.
-4. Re-add `.github/workflows/ci.yml` after upgrading token/app scope (`workflow`).
-5. Validate CI runs Jest + E2E successfully on PR.
-
-
-📊 Current Stats:
-- **70 JS files** across 12 directories
-- **11 comprehensive test suites** (budgetMealPlanner, costTracker, deviceSyncManager, groceryDelivery, ingredientParser, ingredientVectors, mealPrepPlanner, nutritionGoals, pushNotifications, recipeEngine, integration.offline-sync)
-- **16 feature modules** integrated across pantry, meals, plan, nutrition, grocery
-- **248 unit tests passing** (100%)
-- **100% Phase 4, 5, 6, 7 complete**
-
-🧠 System Principles (Locked)
-
-- IndexedDB is the only source of truth
-- State is centralized and reactive
-- UI never directly accesses persistence
-- Logic is pure and testable
-- AI is assistive, not authoritative
-
-
-📝 Notes
-
-- Core architecture is now stable and extensible (congratulations on doing the bare minimum)
-- Remaining work is primarily resilience and scale, not structure
-- Testing exists but needs deeper coverage for confidence under change
-- Advanced features depend on backend + sync infrastructure
-- Current reality: You've crossed the hard part (fixing architecture). Now you're in a different phase entirely: making the system reliable under stress, not just functional.
-
-
-This is a living document. Update as the project evolves—assuming you can maintain the discipline to keep it accurate.
-
-
----
-
-OLD: Dependency-Aware Build Order
-0. Foundation (Nothing depends on this — everything breaks without it)
-
-Goal: You can build and run the project at all
-
- Folder structure
- Install dependencies (esbuild, capacitor, jest, playwright)
- .env + config handling
- Basic build pipeline (esbuild bundling)
- Capacitor + PWA config (manifest.json)
-
-👉 Checkpoint: You can run the app locally and rebuild reliably.
-
-1. Data Layer First (Everything else depends on persistence)
-
-Goal: Data exists before UI or AI touches it
-
- IndexedDB setup (db.js)
-Pantry
-Meal plans
-Recipe cache
-Preferences
- Schema versioning + migrations
- Data loader (dataManager.js)
-
-👉 Checkpoint: You can store/retrieve structured data reliably.
-
-2. State Management Core (Prevents future rewrites)
-
-Goal: Single source of truth before UI complexity explodes
-
- appState.js (unidirectional flow / pub-sub)
- Define state shape:
-pantry
-meals
-plan
-preferences
- Wire state ↔ db sync
-
-👉 Checkpoint: Changing data updates state cleanly without UI hacks.
-
-3. Offline + Caching Backbone
-
-Goal: Avoid reworking network logic later
-
- Service worker (sw.js)
-Cache assets
-Cache API responses
- Background sync (backgroundSync.js)
- Basic cache invalidation strategy
-
-👉 Checkpoint: App works offline (at least partially).
-
-4. Core Logic Engines (No UI yet)
-
-Goal: Make the app “smart” before making it pretty
-
- Ingredient parser (multi-item + unit normalization)
- Recipe scoring engine (recipeEngine.js)
- Ingredient similarity (ingredientVectors.js)
- Shopping list aggregation logic
- Cost estimation (costTracker.js)
-
-👉 Checkpoint: You can run logic in isolation and get correct outputs.
-
-5. AI Layer (Built on top of real data + logic)
-
-Goal: AI enhances—not replaces—your system
-
- Gemini integration (geminiAI.js)
- Prompt library (recipes, plans, Q&A)
- Smart input router (intent detection)
- AI response validation (anti-hallucination)
- Caching + rate limiting
- Offline fallback (use local logic)
-
-👉 Checkpoint: AI returns structured, usable data consistently.
-
-6. Pantry Feature (First Real UI + Data Interaction)
-
-Why first? Lowest complexity, validates your entire stack
-
- Pantry CRUD UI
- Search/filter
- Voice input (optional here)
- Ingredient parsing integration
- Leftover tracking
-
-👉 Checkpoint: You can add items → persist → reload → see same data.
-
-7. Meals Feature (Builds on Pantry + Logic + AI)
-
-Now the app starts feeling intelligent
-
- Recipe list UI
- Integrate scoring engine
- Filters + sorting
- Recipe cards (expandable)
- AI suggestions based on pantry
- Ratings system
-
-👉 Checkpoint: Pantry → meaningful meal suggestions works.
-
-8. Plan Feature (Depends on Meals + Pantry)
-
-This is where complexity spikes
-
- Weekly calendar UI (drag-drop)
- Persist plans (IndexedDB)
- AI meal plan generator
- Templates
- Export/import (JSON + iCal)
-
-👉 Checkpoint: You can build a full week plan and reload it.
-
-9. Shopping System (Depends on Plan)
-
-Derived system — should come after planning works
-
- Shopping list generator (from plan)
- Deduplication + unit merging
- UI with check-off
- Budget optimization
- Seasonal suggestions
-
-👉 Checkpoint: Plan → accurate shopping list pipeline works.
-
-10. Mobile / Native Layer (Only after core is stable)
-
-Otherwise you debug two systems at once
-
- npx cap sync
- Android fixes (back button, UI quirks)
- iOS setup
- Push notifications
- Barcode scanner
- Native share
-
-👉 Checkpoint: Same app behavior on web + mobile.
-
-11. UX / Performance Pass (Optimization phase)
-
-Do NOT do this earlier—it will be wasted effort
-
- Tailwind polish + responsive layouts
- Componentization
- Accessibility (ARIA, keyboard nav)
- Virtualized lists
- Skeleton loaders
- Memoization
-
-👉 Checkpoint: App feels fast and usable at scale.
-
-12. Testing Layer (After systems stabilize)
-
-Testing too early = rewriting tests constantly
-
- Unit tests (logic engines, parser, AI validation)
- E2E tests (full user flows)
- Offline scenario testing
- Manual device testing
-
-👉 Checkpoint: You can trust changes won’t silently break things.
-
-13. CI/CD + Deployment
-
-Now automation actually saves time
-
- GitHub Actions (ci.yml)
- Build + test pipeline
- Deploy scripts (Android/iOS)
- Secure env injection
-
-👉 Checkpoint: One command = reproducible build.
-
-14. SaaS / Advanced Features (Only after core is proven)
-
-Everything here depends on stability + usage patterns
-
- Substitution logic (AI)
- Notifications (expiring food, reminders)
- Cooking mode (step-by-step + voice)
- Nutrition tracking
- Community recipes
- Cross-device sync
- Monetization features
- AI-generated images
-
-
-
-
-
-
-
-
-1️⃣ Audit the current codebase (FIRST — non-negotiable)
-
-You need a reality check before touching anything.
-
-Why first:
-You don’t actually know:
-
-what’s already implemented correctly
-what’s partially done but fragile
-what contradicts the architecture
-
-Skipping this = rebuilding things you already have or missing landmines.
-
-Output should be:
-
-What exists (mapped to the roadmap)
-What’s broken or misaligned
-What’s missing entirely
-
-👉 Think of this as building a truth map, not judging the code.
-
-2️⃣ Reorganize existing code to match architecture
-
-Only after you know what you have.
-
-Why second:
-If your structure is off, everything you add later gets messy fast.
-
-This is where you:
-
-Align files with responsibilities (db, state, AI, features)
-Remove duplicate logic
-Untangle tight coupling (UI ↔ logic ↔ data)
-
-Important:
-Do NOT add features here. This is structural surgery, not expansion.
-
-👉 Goal: “Everything has a clear home and role.”
-
-3️⃣ Fill in missing steps (Phases 12–14 or gaps)
-
-Now you build—but only what’s actually missing.
-
-Why third:
-Now that:
-
-you know what exists (audit)
-and it’s structured cleanly (reorg)
-
-…you can safely add without breaking things.
-
-Focus on:
-
-Missing core pieces (state gaps, caching, AI validation, etc.)
-Then later-stage items (testing, CI/CD, SaaS)
-
-👉 This is the first time you’re adding net-new capability.
-
-4️⃣ Create the roadmap document (LAST)
-
-This surprises people, but doing it earlier is mostly fiction.
-
-Why last:
-
-Before audit → it’s guesswork
-Before reorg → it won’t match reality
-Before filling gaps → it becomes outdated immediately
-
-Now you can produce a roadmap that is:
-
-accurate
-grounded in actual code
-executable
-
-👉 This becomes your living control document, not a wish list.
-
-🧭 Final Order (Clean + Simple)
-Audit → understand reality
-Reorganize → fix structure
-Fill gaps → build what’s missing
-Document roadmap → lock it in

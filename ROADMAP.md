@@ -1,283 +1,175 @@
 # Main - Living Roadmap
 
-> This document tracks the current state and future direction of the Main project.
-> Last updated: April 21, 2026
+Last updated: 2026-04-26
 
----
+This roadmap is grounded in the current repository state after audit. Keep `TODO.md` as the execution queue and this file as the phase-level plan.
 
-## ✅ Completed Work
+## Product direction
 
-### Phase 1: Audit & Reorganization
-- [x] Audited codebase and mapped to roadmap phases
-- [x] Aligned files with responsibilities (core, data, logic, features, ui, utils, advanced, native, auth)
-- [x] Updated all import statements to reflect new structure
-- [x] Removed duplicate logic (ingredient parser extracted to shared utility)
-- [x] Untangled tight coupling between UI, logic, and data layers
+Main is a smart meal planning PWA with Capacitor-based native packaging. The durable product bet is:
 
-### Phase 2: Core Infrastructure
-- [x] **Persistence**: IndexedDB is single source of truth
-  - Core data (pantry, mealPlan, preferences, recipeRatings) uses IndexedDB
-  - localStorage only for non-critical caching (AI cache, offline queues)
-- [x] **State Management**: Pub-sub pattern in appState.js
-  - In-memory state synced to IndexedDB
-  - Async load/save functions
-  - Subscribe/notify for state changes
-- [x] **AI Layer**: Response validation added to geminiAI.js
-  - Validates suggestions, meal plans, and chat responses
-  - Prevents hallucinations with structured validation
+1. reliable offline-first pantry and meal planning;
+2. deterministic local recipe matching and shopping-list generation;
+3. optional AI assistance that never replaces local data integrity;
+4. native mobile polish after web/PWA reliability is proven.
 
-### Phase 3: Testing
-- [x] Unit tests: ingredientVectors, costTracker, ingredientParser, budgetMealPlanner, groceryDelivery, mealPrepPlanner, nutritionGoals, pushNotifications, deviceSyncManager
-- [x] 9 comprehensive test suites with 70+ JS files tested
-- [x] E2E tests: basic navigation, pantry, meals
-- [x] Offline E2E tests: cached app shell, data persistence, AI fallback
+## Audit baseline
 
-### Phase 4: Stability & Resilience (Complete)
-- [x] **Advanced Caching**: `cacheManager.js` with TTL + LRU eviction
-  - `aiCache` (30min TTL) and `apiCache` (5min TTL) singletons
-  - LRU eviction when capacity exceeded
-  - Clear boundary: cache never affects IndexedDB state
-- [x] **Background Sync**: `syncProcessor.js` + `mutationQueue.js`
-  - Durable mutation queue in IndexedDB
-  - Auto-sync every 30s when online
-  - Exponential backoff: 1s → 2s → 4s → 8s → 16s (max 30s)
-  - Max 5 retries, then marks failed
-- [x] **Data Migration**: `migrationManager.js`
-  - Schema version tracking
-  - Rollback capabilities
-  - Migration history stored in preferences
-- [x] **Mutation Handlers**: `mutationHandlers.js`
-  - ADD_ITEM, UPDATE_ITEM, DELETE_ITEM handlers
-  - Integrates with appState for state refresh
+### Confirmed architecture
 
----
-
-## 🏗️ Current Architecture
-
-```
+```text
 www/js/
-├── core/
-│   └── appState.js          # In-memory state + pub-sub
-├── data/
-│   ├── db.js                # IndexedDB single source of truth
-│   ├── dataManager.js       # Recipe/ingredient loading
-│   ├── storageManager.js    # Storage utilities
-│   ├── mutationQueue.js     # Durable mutation queue
-│   ├── syncProcessor.js     # Background sync with retry
-│   ├── migrationManager.js  # Schema evolution
-│   ├── mutationHandlers.js  # Mutation type handlers
-│   └── deviceSyncManager.js # Cross-device sync engine
-├── logic/
-│   ├── ingredientVectors.js # Recipe similarity (tested)
-│   ├── recipeEngine.js      # Recipe operations
-│   ├── costTracker.js       # Budget tracking (tested)
-│   └── searchIndex.js       # Search functionality
-├── features/
-│   ├── pantry/              # Pantry management
-│   │   ├── pantryManager.js
-│   │   ├── leftoverTracker.js
-│   │   ├── seasonalIngredients.js
-│   │   └── wasteReduction.js
-│   ├── meals/               # Meal planning
-│   │   ├── mealPlanner.js
-│   │   └── personalizedRecommendations.js
-│   ├── plan/                # Meal plan templates
-│   │   ├── budgetMealPlanner.js (tested)
-│   │   ├── mealPrepPlanner.js (tested)
-│   │   ├── mealPlanSharing.js
-│   │   └── mealPlanTemplates.js
-│   ├── nutrition/           # Nutrition tracking
-│   │   ├── nutritionGoals.js (tested)
-│   │   ├── nutritionDashboard.js
-│   │   └── mealHistoryAnalytics.js
-│   ├── grocery/             # Grocery delivery
-│   │   └── groceryDelivery.js (tested)
-│   └── preferencesManager.js
-├── ai/
-│   └── geminiAI.js          # AI with validation, caching, rate limiting
-├── ui/
-│   ├── uiManager.js         # UI coordination
-│   └── components/          # Reusable UI components
-│       └── NutritionDashboard.js
-├── utils/
-│   ├── ingredientParser.js  # Shared parsing logic (tested)
-│   ├── networkRetry.js      # Network resilience
-│   ├── cacheManager.js      # TTL + LRU caching
-│   ├── backgroundSync.js    # Background sync utilities
-│   ├── pushNotifications.js # Push notification utilities
-│   ├── analytics.js         # Analytics tracking
-│   ├── errorTracking.js     # Error monitoring
-│   ├── abTesting.js         # A/B testing framework
-│   ├── autoRefresh.js       # Auto-refresh functionality
-│   ├── androidBackButton.js # Android back button handling
-│   ├── deepLinking.js       # Deep link handling
-│   ├── dietFilters.js       # Diet filtering utilities
-│   ├── shareSheet.js        # Share sheet functionality
-│   └── config.js            # Configuration
-├── native/
-│   ├── androidIntents.js    # Android intents integration
-│   ├── nativePush.js        # Native push notifications
-│   ├── siriShortcuts.js     # Siri shortcuts integration
-│   └── widgetManager.js     # Widget management
-├── auth/
-│   ├── authManager.js       # Authentication management
-│   └── googleAuthProvider.js # Google auth provider
-├── advanced/
-│   ├── authManager.js       # Advanced auth features
-│   ├── barcodeScanner.js    # Barcode scanning
-│   ├── communityRecipes.js # Community recipe features
-│   ├── crossDeviceSync.js   # Cross-device sync
-│   ├── groceryDelivery.js   # Grocery delivery integration
-│   ├── pushNotifications.js # Advanced push notifications
-│   ├── receiptScanner.js    # Receipt scanning
-│   └── recipeImages.js     # Recipe image handling
-└── __tests__/
-    ├── budgetMealPlanner.test.js
-    ├── costTracker.test.js
-    ├── deviceSyncManager.test.js
-    ├── groceryDelivery.test.js
-    ├── ingredientParser.test.js
-    ├── ingredientVectors.test.js
-    ├── mealPrepPlanner.test.js
-    ├── nutritionGoals.test.js
-    └── pushNotifications.test.js
+├── core/        # State layer
+├── data/        # IndexedDB, migrations, queues, sync processors
+├── logic/       # Recipe scoring, parsing, search, cost logic
+├── features/    # Pantry, meals, planning, nutrition, grocery, preferences
+├── ai/          # Gemini-backed assistant layer
+├── ui/          # UI coordination and components
+├── utils/       # Shared platform/caching/network helpers
+├── native/      # Capacitor native integrations
+├── auth/        # Authentication
+├── advanced/    # Incubating SaaS/native/community features
+└── __tests__/   # Unit and integration tests
 ```
 
----
+### Confirmed tooling
 
-## 🎯 Future Phases
+- `npm` scripts exist for data build, Jest, Playwright, ESLint, Prettier, Capacitor sync, and native builds.
+- GitHub Actions and GitLab CI configs exist.
+- Playwright is configured to serve `www/` on port 8080.
+- Jest is configured for `jsdom` with module aliases and coverage thresholds.
 
-### Phase 5: Feature Expansion (Complete)
-- [x] **Nutrition goals tracking** - Complete
-  - `nutritionGoals.js` with persistent goal storage
-  - 5 dietary presets (balanced, lowCarb, highProtein, weightLoss, keto)
-  - Progress calculation with smart status
-  - Integrates with existing nutrition dashboard
-  - 15 unit tests
-- [x] **Budget meal planning** - Complete
-  - `budgetMealPlanner.js` with 3 budget tiers (low/medium/high)
-  - Per-serving cost estimation with 40+ ingredient substitutions
-  - Weekly plan generation within budget constraints
-  - Integrates with existing CostTracker
-  - 23 unit tests
-- [x] **Meal prep planning** - Complete
-  - `mealPrepPlanner.js` with 3 strategies (component/batch/hybrid)
-  - Smart scheduling with parallel task optimization
-  - Storage guidelines and reheating instructions
-  - 33 unit tests
-- [x] **Grocery delivery integration** - Complete
-  - `groceryDelivery.js` with 5 provider integrations
-  - Price comparison and cart export
-  - Multi-format export (CSV, text, direct URLs)
-  - 34 unit tests
-- [x] **Personalized recommendations** - Complete
-  - `personalizedRecommendations.js` for AI-powered meal suggestions
-- [x] **Meal history analytics** - Complete
-  - `mealHistoryAnalytics.js` for nutrition tracking over time
-- [x] **Waste reduction** - Complete
-  - `wasteReduction.js` for tracking and reducing food waste
-- [x] **Seasonal ingredients** - Complete
-  - `seasonalIngredients.js` for seasonal ingredient suggestions
-- [x] **Leftover tracking** - Complete
-  - `leftoverTracker.js` for managing leftovers
-- [x] **Meal plan sharing** - Complete
-  - `mealPlanSharing.js` for sharing meal plans
-- [x] **Meal plan templates** - Complete
-  - `mealPlanTemplates.js` for reusable meal plan templates
+### Key risks found
 
-### Phase 6: Cross-Device Sync (Complete)
-- [x] **Sync engine** with conflict resolution
-  - `deviceSyncManager.js` with device registration and vector clocks
-  - 5 strategies: last-write-wins, merge-arrays, max-value, min-value, manual
-  - Data export/import for backup and migration
-  - 35 unit tests
-- [x] **Push notifications** for all major events
-  - `pushNotifications.js` with 5 notification types
-  - Meal prep, expiration, grocery, nutrition, sync complete
-  - Service Worker integration for background delivery
-  - 31 unit tests
-- [x] **Auth foundation** - Complete
-  - `authManager.js` for authentication management
-  - `googleAuthProvider.js` for Google authentication
-  - QR code pairing for new devices
-  - Recovery codes for device loss
-
-### Phase 7: Native Platform (Complete)
-- [x] iOS native features (widgets, Siri shortcuts)
-  - iOS 14+ widget with App Group data sharing
-  - Siri shortcuts for adding ingredients/meals
-  - `siriShortcuts.js` for Siri integration
-- [x] Android native features (widgets, intents)
-  - Android 12+ widget with SharedPreferences
-  - Google Assistant intents (actions.xml, deep link handling)
-  - `androidIntents.js` for Android intents
-- [x] Push notification scheduling
-  - Native triggers (UNCalendarNotificationTrigger / AlarmManager)
-  - Platform-specific scheduling for precise timing
-  - `nativePush.js` for native push notifications
-  - `widgetManager.js` for widget management
-
-### Phase 8: Testing Infrastructure (In Progress)
-- [x] Unit test expansion
-  - `recipeEngine.test.js` - 13 tests for RecipeEngine class
-  - `integration.offline-sync.test.js` - 10 tests for offline sync flow
-  - 248 unit tests passing across 11 test suites
-- [ ] CI/CD automation
-  - `.github/workflows/ci.yml` pending (GitHub OAuth `workflow` scope required)
-  - Enable Jest + Playwright checks on push/PR once workflow is committed
-- [x] Code quality tools
-  - ESLint configuration (.eslintrc.json)
-  - Prettier configuration (.prettierrc)
-  - Updated jest.setup.js with mockMutations Map for mutation queue operations
-- [x] Test scripts
-  - `test:coverage` - Generate coverage reports
-  - `test:watch` - Watch mode for development
-  - `lint` / `lint:fix` - Code linting
-  - `format` / `format:check` - Code formatting
-- [ ] E2E selector fixes
-  - Add data-testid attributes to HTML elements
-  - Update E2E tests to use getByTestId() selectors
-  - Run E2E tests 3x consecutively for stability
-
-#### Remaining Tasks (Dependency Order)
-1. Add missing `data-testid` attributes in UI.
-2. Refactor E2E tests to `getByTestId()`.
-3. Run E2E suite 3 times consecutively with zero failures.
-4. Re-add `.github/workflows/ci.yml` after enabling GitHub `workflow` scope.
-5. Verify PR pipeline runs unit + E2E checks successfully.
-
-### Phase 9: Community (Post-MVP)
-- [ ] **Community recipes** (requires backend + auth)
-- [ ] Recipe sharing and ratings
-- [ ] Social features
+- Clean dependency installation is blocked by a Capacitor peer dependency conflict.
+- CI currently depends on `npm ci`, so CI health is tied to the dependency conflict.
+- `node_modules/` is tracked in git.
+- `npm audit --production` reports one high-severity vulnerability in `@xmldom/xmldom`.
+- Offline E2E tests use port 3000 while the app/test server uses port 8080.
+- Service worker registration was not found in app startup code.
+- Some advanced modules reference IndexedDB stores that are not created by the current DB upgrade path.
+- Several dynamic rendering paths use `innerHTML` with data that may become user- or AI-sourced.
+- Native Android scripts contain machine-specific absolute paths.
 
 ---
 
-## 📝 Notes
+## Phase 1: Dependency and CI stabilization
 
-- All high-priority structural work is complete
-- Codebase is now maintainable and extensible
-- Project structure: 70 JS files across 12 directories (core, data, logic, features, ai, ui, utils, native, auth, advanced, __tests__)
-- Test coverage: 11 comprehensive test suites with 248 tests passing (100%)
-  - budgetMealPlanner, costTracker, deviceSyncManager, groceryDelivery, ingredientParser, ingredientVectors, mealPrepPlanner, nutritionGoals, pushNotifications, recipeEngine, integration.offline-sync
-- AI validation prevents malformed responses
-- Phase 4 (resilience) complete - system handles stress
-- Phase 5 (features) complete - comprehensive feature expansion with 11 major features
-- Phase 6 (sync) complete - cross-device sync + push notifications + auth foundation
-- Phase 7 (native platform) complete - iOS/Android widgets, Siri shortcuts, Google Assistant, native push
-- Phase 8 (testing infrastructure) in progress - unit tests expanded, CI/CD automation, code quality tools
-- Native platform integration with dedicated native/ and auth/ directories
-- Advanced features directory with SaaS-ready modules (barcode scanning, receipt scanning, community recipes)
+Goal: every contributor and CI runner can install, lint, test, and audit the repo from a clean checkout.
 
-### Recent Updates (April 21, 2026)
-- **Rebranding**: Complete migration from "PantryAI" to "main" brand across all files (index.html, README.md, build_dataset.py, e2e tests)
-- **Mobile UI Refactor**: Portrait-only mobile app with bottom navigation bar (5 tabs: Pantry, Meals, Plan, Shop, Nutrition)
-- **Meal Randomizer**: New ingredient-based meal plan generator with:
-  - Pantry vs random ingredient source selector
-  - 6 nutrition filters (calories, protein, carbs, fat, time, difficulty)
-  - Configurable ingredient count for variety
-  - Week-long meal plan generation
+### Work
+
+- Resolve the `@codetrix-studio/capacitor-google-auth` and Capacitor 8 peer conflict.
+- Remove tracked `node_modules/` from git.
+- Pick and document a supported Node version for local development and CI.
+- Update GitHub Actions to current action versions.
+- Make `npm ci` the only install path in CI.
+- Replace deprecated `npm audit --production` with `npm audit --omit=dev`.
+- Resolve or document the `@xmldom/xmldom` high-severity audit finding.
+
+### Exit criteria
+
+- `npm ci` succeeds without `--legacy-peer-deps`.
+- `npm run lint`, `npm run test -- --runInBand`, and `npm audit --omit=dev` pass locally.
+- GitHub Actions passes on pull requests.
 
 ---
 
-*This is a living document. Update as the project evolves.*
+## Phase 2: Test reliability and offline correctness
+
+Goal: core user journeys are stable in automated tests and offline mode is real, not aspirational.
+
+### Work
+
+- Add stable `data-testid` attributes for primary navigation, pantry add flow, meal cards, shopping list, and AI chat controls.
+- Update Playwright specs to use `getByTestId()`.
+- Fix `offline.spec.js` to use the Playwright `baseURL` instead of hard-coded port 3000.
+- Register the service worker from app startup.
+- Add test isolation for IndexedDB/cache state between E2E cases.
+- Run E2E three consecutive times before marking the suite stable.
+
+### Exit criteria
+
+- `npm run test:e2e` passes three times consecutively.
+- Offline cached app shell and persisted pantry data are covered by Playwright.
+- README documents the verified local test workflow.
+
+---
+
+## Phase 3: Data model and backend contracts
+
+Goal: advanced features have explicit data stores and API contracts before more product work is layered on them.
+
+### Work
+
+- Add missing IndexedDB stores/migrations for community recipe and saved recipe data.
+- Define sync API contracts for pantry, preferences, meal plans, recipe ratings, and conflict resolution.
+- Define push token registration/update/delete contracts.
+- Define community recipe submission/moderation/reporting contracts.
+- Decide which features remain local-first and which require authenticated backend state.
+
+### Exit criteria
+
+- Every shipped module references only stores that exist in the DB schema.
+- Placeholder server methods are backed by documented contracts or hidden behind feature flags.
+- Sync/community/push tests cover happy path and failure path behavior.
+
+---
+
+## Phase 4: Security, privacy, and rendering hardening
+
+Goal: user, AI, and recipe data are safely rendered and sensitive config is not exposed accidentally.
+
+### Work
+
+- Replace unsafe dynamic HTML rendering with DOM construction or escaping helpers.
+- Review AI responses before rendering and preserve validation boundaries.
+- Move OAuth/client configuration to documented environment/build config.
+- Review analytics/session identifiers stored in localStorage.
+- Add a security checklist to release docs.
+
+### Exit criteria
+
+- User- and AI-sourced strings are escaped before rendering.
+- No secrets or private tokens are committed.
+- Auth/session/cache persistence choices are documented.
+
+---
+
+## Phase 5: Native release readiness
+
+Goal: Android/iOS builds are reproducible outside one developer machine.
+
+### Work
+
+- Replace hard-coded Android Studio/JDK/SDK paths with environment variables or local config.
+- Document Android and iOS build prerequisites.
+- Add native smoke-test steps for Android and iOS.
+- Validate Capacitor sync/build after dependency stabilization.
+- Confirm native push, widgets, Siri shortcuts, Android intents, and Google Assistant features on device or emulator.
+
+### Exit criteria
+
+- Native scripts run on a fresh configured machine.
+- Android debug build is reproducible.
+- iOS build instructions are complete for macOS maintainers.
+
+---
+
+## Phase 6: Product expansion
+
+Goal: add user-visible value only after install, CI, tests, and data contracts are stable.
+
+### Candidate work
+
+- Backend-backed cross-device sync.
+- Community recipe discovery and moderation.
+- Grocery provider integrations beyond export links.
+- Barcode/receipt scanning refinement.
+- Nutrition goals and meal-history insights.
+- Cooking mode with voice/native assistant integrations.
+- Gradual TypeScript adoption for core/data/logic modules.
+
+### Exit criteria
+
+- Each expansion feature has a design note, data contract, tests, and rollback path before implementation.
