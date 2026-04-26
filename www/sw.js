@@ -1,12 +1,12 @@
-const CACHE_NAME = 'main-v4';
-const STATIC_CACHE = 'main-static-v4';
-const DATA_CACHE = 'main-data-v4';
+const CACHE_NAME = 'main-v5';
+const STATIC_CACHE = 'main-static-v5';
+const DATA_CACHE = 'main-data-v5';
 
 const staticUrlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json?v=4',
-  '/css/output.css?v=4'
+  '/manifest.json?v=5',
+  '/css/output.css?v=5'
 ];
 
 // Install: Cache static assets
@@ -24,7 +24,7 @@ self.addEventListener('install', event => {
       );
     }).then(() => caches.open(STATIC_CACHE))
       .then(cache => {
-        console.log('[SW] Caching static assets v4');
+        console.log('[SW] Caching static assets v5');
         return cache.addAll(staticUrlsToCache);
       })
       .catch(err => console.error('[SW] Cache failed:', err))
