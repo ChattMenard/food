@@ -74,7 +74,17 @@ export class MealPlanner {
                 if (difficulty === 'hard' && r.minutes < 45) continue;
             }
 
-            const matched = r.ingredients.filter(ing => pantryNames.some(p => ing.includes(p) || p.includes(ing))).length;
+            const matched = r.ingredients.filter(ing => {
+                const ingWords = ing.toLowerCase().split(/\s+/);
+                return pantryNames.some(p => {
+                    const pantryWords = p.split(/\s+/);
+                    // Check if all pantry words are in ingredient (e.g., "peanut butter" matches "peanut butter")
+                    // OR if all ingredient words are in pantry (e.g., "butter" matches "unsalted butter")
+                    const pantryMatchesIng = pantryWords.every(pw => ingWords.includes(pw));
+                    const ingMatchesPantry = ingWords.every(iw => pantryWords.includes(iw));
+                    return pantryMatchesIng || ingMatchesPantry;
+                });
+            }).length;
             const ratio = matched / r.ingredients.length;
             const hasAll = matched === r.ingredients.length;
             scored.push({ r, matched, missing: r.ingredients.length - matched, ratio, hasAll, ingredientCount: r.ingredients.length });
