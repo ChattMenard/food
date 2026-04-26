@@ -462,25 +462,44 @@ class MainDataBuilder:
         with (output / "search_index.json").open("w", encoding="utf-8") as handle:
             json.dump(search_index, handle)
 
-        # Mobile-friendly recipes.json: cap at 20K highest-rated recipes to
-        # avoid crashing WebView on Android/iOS (full dataset is in the gzip).
-        MOBILE_CAP = 20000
-        top_recipes = sorted(enhanced_recipes, key=lambda r: (r["rating"], r["review_count"]), reverse=True)[:MOBILE_CAP]
         legacy_recipes = [
             {
                 "id": recipe["id"],
                 "name": recipe["name"],
                 "ingredients": recipe["ingredients_clean"],
+                "steps": recipe["steps"],
                 "time": recipe["minutes"],
                 "servings": recipe["servings"],
                 "category": recipe["cuisine"],
                 "rating": round(recipe["rating"], 1),
+                "nutrition": recipe["nutrition"],
             }
-            for recipe in top_recipes
+            for recipe in enhanced_recipes
         ]
         with (output / "recipes.json").open("w", encoding="utf-8") as handle:
             json.dump(legacy_recipes, handle)
-        print(f"  recipes.json: {len(legacy_recipes):,} recipes (mobile-friendly subset)")
+
+        # Chunked gzip output for progressive mobile loading.
+        # Each chunk is small enough for mobile WebView to handle via fetch().
+        CHUNK_SIZE = 15000
+        chunks_dir = output / "chunks"
+        chunks_dir.mkdir(parents=True, exist_ok=True)
+        # Remove old chunks
+        for old_chunk in chunks_dir.glob("recipes_*.json.gz"):
+            old_chunk.unlink()
+        total_chunks = (len(enhanced_recipes) + CHUNK_SIZE - 1) // CHUNK_SIZE
+        for i in range(total_chunks):
+            chunk = enhanced_recipes[i * CHUNK_SIZE : (i + 1) * CHUNK_SIZE]
+            chunk_path = chunks_dir / f"recipes_{i}.json.gz"
+            with gzip.open(chunk_path, "wt", encoding="utf-8") as handle:
+                json.dump(chunk, handle, separators=(",", ":"))
+            chunk_size_mb = chunk_path.stat().st_size / (1024 * 1024)
+            print(f"  chunk {i}: {len(chunk):,} recipes ({chunk_size_mb:.1f} MB)")
+
+        # Write manifest so the app knows how many chunks exist
+        manifest = {"total_chunks": total_chunks, "total_recipes": len(enhanced_recipes), "chunk_size": CHUNK_SIZE}
+        with (chunks_dir / "manifest.json").open("w", encoding="utf-8") as handle:
+            json.dump(manifest, handle)
 
         with (output / "ingredients.json").open("w", encoding="utf-8") as handle:
             json.dump(sorted(common_ingredients.keys()), handle)
@@ -491,6 +510,7 @@ class MainDataBuilder:
         print(f"  {output / 'ingredients_enhanced.json'}")
         print(f"  {output / 'nutrition_index.json'}")
         print(f"  {output / 'search_index.json'}")
+        print(f"  {total_chunks} chunks in {chunks_dir}/")
         
         # Validate the built dataset
         validate_dataset(enhanced_recipes, strict=True)

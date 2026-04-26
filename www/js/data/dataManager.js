@@ -118,37 +118,68 @@ export class DataManager {
     return JSON.parse(text);
   }
 
-  getRecipeSources() {
-    // Native first: keep startup lighter on Android/iOS.
-    if (this.isNativePlatform()) {
-      return [
-        'data/recipes.json',
-        'data/recipes_enhanced.json',
-        'data/recipes_enhanced_gzip.json.gz',
-      ];
+  async loadChunkedRecipes(onChunkLoaded) {
+    const manifest = await this.fetchJson('data/chunks/manifest.json');
+    const { total_chunks } = manifest;
+
+    // Load chunk 0 first for immediate display
+    const firstChunk = await this.fetchGzipJson('data/chunks/recipes_0.json.gz');
+    let allRecipes = [...firstChunk];
+    if (onChunkLoaded) onChunkLoaded(allRecipes, 1, total_chunks);
+
+    // Load remaining chunks in background
+    for (let i = 1; i < total_chunks; i++) {
+      try {
+        const chunk = await this.fetchGzipJson(`data/chunks/recipes_${i}.json.gz`);
+        allRecipes = allRecipes.concat(chunk);
+        if (onChunkLoaded) onChunkLoaded(allRecipes, i + 1, total_chunks);
+      } catch (err) {
+        console.warn(`Failed to load chunk ${i}:`, err);
+      }
     }
-    // Web first: prefer compressed enhanced dataset for better transfer performance.
-    return [
-      'data/recipes_enhanced_gzip.json.gz',
-      'data/recipes.json',
-      'data/recipes_enhanced.json',
-    ];
+    return allRecipes;
   }
 
   async loadRecipesFromSources() {
-    const sources = this.getRecipeSources();
-    for (const source of sources) {
+    // On native mobile, use chunked loading so we never fetch >7MB at once
+    if (this.isNativePlatform()) {
+      try {
+        return await this.loadChunkedRecipes();
+      } catch (_err) {
+        console.warn('Chunked loading failed, trying fallbacks');
+      }
+      // Fallback chain for native
+      for (const source of ['data/recipes.json', 'data/recipes_enhanced_gzip.json.gz']) {
+        try {
+          const recipes = source.endsWith('.gz')
+            ? await this.fetchGzipJson(source)
+            : await this.fetchJson(source);
+          if (Array.isArray(recipes) && recipes.length) return recipes;
+        } catch (error) {
+          console.warn(`Recipe source unavailable: ${source}`, error);
+        }
+      }
+    }
+
+    // Web: prefer full gzip, fallback to chunks, then plain JSON
+    for (const source of ['data/recipes_enhanced_gzip.json.gz', 'data/recipes.json']) {
       try {
         const recipes = source.endsWith('.gz')
           ? await this.fetchGzipJson(source)
           : await this.fetchJson(source);
-        if (Array.isArray(recipes) && recipes.length) {
-          return recipes;
-        }
+        if (Array.isArray(recipes) && recipes.length) return recipes;
       } catch (error) {
         console.warn(`Recipe source unavailable: ${source}`, error);
       }
     }
+
+    // Last resort: try chunked loading on web too
+    try {
+      return await this.loadChunkedRecipes();
+    } catch (_err) {
+      // fall through
+    }
+
     throw new Error('No recipe dataset could be loaded');
   }
 
