@@ -535,6 +535,94 @@
 
         /* Hide legacy nav dropdown entirely */
         .nav-dropdown { display: none !important; }
+
+        /* Theme toggle */
+        .theme-toggle svg { width: 18px; height: 18px; }
+        .theme-toggle .icon-moon { display: none; }
+        [data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+        [data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+
+        /* Dark mode */
+        [data-theme="dark"] {
+            --bg: #111827;
+            --card: #1f2937;
+            --text: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: #374151;
+            --brand-light: #7c2d12;
+        }
+        [data-theme="dark"] .app-header {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        }
+        [data-theme="dark"] .icon-btn {
+            background: #1f2937;
+            border-color: #374151;
+        }
+        [data-theme="dark"] .icon-btn:active { background: #374151; }
+        [data-theme="dark"] .tabbar {
+            background: rgba(17,24,39,0.95);
+        }
+        [data-theme="dark"] .field {
+            background: #1f2937;
+            border-color: #374151;
+        }
+        [data-theme="dark"] select.field {
+            background-color: #1f2937;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23f97316' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+        [data-theme="dark"] .btn-secondary {
+            background: #1f2937;
+            border-color: #374151;
+        }
+        [data-theme="dark"] .meal-card,
+        [data-theme="dark"] .day-row,
+        [data-theme="dark"] .tile,
+        [data-theme="dark"] .list-item,
+        [data-theme="dark"] .nutri-row,
+        [data-theme="dark"] #ingredient-suggestions button {
+            background: #1f2937;
+            border-color: #374151;
+        }
+        [data-theme="dark"] #ingredient-suggestions {
+            background: #1f2937;
+            border-color: #374151;
+        }
+        [data-theme="dark"] #ingredient-suggestions button:hover { background: #374151; }
+        [data-theme="dark"] .card-gradient-purple {
+            background: linear-gradient(135deg, #2e1065 0%, #1e1b4b 100%);
+            border-color: #6d28d9;
+        }
+        [data-theme="dark"] .card-gradient-amber {
+            background: linear-gradient(135deg, #78350f 0%, #7c2d12 100%);
+            border-color: #b45309;
+        }
+        [data-theme="dark"] .card-gradient-green {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            border-color: #059669;
+        }
+        [data-theme="dark"] .card-gradient-teal {
+            background: linear-gradient(135deg, #134e4a 0%, #115e59 100%);
+            border-color: #0d9488;
+        }
+        [data-theme="dark"] .card-gradient-rose {
+            background: linear-gradient(135deg, #4c0519 0%, #881337 100%);
+            border-color: #e11d48;
+        }
+        [data-theme="dark"] .chip {
+            background: #374151;
+            border-color: #4b5563;
+        }
+        [data-theme="dark"] .pill {
+            background: #1f2937;
+            border-color: #374151;
+        }
+        [data-theme="dark"] .nutri-bar { background: #374151; }
+        [data-theme="dark"] .modal-sheet { background: #1f2937; }
+        [data-theme="dark"] .modal-handle { background: #4b5563; }
+        [data-theme="dark"] .landscape-lock { background: #111827; }
+        [data-theme="dark"] #ingredient-suggestions button { border-bottom-color: #374151; }
     </style>
 </head>
 <body>
@@ -555,8 +643,9 @@
                     <span class="app-title">main</span>
                 </div>
                 <div class="header-actions">
-                    <button class="icon-btn" onclick="openSettings()" aria-label="Settings" title="Settings">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">
+                        <svg class="icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.95l-.71.71M21 12h-1M4 12H3m16.66 7.66l-.71-.71M4.05 4.05l-.71-.71M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <svg class="icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                     </button>
                     <button class="icon-btn" onclick="signInAction()" id="auth-btn" aria-label="Sign in" title="Sign in">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -624,7 +713,12 @@
             <section class="screen" id="tab-meals">
                 <div class="screen-header">
                     <h1 class="screen-title">Meals</h1>
-                    <span class="screen-sub"><span id="meals-badge">0</span> matches</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="screen-sub"><span id="meals-badge">0</span> matches</span>
+                        <button class="icon-btn" onclick="openSettings()" aria-label="Meal settings" title="Meal settings" style="width:30px; height:30px; border-radius:8px;">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px; height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Filter pills -->
@@ -1050,6 +1144,43 @@
                 window.updatePreferences?.();
             });
         });
+    </script>
+
+    <!-- Theme toggle (dark mode) -->
+    <script>
+        (function() {
+            var themeMeta = document.querySelector('meta[name="theme-color"]');
+
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                if (themeMeta) themeMeta.content = theme === 'dark' ? '#111827' : '#f97316';
+            }
+
+            // Resolve initial theme: saved > system > light
+            var saved = localStorage.getItem('theme');
+            if (saved) {
+                applyTheme(saved);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            }
+
+            // Listen for system theme changes (auto-follow when user hasn't manually toggled)
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                    if (!localStorage.getItem('theme-manual')) {
+                        applyTheme(e.matches ? 'dark' : 'light');
+                    }
+                });
+            }
+
+            window.toggleTheme = function() {
+                var current = document.documentElement.getAttribute('data-theme');
+                var next = current === 'dark' ? 'light' : 'dark';
+                applyTheme(next);
+                localStorage.setItem('theme-manual', '1');
+            };
+        })();
     </script>
 </body>
 </html>
