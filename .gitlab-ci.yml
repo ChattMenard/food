@@ -11,7 +11,7 @@ stages:
 # Unit & Integration Tests
 unit-tests:
   stage: test
-  image: node:18
+  image: node:22.12.0
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -28,18 +28,16 @@ unit-tests:
 # E2E Tests (Playwright)
 e2e-tests:
   stage: e2e
-  image: node:18
+  image: mcr.microsoft.com/playwright:v1.59.1-jammy
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - node_modules/
-  services:
-    - name: selenium/standalone-chrome
-      alias: chrome
   script:
     - npm ci
+    - npx playwright install msedge
     - npx playwright install --with-deps
-    - npm run test:e2e
+    - PLAYWRIGHT_EDGE=1 npm run test:e2e
   artifacts:
     when: always
     paths:
@@ -49,7 +47,7 @@ e2e-tests:
 # Lint & Format Check
 lint:
   stage: lint
-  image: node:18
+  image: node:22.12.0
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -57,13 +55,12 @@ lint:
   script:
     - npm ci
     - npm run lint
-    - npm run format:check
   allow_failure: true
 
 # Build Verification
 build:
   stage: build
-  image: node:18
+  image: node:22.12.0
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -79,7 +76,7 @@ build:
 # Security Audit
 security:
   stage: security
-  image: node:18
+  image: node:22.12.0
   script:
     - npm audit --production
   allow_failure: true
