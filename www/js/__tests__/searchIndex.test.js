@@ -9,18 +9,18 @@ describe('SearchIndex', () => {
       {
         id: 1,
         name: 'Spaghetti Carbonara',
-        ingredients: ['spaghetti', 'eggs', 'bacon', 'parmesan']
+        ingredients: ['spaghetti', 'eggs', 'bacon', 'parmesan'],
       },
       {
         id: 2,
         name: 'Chicken Alfredo',
-        ingredients: ['chicken', 'fettuccine', 'cream', 'parmesan']
+        ingredients: ['chicken', 'fettuccine', 'cream', 'parmesan'],
       },
       {
         id: 3,
         name: 'Vegetable Stir Fry',
-        ingredients: ['broccoli', 'carrots', 'soy sauce', 'rice']
-      }
+        ingredients: ['broccoli', 'carrots', 'soy sauce', 'rice'],
+      },
     ];
     searchIndex = new SearchIndex(recipes);
   });
@@ -57,8 +57,8 @@ describe('SearchIndex', () => {
     it('builds index from ingredients', () => {
       const results = searchIndex.search('parmesan');
       expect(results).toHaveLength(2);
-      expect(results.map(r => r.id)).toContain(1);
-      expect(results.map(r => r.id)).toContain(2);
+      expect(results.map((r) => r.id)).toContain(1);
+      expect(results.map((r) => r.id)).toContain(2);
     });
 
     it('handles multiple terms in search', () => {
@@ -120,12 +120,12 @@ describe('SearchIndex', () => {
         {
           id: 4,
           name: 'Taco Salad',
-          ingredients: ['taco', 'lettuce', 'tomato', 'cheese']
-        }
+          ingredients: ['taco', 'lettuce', 'tomato', 'cheese'],
+        },
       ];
-      
+
       searchIndex.updateRecipes(newRecipes);
-      
+
       const results = searchIndex.search('taco');
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe(4);
@@ -136,12 +136,12 @@ describe('SearchIndex', () => {
         {
           id: 4,
           name: 'New Recipe',
-          ingredients: ['ingredient']
-        }
+          ingredients: ['ingredient'],
+        },
       ];
-      
+
       searchIndex.updateRecipes(newRecipes);
-      
+
       const results = searchIndex.search('spaghetti');
       expect(results).toEqual([]);
     });

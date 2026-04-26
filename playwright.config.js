@@ -5,6 +5,9 @@
 
 import { defineConfig, devices } from '@playwright/test';
 
+const webServerCommand =
+    process.env.PLAYWRIGHT_WEB_SERVER_CMD || 'python3 -m http.server 8080 --directory www';
+
 export default defineConfig({
     testDir: './e2e',
     fullyParallel: true,
@@ -41,7 +44,7 @@ export default defineConfig({
         }
     ],
     webServer: {
-        command: 'npm start',
+        command: webServerCommand,
         url: 'http://localhost:8080',
         reuseExistingServer: !process.env.CI,
         timeout: 120000

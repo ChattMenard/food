@@ -63,7 +63,10 @@ describe('checkStorageQuota & isStorageNearQuota', () => {
   });
 
   it('falls back to zeros when storage API missing', async () => {
-    Object.defineProperty(global, 'navigator', { value: {}, configurable: true });
+    Object.defineProperty(global, 'navigator', {
+      value: {},
+      configurable: true,
+    });
     const result = await checkStorageQuota();
     expect(result).toEqual({ usage: 0, quota: 0, usagePercentage: 0 });
   });
@@ -102,10 +105,10 @@ describe('clearOldCaches', () => {
     // Remove 'caches' from window entirely
     const originalCaches = global.caches;
     delete global.caches;
-    
+
     await clearOldCaches();
     // Should not throw
-    
+
     // Restore caches for other tests
     global.caches = originalCaches;
   });
@@ -117,11 +120,18 @@ describe('getStorageBreakdown', () => {
       usageDetails: { indexedDB: 100, caches: 50, serviceWorkers: 10 },
     });
     const breakdown = await getStorageBreakdown();
-    expect(breakdown).toEqual({ indexedDB: 100, cache: 50, serviceWorkers: 10 });
+    expect(breakdown).toEqual({
+      indexedDB: 100,
+      cache: 50,
+      serviceWorkers: 10,
+    });
   });
 
   it('returns zeros when navigator.storage not available', async () => {
-    Object.defineProperty(global, 'navigator', { value: {}, configurable: true });
+    Object.defineProperty(global, 'navigator', {
+      value: {},
+      configurable: true,
+    });
     const breakdown = await getStorageBreakdown();
     expect(breakdown).toEqual({ indexedDB: 0, cache: 0, serviceWorkers: 0 });
   });

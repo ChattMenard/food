@@ -2,46 +2,46 @@ import db from '../data/db.js';
 import authManager from '../auth/authManager.js';
 
 const DEFAULT_PREFERENCES = {
-    people: 1,
-    diet: 'none',
-    diets: [],
-    allergy: 'none',
-    cuisine: 'all',
-    maxTime: 60,
-    difficulty: 'any'
+  people: 1,
+  diet: 'none',
+  diets: [],
+  allergy: 'none',
+  cuisine: 'all',
+  maxTime: 60,
+  difficulty: 'any',
 };
 
 // In-memory state cache
 let stateCache = {
-    pantry: [],
-    mealPlan: {},
-    preferences: { ...DEFAULT_PREFERENCES },
-    recipeRatings: {},
-    user: null
+  pantry: [],
+  mealPlan: {},
+  preferences: { ...DEFAULT_PREFERENCES },
+  recipeRatings: {},
+  user: null,
 };
 
 // Pub-sub listeners
 const listeners = [];
 
 function normalizePreferences(preferences = {}) {
-    const normalizedPreferences = {
-        ...DEFAULT_PREFERENCES,
-        ...preferences,
-        diets: Array.isArray(preferences.diets) ? preferences.diets : []
-    };
+  const normalizedPreferences = {
+    ...DEFAULT_PREFERENCES,
+    ...preferences,
+    diets: Array.isArray(preferences.diets) ? preferences.diets : [],
+  };
 
-    if (!normalizedPreferences.diet && normalizedPreferences.diets.length > 0) {
-        normalizedPreferences.diet = normalizedPreferences.diets[0];
-    }
+  if (!normalizedPreferences.diet && normalizedPreferences.diets.length > 0) {
+    normalizedPreferences.diet = normalizedPreferences.diets[0];
+  }
 
-    return normalizedPreferences;
+  return normalizedPreferences;
 }
 
 function setState(partialState) {
-    stateCache = {
-        ...stateCache,
-        ...partialState
-    };
+  stateCache = {
+    ...stateCache,
+    ...partialState,
+  };
 }
 
 /**
@@ -49,19 +49,19 @@ function setState(partialState) {
  * @param {Function} fn - Callback function
  */
 export function subscribe(fn) {
-    listeners.push(fn);
-    // Return unsubscribe function
-    return () => {
-        const index = listeners.indexOf(fn);
-        if (index > -1) listeners.splice(index, 1);
-    };
+  listeners.push(fn);
+  // Return unsubscribe function
+  return () => {
+    const index = listeners.indexOf(fn);
+    if (index > -1) listeners.splice(index, 1);
+  };
 }
 
 /**
  * Notify all listeners of state change
  */
 function notify() {
-    listeners.forEach(fn => fn(stateCache));
+  listeners.forEach((fn) => fn(stateCache));
 }
 
 /**
@@ -69,30 +69,31 @@ function notify() {
  * @returns {Promise<Object>} State object
  */
 export async function loadState() {
-    await db.ready;
-    
-    const userPromise = authManager.loadSession().catch(error => {
-        console.error('[AppState] Failed to load auth session:', error);
-        return null;
-    });
-    
-    const [pantry, mealPlan, preferences, recipeRatings, user] = await Promise.all([
-        db.getPantry(),
-        db.getMealPlan(),
-        db.getPreferences(),
-        db.get('preferences', 'recipeRatings').then(r => r || {}),
-        userPromise
+  await db.ready;
+
+  const userPromise = authManager.loadSession().catch((error) => {
+    console.error('[AppState] Failed to load auth session:', error);
+    return null;
+  });
+
+  const [pantry, mealPlan, preferences, recipeRatings, user] =
+    await Promise.all([
+      db.getPantry(),
+      db.getMealPlan(),
+      db.getPreferences(),
+      db.get('preferences', 'recipeRatings').then((r) => r || {}),
+      userPromise,
     ]);
 
-    stateCache = {
-        pantry,
-        mealPlan,
-        preferences: normalizePreferences(preferences),
-        recipeRatings,
-        user
-    };
+  stateCache = {
+    pantry,
+    mealPlan,
+    preferences: normalizePreferences(preferences),
+    recipeRatings,
+    user,
+  };
 
-    return stateCache;
+  return stateCache;
 }
 
 /**
@@ -100,10 +101,10 @@ export async function loadState() {
  * @param {Array} pantry - Pantry array
  */
 export async function savePantryState(pantry) {
-    await db.ready;
-    await db.setPantry(pantry);
-    setState({ pantry });
-    notify();
+  await db.ready;
+  await db.setPantry(pantry);
+  setState({ pantry });
+  notify();
 }
 
 /**
@@ -111,10 +112,10 @@ export async function savePantryState(pantry) {
  * @param {Object} mealPlan - Meal plan object
  */
 export async function saveMealPlanState(mealPlan) {
-    await db.ready;
-    await db.setMealPlan(mealPlan);
-    setState({ mealPlan });
-    notify();
+  await db.ready;
+  await db.setMealPlan(mealPlan);
+  setState({ mealPlan });
+  notify();
 }
 
 /**
@@ -122,10 +123,10 @@ export async function saveMealPlanState(mealPlan) {
  * @param {Object} preferences - Preferences object
  */
 export async function savePreferencesState(preferences) {
-    await db.ready;
-    await db.setPreferences(preferences);
-    setState({ preferences: normalizePreferences(preferences) });
-    notify();
+  await db.ready;
+  await db.setPreferences(preferences);
+  setState({ preferences: normalizePreferences(preferences) });
+  notify();
 }
 
 /**
@@ -133,10 +134,10 @@ export async function savePreferencesState(preferences) {
  * @param {Object} recipeRatings - Recipe ratings object
  */
 export async function saveRecipeRatingsState(recipeRatings) {
-    await db.ready;
-    await db.put('preferences', { ...recipeRatings, key: 'recipeRatings' });
-    setState({ recipeRatings });
-    notify();
+  await db.ready;
+  await db.put('preferences', { ...recipeRatings, key: 'recipeRatings' });
+  setState({ recipeRatings });
+  notify();
 }
 
 /**
@@ -144,8 +145,8 @@ export async function saveRecipeRatingsState(recipeRatings) {
  * @param {Object} user - User object
  */
 export async function saveUserState(user) {
-    setState({ user });
-    notify();
+  setState({ user });
+  notify();
 }
 
 /**
@@ -153,9 +154,9 @@ export async function saveUserState(user) {
  * @returns {Promise<Object>} User object
  */
 export async function signInUser() {
-    const user = await authManager.signIn();
-    await saveUserState(user);
-    return user;
+  const user = await authManager.signIn();
+  await saveUserState(user);
+  return user;
 }
 
 /**
@@ -163,8 +164,8 @@ export async function signInUser() {
  * @returns {Promise<void>}
  */
 export async function signOutUser() {
-    await authManager.signOut();
-    await saveUserState(null);
+  await authManager.signOut();
+  await saveUserState(null);
 }
 
 /**
@@ -172,5 +173,5 @@ export async function signOutUser() {
  * @returns {Object} Current state
  */
 export function getState() {
-    return stateCache;
+  return stateCache;
 }

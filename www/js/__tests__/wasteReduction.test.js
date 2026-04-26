@@ -1,4 +1,7 @@
-import { WasteReductionManager, getWasteReductionManager } from '../features/pantry/wasteReduction.js';
+import {
+  WasteReductionManager,
+  getWasteReductionManager,
+} from '../features/pantry/wasteReduction.js';
 
 describe('WasteReductionManager', () => {
   let manager;
@@ -25,11 +28,13 @@ describe('WasteReductionManager', () => {
 
       const pantry = [
         { name: 'milk', expiryDate: tomorrow.toISOString(), quantity: 1 },
-        { name: 'bread', expiryDate: null, quantity: 1 }
+        { name: 'bread', expiryDate: null, quantity: 1 },
       ];
 
       const suggestions = manager.analyzePantry(pantry);
-      const expiringSoon = suggestions.filter(s => s.type === 'expiring-soon');
+      const expiringSoon = suggestions.filter(
+        (s) => s.type === 'expiring-soon'
+      );
       expect(expiringSoon.length).toBe(1);
       expect(expiringSoon[0].item).toBe('milk');
       expect(expiringSoon[0].priority).toBe('high');
@@ -40,11 +45,11 @@ describe('WasteReductionManager', () => {
       yesterday.setDate(yesterday.getDate() - 1);
 
       const pantry = [
-        { name: 'milk', expiryDate: yesterday.toISOString(), quantity: 1 }
+        { name: 'milk', expiryDate: yesterday.toISOString(), quantity: 1 },
       ];
 
       const suggestions = manager.analyzePantry(pantry);
-      const expired = suggestions.filter(s => s.type === 'expired');
+      const expired = suggestions.filter((s) => s.type === 'expired');
       expect(expired.length).toBe(1);
       expect(expired[0].item).toBe('milk');
       expect(expired[0].priority).toBe('urgent');
@@ -53,11 +58,11 @@ describe('WasteReductionManager', () => {
     it('identifies low quantity items', () => {
       const pantry = [
         { name: 'milk', quantity: 1 },
-        { name: 'bread', quantity: 5 }
+        { name: 'bread', quantity: 5 },
       ];
 
       const suggestions = manager.analyzePantry(pantry);
-      const lowQuantity = suggestions.filter(s => s.type === 'low-quantity');
+      const lowQuantity = suggestions.filter((s) => s.type === 'low-quantity');
       expect(lowQuantity.length).toBe(1);
       expect(lowQuantity[0].item).toBe('milk');
       expect(lowQuantity[0].priority).toBe('medium');
@@ -68,11 +73,15 @@ describe('WasteReductionManager', () => {
       twentyDaysAgo.setDate(twentyDaysAgo.getDate() - 20);
 
       const pantry = [
-        { name: 'milk', purchaseDate: twentyDaysAgo.toISOString(), quantity: 2 }
+        {
+          name: 'milk',
+          purchaseDate: twentyDaysAgo.toISOString(),
+          quantity: 2,
+        },
       ];
 
       const suggestions = manager.analyzePantry(pantry);
-      const stale = suggestions.filter(s => s.type === 'stale');
+      const stale = suggestions.filter((s) => s.type === 'stale');
       expect(stale.length).toBe(1);
       expect(stale[0].item).toBe('milk');
       expect(stale[0].priority).toBe('low');
@@ -88,7 +97,13 @@ describe('WasteReductionManager', () => {
         { name: 'expired', expiryDate: yesterday.toISOString(), quantity: 5 },
         { name: 'expiring', expiryDate: tomorrow.toISOString(), quantity: 5 },
         { name: 'low', quantity: 1 },
-        { name: 'stale', purchaseDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), quantity: 5 }
+        {
+          name: 'stale',
+          purchaseDate: new Date(
+            Date.now() - 15 * 24 * 60 * 60 * 1000
+          ).toISOString(),
+          quantity: 5,
+        },
       ];
 
       const suggestions = manager.analyzePantry(pantry);
@@ -104,9 +119,7 @@ describe('WasteReductionManager', () => {
     });
 
     it('stores suggestions in instance', () => {
-      const pantry = [
-        { name: 'milk', quantity: 1 }
-      ];
+      const pantry = [{ name: 'milk', quantity: 1 }];
 
       manager.analyzePantry(pantry);
       expect(manager.suggestions).toEqual(manager.analyzePantry(pantry));
@@ -126,7 +139,12 @@ describe('WasteReductionManager', () => {
       yesterday.setDate(yesterday.getDate() - 1);
 
       const pantry = [
-        { name: 'milk', expiryDate: yesterday.toISOString(), quantity: 2, category: 'dairy' }
+        {
+          name: 'milk',
+          expiryDate: yesterday.toISOString(),
+          quantity: 2,
+          category: 'dairy',
+        },
       ];
 
       const cost = manager.calculateWasteCost(pantry);
@@ -139,7 +157,7 @@ describe('WasteReductionManager', () => {
       yesterday.setDate(yesterday.getDate() - 1);
 
       const pantry = [
-        { name: 'milk', expiryDate: yesterday.toISOString(), quantity: 1 }
+        { name: 'milk', expiryDate: yesterday.toISOString(), quantity: 1 },
       ];
 
       const costEstimates = { milk: 5 };
@@ -152,7 +170,7 @@ describe('WasteReductionManager', () => {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const pantry = [
-        { name: 'milk', expiryDate: tomorrow.toISOString(), quantity: 1 }
+        { name: 'milk', expiryDate: tomorrow.toISOString(), quantity: 1 },
       ];
 
       const cost = manager.calculateWasteCost(pantry);
@@ -165,8 +183,18 @@ describe('WasteReductionManager', () => {
       yesterday.setDate(yesterday.getDate() - 1);
 
       const pantry = [
-        { name: 'milk', expiryDate: yesterday.toISOString(), quantity: 1, category: 'meat' },
-        { name: 'bread', expiryDate: yesterday.toISOString(), quantity: 1, category: 'vegetables' }
+        {
+          name: 'milk',
+          expiryDate: yesterday.toISOString(),
+          quantity: 1,
+          category: 'meat',
+        },
+        {
+          name: 'bread',
+          expiryDate: yesterday.toISOString(),
+          quantity: 1,
+          category: 'vegetables',
+        },
       ];
 
       const cost = manager.calculateWasteCost(pantry);
@@ -209,7 +237,7 @@ describe('WasteReductionManager', () => {
 
     it('each tip has required properties', () => {
       const tips = manager.getTips();
-      tips.forEach(tip => {
+      tips.forEach((tip) => {
         expect(tip.title).toBeDefined();
         expect(tip.description).toBeDefined();
         expect(tip.icon).toBeDefined();
@@ -219,9 +247,7 @@ describe('WasteReductionManager', () => {
 
   describe('generateWeeklyReport', () => {
     it('generates report with all sections', () => {
-      const pantry = [
-        { name: 'milk', quantity: 1 }
-      ];
+      const pantry = [{ name: 'milk', quantity: 1 }];
 
       const report = manager.generateWeeklyReport(pantry);
       expect(report.date).toBeDefined();
@@ -240,7 +266,7 @@ describe('WasteReductionManager', () => {
       const pantry = [
         { name: 'expired', expiryDate: yesterday.toISOString(), quantity: 5 },
         { name: 'expiring', expiryDate: tomorrow.toISOString(), quantity: 5 },
-        { name: 'low', quantity: 1 }
+        { name: 'low', quantity: 1 },
       ];
 
       const report = manager.generateWeeklyReport(pantry);

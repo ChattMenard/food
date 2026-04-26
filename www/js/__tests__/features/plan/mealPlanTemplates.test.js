@@ -48,7 +48,7 @@ describe('MealPlanTemplates', () => {
 
     it('calls loadCustomTemplates on construction', async () => {
       db.get.mockResolvedValue({ 'My Template': { Monday: 'Pasta' } });
-      const newTemplates = new MealPlanTemplates({
+      new MealPlanTemplates({
         getMealPlan: mockGetMealPlan,
         setMealPlan: mockSetMealPlan,
         persistMealPlan: mockPersistMealPlan,

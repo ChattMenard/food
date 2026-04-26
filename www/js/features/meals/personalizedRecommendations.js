@@ -14,8 +14,8 @@ export class PersonalizedRecommendations {
 
         // Get favorite recipes (highly rated)
         const favoriteRecipes = Object.entries(recipeRatings)
-            .filter(([name, rating]) => rating >= 4)
-            .map(([name, rating]) => recipes.find(r => r.name === name))
+            .filter(([_name, rating]) => rating >= 4)
+            .map(([name, _rating]) => recipes.find(r => r.name === name))
             .filter(Boolean);
 
         // Get frequently cooked recipes from meal plan
@@ -25,7 +25,7 @@ export class PersonalizedRecommendations {
         });
 
         const frequentRecipes = Object.entries(mealCounts)
-            .filter(([name, count]) => count >= 2)
+            .filter(([_name, count]) => count >= 2)
             .map(([name, count]) => ({ recipe: recipes.find(r => r.name === name), count }))
             .filter(item => item.recipe)
             .sort((a, b) => b.count - a.count)

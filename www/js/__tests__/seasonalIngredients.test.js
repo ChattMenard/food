@@ -1,7 +1,7 @@
 import {
   getCurrentSeasonalIngredients,
   getSeasonalIngredientSuggestion,
-  getSeasonalRecipes
+  getSeasonalRecipes,
 } from '../features/pantry/seasonalIngredients.js';
 
 describe('seasonalIngredients', () => {
@@ -14,7 +14,7 @@ describe('seasonalIngredients', () => {
 
     it('returns valid ingredient names', () => {
       const ingredients = getCurrentSeasonalIngredients();
-      ingredients.forEach(ing => {
+      ingredients.forEach((ing) => {
         expect(typeof ing).toBe('string');
         expect(ing.length).toBeGreaterThan(0);
       });
@@ -23,10 +23,7 @@ describe('seasonalIngredients', () => {
 
   describe('getSeasonalIngredientSuggestion', () => {
     it('returns suggestions not already in pantry', () => {
-      const pantryItems = [
-        { name: 'tomato' },
-        { name: 'onion' }
-      ];
+      const pantryItems = [{ name: 'tomato' }, { name: 'onion' }];
 
       const suggestions = getSeasonalIngredientSuggestion(pantryItems);
       expect(Array.isArray(suggestions)).toBe(true);
@@ -41,7 +38,7 @@ describe('seasonalIngredients', () => {
         { name: 'squash' },
         { name: 'root vegetables' },
         { name: 'cabbage' },
-        { name: 'leeks' }
+        { name: 'leeks' },
       ];
 
       const suggestions = getSeasonalIngredientSuggestion(pantryItems);
@@ -60,13 +57,10 @@ describe('seasonalIngredients', () => {
     });
 
     it('filters out pantry items by name matching', () => {
-      const pantryItems = [
-        { name: 'tomato' },
-        { name: 'cucumber' }
-      ];
+      const pantryItems = [{ name: 'tomato' }, { name: 'cucumber' }];
 
       const suggestions = getSeasonalIngredientSuggestion(pantryItems);
-      const suggestionsLower = suggestions.map(s => s.toLowerCase());
+      const suggestionsLower = suggestions.map((s) => s.toLowerCase());
       expect(suggestionsLower).not.toContain('tomato');
       expect(suggestionsLower).not.toContain('cucumber');
     });
@@ -77,16 +71,16 @@ describe('seasonalIngredients', () => {
       const recipes = [
         {
           name: 'Tomato Soup',
-          ingredients: ['tomato', 'onion', 'garlic']
+          ingredients: ['tomato', 'onion', 'garlic'],
         },
         {
           name: 'Chicken Salad',
-          ingredients: ['chicken', 'lettuce', 'tomato']
+          ingredients: ['chicken', 'lettuce', 'tomato'],
         },
         {
           name: 'Beef Stew',
-          ingredients: ['beef', 'potato', 'carrot']
-        }
+          ingredients: ['beef', 'potato', 'carrot'],
+        },
       ];
 
       const seasonalRecipes = getSeasonalRecipes(recipes);
@@ -98,8 +92,8 @@ describe('seasonalIngredients', () => {
       const recipes = [
         {
           name: 'Exotic Fruit Salad',
-          ingredients: ['mango', 'papaya', 'coconut']
-        }
+          ingredients: ['mango', 'papaya', 'coconut'],
+        },
       ];
 
       const seasonalRecipes = getSeasonalRecipes(recipes);
@@ -115,7 +109,7 @@ describe('seasonalIngredients', () => {
     it('limits results to 5 recipes', () => {
       const recipes = Array.from({ length: 10 }, (_, i) => ({
         name: `Recipe ${i}`,
-        ingredients: ['tomato', 'onion']
+        ingredients: ['tomato', 'onion'],
       }));
 
       const seasonalRecipes = getSeasonalRecipes(recipes);
@@ -126,8 +120,8 @@ describe('seasonalIngredients', () => {
       const recipes = [
         {
           name: 'Tomato Recipe',
-          ingredients: ['TOMATO', 'ONION']
-        }
+          ingredients: ['TOMATO', 'ONION'],
+        },
       ];
 
       const seasonalRecipes = getSeasonalRecipes(recipes);
@@ -138,8 +132,8 @@ describe('seasonalIngredients', () => {
       const recipes = [
         {
           name: 'Bell Pepper Recipe',
-          ingredients: ['bell pepper', 'onion']
-        }
+          ingredients: ['bell pepper', 'onion'],
+        },
       ];
 
       const seasonalRecipes = getSeasonalRecipes(recipes);

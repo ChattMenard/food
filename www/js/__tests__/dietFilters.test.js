@@ -4,14 +4,14 @@ import {
   passesAllergy,
   getAllergensInRecipe,
   passesCuisine,
-  normalizeCuisine
+  normalizeCuisine,
 } from '../utils/dietFilters.js';
 
 describe('dietFilters', () => {
   const mockRecipe = {
     name: 'Chicken Pasta',
     ingredients: ['chicken', 'pasta', 'cream', 'parmesan'],
-    category: 'Italian'
+    category: 'Italian',
   };
 
   describe('recipeHasAny', () => {
@@ -50,7 +50,7 @@ describe('dietFilters', () => {
     it('returns true for vegetarian without meat', () => {
       const vegRecipe = {
         ...mockRecipe,
-        ingredients: ['pasta', 'cream', 'parmesan']
+        ingredients: ['pasta', 'cream', 'parmesan'],
       };
       expect(passesDiet(vegRecipe, 'vegetarian')).toBe(true);
     });
@@ -62,7 +62,7 @@ describe('dietFilters', () => {
     it('returns true for vegan without animal products', () => {
       const veganRecipe = {
         ...mockRecipe,
-        ingredients: ['pasta', 'tomato', 'basil']
+        ingredients: ['pasta', 'tomato', 'basil'],
       };
       expect(passesDiet(veganRecipe, 'vegan')).toBe(true);
     });
@@ -74,7 +74,7 @@ describe('dietFilters', () => {
     it('returns true for gluten-free without gluten', () => {
       const gfRecipe = {
         ...mockRecipe,
-        ingredients: ['rice', 'vegetables', 'soy sauce']
+        ingredients: ['rice', 'vegetables', 'soy sauce'],
       };
       expect(passesDiet(gfRecipe, 'gluten-free')).toBe(true);
     });
@@ -87,7 +87,7 @@ describe('dietFilters', () => {
     it('returns true for all restrictions when recipe complies', () => {
       const compliantRecipe = {
         ...mockRecipe,
-        ingredients: ['rice', 'vegetables']
+        ingredients: ['rice', 'vegetables'],
       };
       const result = passesDiet(compliantRecipe, ['vegetarian', 'gluten-free']);
       expect(result).toBe(true);
@@ -132,9 +132,12 @@ describe('dietFilters', () => {
     it('returns multiple allergens if present', () => {
       const recipeWithMultiple = {
         ...mockRecipe,
-        ingredients: ['chicken', 'pasta', 'milk', 'almonds']
+        ingredients: ['chicken', 'pasta', 'milk', 'almonds'],
       };
-      const result = getAllergensInRecipe(recipeWithMultiple, ['dairy', 'nuts']);
+      const result = getAllergensInRecipe(recipeWithMultiple, [
+        'dairy',
+        'nuts',
+      ]);
       expect(result).toEqual(['dairy', 'nuts']);
     });
 

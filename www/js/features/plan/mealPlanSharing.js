@@ -71,14 +71,14 @@ END:VEVENT
 `;
         });
 
-        icalContent += `END:VCALENDAR`;
+        icalContent += 'END:VCALENDAR';
 
         const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         
         const link = document.createElement('a');
         link.href = url;
-        link.download = `meal-plan-calendar.ics`;
+        link.download = 'meal-plan-calendar.ics';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

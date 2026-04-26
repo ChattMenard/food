@@ -34,16 +34,26 @@ export class MealPlanner {
         return JSON.stringify({ diets, allergy, cuisine, maxTime, difficulty });
     }
 
+    normalizeSortBy(sortBy) {
+        const aliasMap = {
+            match: 'best',
+            time: 'fastest',
+            calories: 'fewest'
+        };
+        return aliasMap[sortBy] || sortBy || 'fewest';
+    }
+
     rankedMeals(sortBy = 'fewest', sortDir = 'asc') {
         const pantry = this.getPantry();
         const preferences = this.getPreferences();
         const recipes = this.getRecipes();
         const pantryNames = pantry.map(i => i.name.toLowerCase());
         if (recipes.length === 0) return [];
+        const normalizedSortBy = this.normalizeSortBy(sortBy);
 
         const currentHash = this.getPantryHash();
         const prefKey = this.buildPreferenceKey(preferences);
-        const cacheKey = `${currentHash}-${prefKey}-${sortBy}-${sortDir}`;
+        const cacheKey = `${currentHash}-${prefKey}-${normalizedSortBy}-${sortDir}`;
 
         if (this.lastPantryHash === currentHash && this.mealCache.has(cacheKey)) {
             return this.mealCache.get(cacheKey);
@@ -70,7 +80,7 @@ export class MealPlanner {
             scored.push({ r, matched, missing: r.ingredients.length - matched, ratio, hasAll, ingredientCount: r.ingredients.length });
         }
 
-        this.sortScored(scored, sortBy, sortDir);
+        this.sortScored(scored, normalizedSortBy, sortDir);
 
         this.mealCache.set(cacheKey, scored);
         this.lastPantryHash = currentHash;
@@ -84,8 +94,13 @@ export class MealPlanner {
         const dir = sortDir === 'desc' ? -1 : 1;
         switch (sortBy) {
             case 'fewest':
-                // Prioritize recipes with all ingredients available, then by simplest (fewest ingredients), then by missing count
-                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.ingredientCount - b.ingredientCount) || (a.missing - b.missing)));
+                // Default mode: always favor simpler recipes (fewer ingredients), then fewer missing ingredients.
+                scored.sort((a, b) => dir * (
+                    (a.ingredientCount - b.ingredientCount) ||
+                    (a.missing - b.missing) ||
+                    (b.hasAll - a.hasAll) ||
+                    ((a.r.minutes || Number.MAX_SAFE_INTEGER) - (b.r.minutes || Number.MAX_SAFE_INTEGER))
+                ));
                 break;
             case 'best':
                 scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (b.ratio - a.ratio) || (a.missing - b.missing)));
@@ -101,7 +116,7 @@ export class MealPlanner {
                 scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || (a.ingredientCount - b.ingredientCount)));
                 break;
             case 'rating':
-                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || ((a.r.rating || 0) - (b.r.rating || 0))));
+                scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || ((b.r.rating || 0) - (a.r.rating || 0))));
                 break;
             case 'name':
                 scored.sort((a, b) => dir * ((b.hasAll - a.hasAll) || a.r.name.localeCompare(b.r.name)));
@@ -117,7 +132,7 @@ export class MealPlanner {
     }
 
     sortMeals(sortBy, sortDir) {
-        this.updateMeals(sortBy, sortDir || 'asc');
+        this.updateMeals(this.normalizeSortBy(sortBy), sortDir || 'asc');
     }
 
     renderMeals(scored) {
@@ -151,7 +166,7 @@ export class MealPlanner {
         return `
             <div class="border ${cardBorder} rounded-xl p-4 hover:shadow-md transition" data-recipe-index="${index}">
                 <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-semibold cursor-pointer hover:text-orange-600 flex items-center" onclick="openRecipeModal('${recipe.name.replace(/'/g, "\\'")}')">${missingIndicator}${recipe.name}</h3>
+                    <h3 class="font-semibold cursor-pointer hover:text-orange-600 flex items-center" onclick="openRecipeModal('${recipe.name.replace(/'/g, '\\\'')}')">${missingIndicator}${recipe.name}</h3>
                     <span class="text-sm text-orange-600">★${recipe.rating || '-'}</span>
                 </div>
                 ${recipe.image ? `<img src="${recipe.image}" alt="${recipe.name}" class="w-full h-32 object-cover rounded-lg mb-2" loading="lazy">` : ''}
@@ -165,7 +180,7 @@ export class MealPlanner {
                 </div>
                 <div class="mt-3 flex justify-between items-center">
                     <span class="text-xs ${!hasAll ? 'text-red-500 font-medium' : 'text-gray-400'}">${matched}/${recipe.ingredients.length} in pantry · ${missing} to buy</span>
-                    <button onclick="addToPlanByName('${recipe.name.replace(/'/g, "\\'")}')" class="text-sm bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600">Add</button>
+                    <button onclick="addToPlanByName('${recipe.name.replace(/'/g, '\\\'')}')" class="text-sm bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600">Add</button>
                 </div>
             </div>
         `;

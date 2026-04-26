@@ -4,12 +4,12 @@ import { Analytics, getAnalytics, initAnalytics } from '../utils/analytics.js';
 global.window = {
   location: {
     pathname: '/test',
-    href: 'https://example.com/test'
-  }
+    href: 'https://example.com/test',
+  },
 };
 
 global.document = {
-  title: 'Test Page'
+  title: 'Test Page',
 };
 
 describe('Analytics', () => {
@@ -19,7 +19,7 @@ describe('Analytics', () => {
     analytics = new Analytics();
     localStorage.clear();
     jest.clearAllMocks();
-    
+
     // Set document title for pageView tests
     document.title = 'Test Page';
   });
@@ -100,7 +100,10 @@ describe('Analytics', () => {
     it('merges properties with existing', () => {
       analytics.identify('user_123', { name: 'Test' });
       analytics.identify('user_123', { email: 'test@example.com' });
-      expect(analytics.userProperties).toEqual({ name: 'Test', email: 'test@example.com' });
+      expect(analytics.userProperties).toEqual({
+        name: 'Test',
+        email: 'test@example.com',
+      });
     });
 
     it('uses existing user ID if none provided', () => {
@@ -130,7 +133,7 @@ describe('Analytics', () => {
       expect(trackSpy).toHaveBeenCalledWith('page_view', {
         path: window.location.pathname,
         url: window.location.href,
-        title: 'Test Page'
+        title: 'Test Page',
       });
     });
 
@@ -140,7 +143,7 @@ describe('Analytics', () => {
       expect(trackSpy).toHaveBeenCalledWith('page_view', {
         path: '/custom',
         url: window.location.href,
-        title: 'Test Page'
+        title: 'Test Page',
       });
     });
   });
@@ -153,7 +156,7 @@ describe('Analytics', () => {
       expect(trackSpy).toHaveBeenCalledWith('pantry_item_added', {
         item_name: 'Chicken',
         category: 'meat',
-        quantity: 2
+        quantity: 2,
       });
     });
   });
@@ -161,13 +164,18 @@ describe('Analytics', () => {
   describe('trackMealPlanned', () => {
     it('tracks meal planned event', () => {
       const trackSpy = jest.spyOn(analytics, 'track');
-      const meal = { recipeId: 1, recipeName: 'Pasta', date: '2024-01-01', mealType: 'dinner' };
+      const meal = {
+        recipeId: 1,
+        recipeName: 'Pasta',
+        date: '2024-01-01',
+        mealType: 'dinner',
+      };
       analytics.trackMealPlanned(meal);
       expect(trackSpy).toHaveBeenCalledWith('meal_planned', {
         recipe_id: 1,
         recipe_name: 'Pasta',
         date: '2024-01-01',
-        meal_type: 'dinner'
+        meal_type: 'dinner',
       });
     });
   });
@@ -178,7 +186,7 @@ describe('Analytics', () => {
       analytics.trackRecipeViewed(1, 'Pasta');
       expect(trackSpy).toHaveBeenCalledWith('recipe_viewed', {
         recipe_id: 1,
-        recipe_name: 'Pasta'
+        recipe_name: 'Pasta',
       });
     });
   });
@@ -189,7 +197,7 @@ describe('Analytics', () => {
       analytics.trackRecipeCooked(1, 'Pasta');
       expect(trackSpy).toHaveBeenCalledWith('recipe_cooked', {
         recipe_id: 1,
-        recipe_name: 'Pasta'
+        recipe_name: 'Pasta',
       });
     });
   });
@@ -199,7 +207,7 @@ describe('Analytics', () => {
       const trackSpy = jest.spyOn(analytics, 'track');
       analytics.trackShoppingListCreated(10);
       expect(trackSpy).toHaveBeenCalledWith('shopping_list_created', {
-        item_count: 10
+        item_count: 10,
       });
     });
   });
@@ -209,7 +217,7 @@ describe('Analytics', () => {
       const trackSpy = jest.spyOn(analytics, 'track');
       analytics.trackAISuggestionUsed('meal_suggestion');
       expect(trackSpy).toHaveBeenCalledWith('ai_suggestion_used', {
-        suggestion_type: 'meal_suggestion'
+        suggestion_type: 'meal_suggestion',
       });
     });
   });
@@ -220,7 +228,7 @@ describe('Analytics', () => {
       analytics.trackSearch('chicken', 15);
       expect(trackSpy).toHaveBeenCalledWith('search_performed', {
         query: 'chicken',
-        result_count: 15
+        result_count: 15,
       });
     });
   });
@@ -231,7 +239,7 @@ describe('Analytics', () => {
       analytics.trackFilterApplied('cuisine', 'italian');
       expect(trackSpy).toHaveBeenCalledWith('filter_applied', {
         filter_type: 'cuisine',
-        filter_value: 'italian'
+        filter_value: 'italian',
       });
     });
   });

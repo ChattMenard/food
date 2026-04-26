@@ -1,4 +1,7 @@
-import { BackgroundSyncManager, getBackgroundSyncManager } from '../utils/backgroundSync.js';
+import {
+  BackgroundSyncManager,
+  getBackgroundSyncManager,
+} from '../utils/backgroundSync.js';
 
 // Mock navigator and window for testing
 global.navigator = {
@@ -6,22 +9,22 @@ global.navigator = {
   serviceWorker: {
     ready: Promise.resolve({
       periodicSync: {
-        register: jest.fn().mockResolvedValue()
-      }
-    })
-  }
+        register: jest.fn().mockResolvedValue(),
+      },
+    }),
+  },
 };
 
 global.window = {
-  addEventListener: jest.fn()
+  addEventListener: jest.fn(),
 };
 
 global.document = {
   addEventListener: jest.fn(),
-  hidden: false
+  hidden: false,
 };
 
-global.Notification = jest.fn(function(title, options) {
+global.Notification = jest.fn(function (title, options) {
   this.title = title;
   this.options = options;
 });
@@ -57,10 +60,16 @@ describe('BackgroundSyncManager', () => {
   describe('loadSyncQueue', () => {
     it('loads queue from localStorage', () => {
       const queue = [
-        { id: 1, type: 'mealPlan', data: {}, timestamp: Date.now(), attempts: 0 }
+        {
+          id: 1,
+          type: 'mealPlan',
+          data: {},
+          timestamp: Date.now(),
+          attempts: 0,
+        },
       ];
       localStorage.setItem('main-sync-queue', JSON.stringify(queue));
-      
+
       const newManager = new BackgroundSyncManager();
       expect(newManager.syncQueue).toEqual(queue);
     });
@@ -86,7 +95,9 @@ describe('BackgroundSyncManager', () => {
 
     it('handles save errors gracefully', () => {
       const originalSetItem = localStorage.setItem;
-      localStorage.setItem = jest.fn(() => { throw new Error('Storage error'); });
+      localStorage.setItem = jest.fn(() => {
+        throw new Error('Storage error');
+      });
       expect(() => syncManager.saveSyncQueue()).not.toThrow();
       localStorage.setItem = originalSetItem;
     });
@@ -155,48 +166,100 @@ describe('BackgroundSyncManager', () => {
     });
 
     it('does not sync if offline', async () => {
-      Object.defineProperty(navigator, 'onLine', { writable: true, value: false });
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: false,
+      });
       syncManager.syncQueue = [{ id: 1, type: 'mealPlan', data: {} }];
       await syncManager.syncAll();
       expect(syncManager.syncQueue).toHaveLength(1);
-      Object.defineProperty(navigator, 'onLine', { writable: true, value: true });
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: true,
+      });
     });
 
     it('processes all sync items', async () => {
       syncManager.syncQueue = [
-        { id: 1, type: 'mealPlan', data: {}, timestamp: Date.now(), attempts: 0 },
-        { id: 2, type: 'pantry', data: [], timestamp: Date.now(), attempts: 0 }
+        {
+          id: 1,
+          type: 'mealPlan',
+          data: {},
+          timestamp: Date.now(),
+          attempts: 0,
+        },
+        { id: 2, type: 'pantry', data: [], timestamp: Date.now(), attempts: 0 },
       ];
       await syncManager.syncAll();
       expect(syncManager.syncQueue).toHaveLength(0);
     });
 
     it('removes successful items from queue', async () => {
-      syncManager.syncQueue = [{ id: 1, type: 'mealPlan', data: {}, timestamp: Date.now(), attempts: 0 }];
+      syncManager.syncQueue = [
+        {
+          id: 1,
+          type: 'mealPlan',
+          data: {},
+          timestamp: Date.now(),
+          attempts: 0,
+        },
+      ];
       await syncManager.syncAll();
       expect(syncManager.syncQueue).toHaveLength(0);
     });
 
     it('keeps failed items in queue', async () => {
-      syncManager.syncQueue = [{ id: 1, type: 'unknown', data: {}, timestamp: Date.now(), attempts: 0 }];
+      syncManager.syncQueue = [
+        {
+          id: 1,
+          type: 'unknown',
+          data: {},
+          timestamp: Date.now(),
+          attempts: 0,
+        },
+      ];
       await syncManager.syncAll();
       expect(syncManager.syncQueue).toHaveLength(1);
     });
 
     it('increments attempt count on failure', async () => {
-      syncManager.syncQueue = [{ id: 1, type: 'unknown', data: {}, timestamp: Date.now(), attempts: 0 }];
+      syncManager.syncQueue = [
+        {
+          id: 1,
+          type: 'unknown',
+          data: {},
+          timestamp: Date.now(),
+          attempts: 0,
+        },
+      ];
       await syncManager.syncAll();
       expect(syncManager.syncQueue[0].attempts).toBe(1);
     });
 
     it('removes items after max attempts', async () => {
-      syncManager.syncQueue = [{ id: 1, type: 'unknown', data: {}, timestamp: Date.now(), attempts: 5 }];
+      syncManager.syncQueue = [
+        {
+          id: 1,
+          type: 'unknown',
+          data: {},
+          timestamp: Date.now(),
+          attempts: 5,
+        },
+      ];
       await syncManager.syncAll();
       expect(syncManager.syncQueue).toHaveLength(0);
     });
 
     it('resets isSyncing flag after completion', async () => {
-      syncManager.syncQueue = [{ id: 1, type: 'mealPlan', data: {}, timestamp: Date.now(), attempts: 0 }];
+      syncManager.syncQueue = [
+        {
+          id: 1,
+          type: 'mealPlan',
+          data: {},
+          timestamp: Date.now(),
+          attempts: 0,
+        },
+      ];
       await syncManager.syncAll();
       expect(syncManager.isSyncing).toBe(false);
     });
@@ -220,7 +283,9 @@ describe('BackgroundSyncManager', () => {
 
     it('throws error for unknown types', async () => {
       const item = { type: 'unknown', data: {} };
-      await expect(syncManager.processSyncItem(item)).rejects.toThrow('Unknown sync type: unknown');
+      await expect(syncManager.processSyncItem(item)).rejects.toThrow(
+        'Unknown sync type: unknown'
+      );
     });
   });
 
@@ -277,7 +342,7 @@ describe('BackgroundSyncManager', () => {
       syncManager.syncQueue = [{ id: 1 }, { id: 2 }];
       syncManager.isSyncing = true;
       localStorage.setItem('main-last-sync', Date.now().toString());
-      
+
       const status = syncManager.getSyncStatus();
       expect(status.pending).toBe(2);
       expect(status.isSyncing).toBe(true);

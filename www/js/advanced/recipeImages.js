@@ -13,113 +13,156 @@ const UNSPLASH_SOURCE_BASE = 'https://source.unsplash.com';
  * @param {number} height - Image height (default: 300)
  * @returns {string} Image URL
  */
-export function generateRecipeImageUrl(recipeName, category = '', width = 400, height = 300) {
-    // Extract key food terms from recipe name
-    const foodTerms = extractFoodTerms(recipeName, category);
-    const searchQuery = foodTerms.join(',');
-    
-    // Use Unsplash Source API for dynamic food images
-    // Note: Unsplash Source is deprecated, using a fallback approach
-    return `${UNSPLASH_SOURCE_BASE}/${width}x${height}/?${encodeURIComponent(searchQuery)}`;
+export function generateRecipeImageUrl(
+  recipeName,
+  category = '',
+  width = 400,
+  height = 300
+) {
+  // Extract key food terms from recipe name
+  const foodTerms = extractFoodTerms(recipeName, category);
+  const searchQuery = foodTerms.join(',');
+
+  // Use Unsplash Source API for dynamic food images
+  // Note: Unsplash Source is deprecated, using a fallback approach
+  return `${UNSPLASH_SOURCE_BASE}/${width}x${height}/?${encodeURIComponent(searchQuery)}`;
 }
 
 /**
  * Extract relevant food terms from recipe name and category
- * @param {string} recipeName 
- * @param {string} category 
+ * @param {string} recipeName
+ * @param {string} category
  * @returns {string[]} Array of food search terms
  */
 function extractFoodTerms(recipeName, category) {
-    const terms = [];
-    
-    // Add category if it's food-related
-    if (category && isFoodCategory(category)) {
-        terms.push(category);
+  const terms = [];
+
+  // Add category if it's food-related
+  if (category && isFoodCategory(category)) {
+    terms.push(category);
+  }
+
+  // Extract main ingredient from recipe name
+  const mainIngredients = [
+    'chicken',
+    'beef',
+    'pork',
+    'fish',
+    'salmon',
+    'shrimp',
+    'turkey',
+    'pasta',
+    'rice',
+    'bread',
+    'pizza',
+    'burger',
+    'sandwich',
+    'soup',
+    'salad',
+    'stew',
+    'curry',
+    'chili',
+    'cake',
+    'cookie',
+    'pie',
+    'bread',
+    'muffin',
+    'banana',
+    'apple',
+    'chocolate',
+    'cheese',
+    'potato',
+    'tomato',
+    'egg',
+    'bacon',
+    'sausage',
+    'steak',
+    'ribs',
+  ];
+
+  const lowerName = recipeName.toLowerCase();
+  for (const ingredient of mainIngredients) {
+    if (lowerName.includes(ingredient)) {
+      terms.push(ingredient);
+      break; // Only add first match to keep query focused
     }
-    
-    // Extract main ingredient from recipe name
-    const mainIngredients = [
-        'chicken', 'beef', 'pork', 'fish', 'salmon', 'shrimp', 'turkey',
-        'pasta', 'rice', 'bread', 'pizza', 'burger', 'sandwich',
-        'soup', 'salad', 'stew', 'curry', 'chili',
-        'cake', 'cookie', 'pie', 'bread', 'muffin',
-        'banana', 'apple', 'chocolate', 'cheese', 'potato', 'tomato',
-        'egg', 'bacon', 'sausage', 'steak', 'ribs'
-    ];
-    
-    const lowerName = recipeName.toLowerCase();
-    for (const ingredient of mainIngredients) {
-        if (lowerName.includes(ingredient)) {
-            terms.push(ingredient);
-            break; // Only add first match to keep query focused
-        }
-    }
-    
-    // Fallback to "food" if no terms found
-    if (terms.length === 0) {
-        terms.push('food', 'recipe');
-    }
-    
-    return terms;
+  }
+
+  // Fallback to "food" if no terms found
+  if (terms.length === 0) {
+    terms.push('food', 'recipe');
+  }
+
+  return terms;
 }
 
 /**
  * Check if a category is food-related
- * @param {string} category 
+ * @param {string} category
  * @returns {boolean}
  */
 function isFoodCategory(category) {
-    const nonFoodCategories = ['Quick', 'Easy', 'Healthy', 'Low', 'Best', 'Great', 'World Famous'];
-    const lowerCategory = category.toLowerCase();
-    return !nonFoodCategories.some(term => lowerCategory.includes(term.toLowerCase()));
+  const nonFoodCategories = [
+    'Quick',
+    'Easy',
+    'Healthy',
+    'Low',
+    'Best',
+    'Great',
+    'World Famous',
+  ];
+  const lowerCategory = category.toLowerCase();
+  return !nonFoodCategories.some((term) =>
+    lowerCategory.includes(term.toLowerCase())
+  );
 }
 
 /**
  * Get a fallback image URL for recipes
- * @param {number} width 
- * @param {number} height 
+ * @param {number} width
+ * @param {number} height
  * @returns {string}
  */
 export function getFallbackImageUrl(width = 400, height = 300) {
-    return `${UNSPLASH_SOURCE_BASE}/${width}x${height}/?food,cooking`;
+  return `${UNSPLASH_SOURCE_BASE}/${width}x${height}/?food,cooking`;
 }
 
 /**
  * Preload an image to ensure it loads before displaying
- * @param {string} url 
+ * @param {string} url
  * @returns {Promise<HTMLImageElement>}
  */
 export function preloadImage(url) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
-    });
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
 /**
  * Generate multiple image options for a recipe (for A/B testing or variety)
- * @param {string} recipeName 
- * @param {string} category 
- * @param {number} count 
+ * @param {string} recipeName
+ * @param {string} category
+ * @param {number} count
  * @returns {string[]}
  */
 export function generateImageOptions(recipeName, category = '', count = 3) {
-    const terms = extractFoodTerms(recipeName, category);
-    const options = [];
-    
-    const variations = [
-        'cooked', 'fresh', 'homemade', 'delicious', 'gourmet'
-    ];
-    
-    for (let i = 0; i < count; i++) {
-        const variation = variations[i % variations.length];
-        const query = [...terms, variation].join(',');
-        options.push(`${UNSPLASH_SOURCE_BASE}/400x300/?${encodeURIComponent(query)}`);
-    }
-    
-    return options;
+  const terms = extractFoodTerms(recipeName, category);
+  const options = [];
+
+  const variations = ['cooked', 'fresh', 'homemade', 'delicious', 'gourmet'];
+
+  for (let i = 0; i < count; i++) {
+    const variation = variations[i % variations.length];
+    const query = [...terms, variation].join(',');
+    options.push(
+      `${UNSPLASH_SOURCE_BASE}/400x300/?${encodeURIComponent(query)}`
+    );
+  }
+
+  return options;
 }
 
 /**
@@ -128,8 +171,8 @@ export function generateImageOptions(recipeName, category = '', count = 3) {
  * @returns {Array} Recipes with image URLs added
  */
 export function addImagesToRecipes(recipes) {
-    return recipes.map(recipe => ({
-        ...recipe,
-        image: recipe.image || generateRecipeImageUrl(recipe.name, recipe.category)
-    }));
+  return recipes.map((recipe) => ({
+    ...recipe,
+    image: recipe.image || generateRecipeImageUrl(recipe.name, recipe.category),
+  }));
 }

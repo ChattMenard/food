@@ -7,4 +7,4 @@
     android:updatePeriodMillis="900000"
     android:initialLayout="@layout/meal_widget"
     android:description="@string/widget_description"
-    android:previewImage="@drawable/ic_launcher" />
+    android:previewImage="@drawable/splash" />

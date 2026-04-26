@@ -1,7 +1,5 @@
 import db from '../data/db.js';
 
-const DB_NAME = 'main-pro';
-
 describe('PantryDB', () => {
   beforeAll(async () => {
     await db.ready;
@@ -9,8 +7,16 @@ describe('PantryDB', () => {
 
   beforeEach(async () => {
     // Clear all object stores instead of deleting the database
-    const stores = ['recipes', 'pantry', 'mealPlan', 'preferences', 'nutritionLog', 'searchIndex', 'queuedMutations'];
-    
+    const stores = [
+      'recipes',
+      'pantry',
+      'mealPlan',
+      'preferences',
+      'nutritionLog',
+      'searchIndex',
+      'queuedMutations',
+    ];
+
     for (const storeName of stores) {
       await new Promise((resolve, reject) => {
         const transaction = db.db.transaction(storeName, 'readwrite');

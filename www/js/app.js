@@ -1,5 +1,5 @@
 console.log('=== MODULE START ===');
-import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState, signInUser, signOutUser } from './core/appState.js';
+import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState, signInUser } from './core/appState.js';
 import { PantryManager } from './features/pantry/pantryManager.js';
 import { MealPlanner } from './features/meals/mealPlanner.js';
 import { RecipeEngine } from './logic/recipeEngine.js';
@@ -14,7 +14,7 @@ import { MealPrep } from './features/mealPrep.js';
 import syncProcessor from './data/syncProcessor.js';
 import { registerAllHandlers } from './data/mutationHandlers.js';
 import db from './data/db.js';
-import { performanceMonitor, withPerformanceTiming } from './utils/performanceMonitor.js';
+import { performanceMonitor } from './utils/performanceMonitor.js';
 
 // Lazy-loaded modules
 let geminiAI = null;
@@ -82,12 +82,12 @@ registerAllHandlers(syncProcessor);
 // Kick off lazy-loaded managers in background (parallel for faster startup)
 (async () => {
     await Promise.all([
-        (async () => { try { const mgr = await getNutritionGoalsManager(); await mgr.loadGoals(); } catch(e){} })(),
-        (async () => { try { const mgr = await getBudgetMealPlanner(); await mgr.loadTier(); } catch(e){} })(),
-        (async () => { try { const mgr = await getMealPrepPlanner(); await mgr.loadSettings(); } catch(e){} })(),
-        (async () => { try { const mgr = await getGroceryDelivery(); await mgr.loadPreferences(); } catch(e){} })(),
-        (async () => { try { const mgr = await getDeviceSyncManager(); await mgr.init(); } catch(e){} })(),
-        (async () => { try { const mgr = await getPushNotifications(); await mgr.init(); mgr.scheduleAllEnabled(); } catch(e){} })()
+        (async () => { try { const mgr = await getNutritionGoalsManager(); await mgr.loadGoals(); } catch (_error) {} })(),
+        (async () => { try { const mgr = await getBudgetMealPlanner(); await mgr.loadTier(); } catch (_error) {} })(),
+        (async () => { try { const mgr = await getMealPrepPlanner(); await mgr.loadSettings(); } catch (_error) {} })(),
+        (async () => { try { const mgr = await getGroceryDelivery(); await mgr.loadPreferences(); } catch (_error) {} })(),
+        (async () => { try { const mgr = await getDeviceSyncManager(); await mgr.init(); } catch (_error) {} })(),
+        (async () => { try { const mgr = await getPushNotifications(); await mgr.init(); mgr.scheduleAllEnabled(); } catch (_error) {} })()
     ]);
 })();
 
@@ -255,9 +255,11 @@ Object.assign(window, {
         document.getElementById('new-ingredient').value = name;
         pantryManager.addIngredient();
     },
-    sortMeals: (mode) => {
+    sortMeals: (mode, eventObj) => {
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-        event.target.classList.add('active');
+        if (eventObj?.currentTarget) {
+            eventObj.currentTarget.classList.add('active');
+        }
         mealPlanner.sortMeals(mode);
     },
     addToPlanByName: mealPlanner.addToPlanByName.bind(mealPlanner),
@@ -279,11 +281,11 @@ Object.assign(window, {
             const items = mealPlanner.getShoppingListItems?.() || [];
             const delivery = await getGroceryDelivery();
             delivery.sendToService(service, items);
-        } catch(e) { alert('Please add meals to your plan first.'); }
+        } catch (_error) { alert('Please add meals to your plan first.'); }
     },
     signInAction: async () => {
         try { await signInUser(); alert('Signed in!'); }
-        catch(e) { alert('Sign-in unavailable in this environment.'); }
+        catch (_error) { alert('Sign-in unavailable in this environment.'); }
     },
     getAISuggestions: async () => {
         const container = document.getElementById('ai-suggestions-container');
@@ -313,7 +315,7 @@ Object.assign(window, {
                 const ai = await getGeminiAI();
                 const answer = await ai.answerQuestion(text);
                 responseText.textContent = answer || 'No answer.';
-            } catch(e) { responseText.textContent = 'AI unavailable.'; }
+            } catch (_error) { responseText.textContent = 'AI unavailable.'; }
             input.value = '';
         } else {
             pantryManager.addIngredient();

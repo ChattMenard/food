@@ -14,7 +14,6 @@ export class MealHistoryAnalytics {
      * @returns {Object} Frequency analysis
      */
     async getMealFrequency(days = 30) {
-        const mealPlan = await this.db.getMealPlan();
         const nutritionLogs = await this.db.getAll('nutritionLog');
         
         const cutoffDate = new Date();
@@ -59,7 +58,7 @@ export class MealHistoryAnalytics {
      * @param {number} days - Number of days to analyze
      * @returns {Object} Nutrition trends
      */
-    async getNutritionTrends(days = 30) {
+    async getNutritionTrends(_days = 30) {
         const weeklyNutrition = await this.db.getWeeklyNutrition();
         
         const trends = {
@@ -172,7 +171,6 @@ export class MealHistoryAnalytics {
         const sortedDates = Array.from(uniqueDates).sort().reverse();
         
         let currentStreak = 0;
-        const today = new Date().toISOString().split('T')[0];
         let checkDate = new Date();
         
         for (let i = 0; i < 30; i++) {
@@ -226,8 +224,6 @@ export class MealHistoryAnalytics {
      * @returns {Object} Time preference analysis
      */
     async getCookingTimePreferences() {
-        const nutritionLogs = await this.db.getAll('nutritionLog');
-        
         // This would need recipe data to get cooking times
         // Placeholder implementation
         return {

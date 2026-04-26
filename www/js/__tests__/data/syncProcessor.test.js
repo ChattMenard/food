@@ -1,4 +1,4 @@
-import { SyncProcessor, syncProcessor } from '../../data/syncProcessor.js';
+import { SyncProcessor } from '../../data/syncProcessor.js';
 
 jest.mock('../../data/mutationQueue.js', () => ({
   getPending: jest.fn().mockResolvedValue([]),

@@ -4,10 +4,10 @@
  */
 
 import {
-    initializeGoogleAuth,
-    signInWithGoogle,
-    signOutFromGoogle,
-    refreshGoogleSession
+  initializeGoogleAuth,
+  signInWithGoogle,
+  signOutFromGoogle,
+  refreshGoogleSession,
 } from './googleAuthProvider.js';
 
 class AuthManager {
@@ -27,9 +27,10 @@ class AuthManager {
     try {
       // Initialize Google Auth
       await initializeGoogleAuth({
-        clientId: '593330232333-ibpbcc7qme63ku7a3e67i2dg33n9f1en.apps.googleusercontent.com',
+        clientId:
+          '593330232333-ibpbcc7qme63ku7a3e67i2dg33n9f1en.apps.googleusercontent.com',
         scopes: ['email', 'profile'],
-        grantOfflineAccess: true
+        grantOfflineAccess: true,
       });
 
       this.initialized = true;
@@ -50,7 +51,7 @@ class AuthManager {
       }
 
       const result = await signInWithGoogle();
-      
+
       this.currentUser = {
         id: result.id,
         email: result.email,
@@ -59,7 +60,7 @@ class AuthManager {
         familyName: result.familyName,
         photoUrl: result.imageUrl,
         idToken: result.idToken,
-        authentication: result.authentication
+        authentication: result.authentication,
       };
 
       this.isAuthenticated = true;
@@ -80,7 +81,7 @@ class AuthManager {
   async signOut() {
     try {
       await signOutFromGoogle();
-      
+
       this.currentUser = null;
       this.isAuthenticated = false;
       await this.clearSession();
@@ -99,11 +100,11 @@ class AuthManager {
   async refresh() {
     try {
       const result = await refreshGoogleSession();
-      
+
       this.currentUser.idToken = result.idToken;
       this.currentUser.authentication = result.authentication;
       await this.saveSession();
-      
+
       console.log('[AuthManager] Session refreshed');
       return this.currentUser;
     } catch (error) {
@@ -189,7 +190,7 @@ class AuthManager {
    * @param {Function} callback - Callback function to remove
    */
   unsubscribe(callback) {
-    this.listeners = this.listeners.filter(listener => listener !== callback);
+    this.listeners = this.listeners.filter((listener) => listener !== callback);
   }
 
   /**
@@ -198,7 +199,7 @@ class AuthManager {
    * @param {Object} data - Event data
    */
   notifyListeners(event, data) {
-    this.listeners.forEach(callback => callback(event, data));
+    this.listeners.forEach((callback) => callback(event, data));
   }
 }
 

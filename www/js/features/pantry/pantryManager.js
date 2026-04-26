@@ -278,7 +278,7 @@ export class PantryManager {
     async stopSpeechRecognition() {
         // Stop web speech recognition
         if (this._recognition) {
-            try { this._recognition.stop(); } catch (e) {}
+            try { this._recognition.stop(); } catch (_error) {}
             this._recognition = null;
         }
 
@@ -294,7 +294,7 @@ export class PantryManager {
 
         try {
             await SpeechRecognition.stop();
-        } catch (e) {}
+        } catch (_error) {}
 
         const modal = document.getElementById('speech-modal');
         modal.classList.add('hidden');

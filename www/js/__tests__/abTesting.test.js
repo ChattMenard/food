@@ -1,4 +1,8 @@
-import { ABTesting, getABTesting, isFeatureEnabled } from '../utils/abTesting.js';
+import {
+  ABTesting,
+  getABTesting,
+  isFeatureEnabled,
+} from '../utils/abTesting.js';
 
 describe('abTesting', () => {
   let abTesting;
@@ -73,7 +77,10 @@ describe('abTesting', () => {
     it('sets date range', () => {
       const startDate = '2024-01-01';
       const endDate = '2024-12-31';
-      abTesting.registerExperiment('test-exp', ['A', 'B'], { startDate, endDate });
+      abTesting.registerExperiment('test-exp', ['A', 'B'], {
+        startDate,
+        endDate,
+      });
       const experiment = abTesting.experiments.get('test-exp');
       expect(experiment.startDate).toBe(startDate);
       expect(experiment.endDate).toBe(endDate);
@@ -97,7 +104,7 @@ describe('abTesting', () => {
       futureDate.setFullYear(futureDate.getFullYear() + 1);
       abTesting.registerExperiment('test-exp', ['A', 'B'], {
         enabled: true,
-        startDate: futureDate.toISOString()
+        startDate: futureDate.toISOString(),
       });
       const variant = abTesting.getVariant('test-exp');
       expect(variant).toBe(null);
@@ -108,7 +115,7 @@ describe('abTesting', () => {
       pastDate.setFullYear(pastDate.getFullYear() - 1);
       abTesting.registerExperiment('test-exp', ['A', 'B'], {
         enabled: true,
-        endDate: pastDate.toISOString()
+        endDate: pastDate.toISOString(),
       });
       const variant = abTesting.getVariant('test-exp');
       expect(variant).toBe(null);
@@ -137,7 +144,9 @@ describe('abTesting', () => {
     });
 
     it('respects weights', () => {
-      abTesting.registerExperiment('test-exp', ['A', 'B'], { weights: [10, 0] });
+      abTesting.registerExperiment('test-exp', ['A', 'B'], {
+        weights: [10, 0],
+      });
       const experiment = abTesting.experiments.get('test-exp');
       const variant = abTesting.assignVariant('test-exp', experiment);
       expect(variant).toBe('A');
@@ -182,10 +191,13 @@ describe('abTesting', () => {
   describe('trackExposure', () => {
     it('tracks exposure to analytics', () => {
       abTesting.trackExposure('test-exp', 'A');
-      expect(window.analytics.track).toHaveBeenCalledWith('experiment_exposure', {
-        experiment: 'test-exp',
-        variant: 'A'
-      });
+      expect(window.analytics.track).toHaveBeenCalledWith(
+        'experiment_exposure',
+        {
+          experiment: 'test-exp',
+          variant: 'A',
+        }
+      );
     });
 
     it('does not throw when analytics not available', () => {
@@ -198,11 +210,14 @@ describe('abTesting', () => {
   describe('trackConversion', () => {
     it('tracks conversion to analytics', () => {
       abTesting.trackConversion('test-exp', 'A', 'signup');
-      expect(window.analytics.track).toHaveBeenCalledWith('experiment_conversion', {
-        experiment: 'test-exp',
-        variant: 'A',
-        goal: 'signup'
-      });
+      expect(window.analytics.track).toHaveBeenCalledWith(
+        'experiment_conversion',
+        {
+          experiment: 'test-exp',
+          variant: 'A',
+          goal: 'signup',
+        }
+      );
     });
   });
 

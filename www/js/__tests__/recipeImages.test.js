@@ -3,7 +3,7 @@ import {
   getFallbackImageUrl,
   preloadImage,
   generateImageOptions,
-  addImagesToRecipes
+  addImagesToRecipes,
 } from '../advanced/recipeImages.js';
 
 describe('recipeImages', () => {
@@ -91,7 +91,9 @@ describe('recipeImages', () => {
     it('generates multiple image options', () => {
       const options = generateImageOptions('Chicken Pasta', 'Italian', 3);
       expect(options).toHaveLength(3);
-      expect(options.every(url => url.includes('source.unsplash.com'))).toBe(true);
+      expect(options.every((url) => url.includes('source.unsplash.com'))).toBe(
+        true
+      );
     });
 
     it('includes variations in search terms', () => {
@@ -116,7 +118,7 @@ describe('recipeImages', () => {
     it('adds image URL to recipes without images', () => {
       const recipes = [
         { id: 1, name: 'Chicken Pasta', category: 'Italian' },
-        { id: 2, name: 'Grilled Salmon', category: 'Seafood' }
+        { id: 2, name: 'Grilled Salmon', category: 'Seafood' },
       ];
       const result = addImagesToRecipes(recipes);
       expect(result[0]).toHaveProperty('image');
@@ -126,7 +128,11 @@ describe('recipeImages', () => {
 
     it('preserves existing image URLs', () => {
       const recipes = [
-        { id: 1, name: 'Chicken Pasta', image: 'https://example.com/image.jpg' }
+        {
+          id: 1,
+          name: 'Chicken Pasta',
+          image: 'https://example.com/image.jpg',
+        },
       ];
       const result = addImagesToRecipes(recipes);
       expect(result[0].image).toBe('https://example.com/image.jpg');
@@ -134,7 +140,7 @@ describe('recipeImages', () => {
 
     it('preserves all other recipe properties', () => {
       const recipes = [
-        { id: 1, name: 'Chicken Pasta', category: 'Italian', time: 30 }
+        { id: 1, name: 'Chicken Pasta', category: 'Italian', time: 30 },
       ];
       const result = addImagesToRecipes(recipes);
       expect(result[0].id).toBe(1);
@@ -149,9 +155,7 @@ describe('recipeImages', () => {
     });
 
     it('handles single recipe', () => {
-      const recipes = [
-        { id: 1, name: 'Pasta', category: 'Italian' }
-      ];
+      const recipes = [{ id: 1, name: 'Pasta', category: 'Italian' }];
       const result = addImagesToRecipes(recipes);
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty('image');

@@ -284,7 +284,7 @@ class MealPrepPlanner {
     /**
      * Generate prep schedule with parallel tasks
      */
-    generateSchedule(recipes, strategy) {
+    generateSchedule(recipes, _strategy) {
         const schedule = [];
         let currentTime = 0; // Minutes from start
 
@@ -303,7 +303,7 @@ class MealPrepPlanner {
         };
 
         // Create tasks from recipes
-        recipes.forEach((recipe, index) => {
+        recipes.forEach((recipe, _index) => {
             // Preheating
             if (recipe.cookTime > 15) {
                 taskGroups['preheat'].push({

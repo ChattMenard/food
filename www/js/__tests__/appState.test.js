@@ -8,7 +8,7 @@ import {
   saveRecipeRatingsState,
   saveUserState,
   signInUser,
-  signOutUser
+  signOutUser,
 } from '../core/appState.js';
 
 jest.mock('../data/db.js', () => ({
@@ -20,13 +20,15 @@ jest.mock('../data/db.js', () => ({
   getPreferences: jest.fn().mockResolvedValue({}),
   setPreferences: jest.fn().mockResolvedValue(),
   get: jest.fn().mockResolvedValue({}),
-  put: jest.fn().mockResolvedValue()
+  put: jest.fn().mockResolvedValue(),
 }));
 
 jest.mock('../auth/authManager.js', () => ({
   loadSession: jest.fn().mockResolvedValue(null),
-  signIn: jest.fn().mockResolvedValue({ id: 'user123', email: 'test@example.com' }),
-  signOut: jest.fn().mockResolvedValue()
+  signIn: jest
+    .fn()
+    .mockResolvedValue({ id: 'user123', email: 'test@example.com' }),
+  signOut: jest.fn().mockResolvedValue(),
 }));
 
 import db from '../data/db.js';
@@ -40,7 +42,15 @@ describe('appState', () => {
     const state = getState();
     state.pantry = [];
     state.mealPlan = {};
-    state.preferences = { people: 1, diet: 'none', diets: [], allergy: 'none', cuisine: 'all', maxTime: 60, difficulty: 'any' };
+    state.preferences = {
+      people: 1,
+      diet: 'none',
+      diets: [],
+      allergy: 'none',
+      cuisine: 'all',
+      maxTime: 60,
+      difficulty: 'any',
+    };
     state.recipeRatings = {};
     state.user = null;
   });
@@ -148,7 +158,10 @@ describe('appState', () => {
     it('saves recipe ratings to db and updates state', async () => {
       const ratings = { recipe1: 5, recipe2: 4 };
       await saveRecipeRatingsState(ratings);
-      expect(db.put).toHaveBeenCalledWith('preferences', expect.objectContaining({ key: 'recipeRatings' }));
+      expect(db.put).toHaveBeenCalledWith(
+        'preferences',
+        expect.objectContaining({ key: 'recipeRatings' })
+      );
       expect(getState().recipeRatings).toEqual(ratings);
     });
   });

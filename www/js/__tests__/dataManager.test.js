@@ -1,18 +1,21 @@
 import { DataManager } from '../data/dataManager.js';
 
 jest.mock('../advanced/recipeImages.js', () => ({
-  addImagesToRecipes: recipes =>
-    recipes.map(recipe => ({ ...recipe, image: recipe.image || 'mocked-image' })),
+  addImagesToRecipes: (recipes) =>
+    recipes.map((recipe) => ({
+      ...recipe,
+      image: recipe.image || 'mocked-image',
+    })),
 }));
 
 jest.mock('../utils/dietFilters.js', () => ({
-  normalizeCuisine: cuisine => cuisine?.toLowerCase() || 'other',
+  normalizeCuisine: (cuisine) => cuisine?.toLowerCase() || 'other',
 }));
 
 jest.mock('../logic/searchIndex.js', () => ({
   SearchIndex: jest.fn().mockImplementation(() => ({
-    search: jest.fn().mockReturnValue([])
-  }))
+    search: jest.fn().mockReturnValue([]),
+  })),
 }));
 
 describe('DataManager', () => {
@@ -25,7 +28,11 @@ describe('DataManager', () => {
     setRecipes = jest.fn();
     setAutocompleteIngredients = jest.fn();
     updateMeals = jest.fn();
-    manager = new DataManager({ setRecipes, setAutocompleteIngredients, updateMeals });
+    manager = new DataManager({
+      setRecipes,
+      setAutocompleteIngredients,
+      updateMeals,
+    });
   });
 
   afterEach(() => {
@@ -33,12 +40,16 @@ describe('DataManager', () => {
   });
 
   it('validates nutrition objects correctly', () => {
-    expect(manager.validateNutrition({ calories: 10, protein: 1, carbs: 2, fat: 3 })).toBe(true);
+    expect(
+      manager.validateNutrition({ calories: 10, protein: 1, carbs: 2, fat: 3 })
+    ).toBe(true);
     expect(manager.validateNutrition({ calories: 10 })).toBe(false);
     expect(manager.validateNutrition(null)).toBe(false);
     expect(manager.validateNutrition(undefined)).toBe(false);
     expect(manager.validateNutrition('not an object')).toBe(false);
-    expect(manager.validateNutrition({ calories: 10, protein: 1, carbs: 2 })).toBe(false);
+    expect(
+      manager.validateNutrition({ calories: 10, protein: 1, carbs: 2 })
+    ).toBe(false);
   });
 
   it('returns empty array if search index not ready', () => {
@@ -56,9 +67,15 @@ describe('DataManager', () => {
   });
 
   it('loads datasets and sets recipes', async () => {
-    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt', 'pepper']) };
+    const ingredientsResponse = {
+      json: jest.fn().mockResolvedValue(['salt', 'pepper']),
+    };
     const recipes = [
-      { name: 'Test Recipe', ingredients: ['test'], nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } }
+      {
+        name: 'Test Recipe',
+        ingredients: ['test'],
+        nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 },
+      },
     ];
 
     global.fetch = jest
@@ -76,17 +93,33 @@ describe('DataManager', () => {
   it('filters out recipes with invalid schema', async () => {
     const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
     const invalidRecipes = [
-      { name: 'Valid Recipe', ingredients: ['test'], nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
-      { ingredients: ['test'], nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
-      { name: 'No Ingredients', nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
-      { name: 'Invalid Ingredients', ingredients: 'not an array', nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
+      {
+        name: 'Valid Recipe',
+        ingredients: ['test'],
+        nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 },
+      },
+      {
+        ingredients: ['test'],
+        nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 },
+      },
+      {
+        name: 'No Ingredients',
+        nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 },
+      },
+      {
+        name: 'Invalid Ingredients',
+        ingredients: 'not an array',
+        nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 },
+      },
     ];
 
     global.fetch = jest
       .fn()
       .mockResolvedValueOnce(ingredientsResponse)
       .mockRejectedValueOnce(new Error('Gzip error'))
-      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(invalidRecipes) });
+      .mockResolvedValueOnce({
+        json: jest.fn().mockResolvedValue(invalidRecipes),
+      });
 
     await manager.loadData();
 
@@ -98,8 +131,16 @@ describe('DataManager', () => {
   it('removes invalid nutrition data from recipes', async () => {
     const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
     const recipes = [
-      { name: 'Valid Recipe', ingredients: ['test'], nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
-      { name: 'Invalid Nutrition', ingredients: ['test'], nutrition: { calories: 100 } },
+      {
+        name: 'Valid Recipe',
+        ingredients: ['test'],
+        nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 },
+      },
+      {
+        name: 'Invalid Nutrition',
+        ingredients: ['test'],
+        nutrition: { calories: 100 },
+      },
     ];
 
     global.fetch = jest
@@ -111,14 +152,21 @@ describe('DataManager', () => {
     await manager.loadData();
 
     const call = setRecipes.mock.calls[0][0];
-    const invalidRecipeResult = call.find(r => r.name === 'Invalid Nutrition');
+    const invalidRecipeResult = call.find(
+      (r) => r.name === 'Invalid Nutrition'
+    );
     expect(invalidRecipeResult.nutrition).toBeUndefined();
   });
 
   it('normalizes cuisine values for recipes with category', async () => {
     const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
     const recipes = [
-      { name: 'Italian Recipe', ingredients: ['test'], category: 'ITALIAN', nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 } },
+      {
+        name: 'Italian Recipe',
+        ingredients: ['test'],
+        category: 'ITALIAN',
+        nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 },
+      },
     ];
 
     global.fetch = jest
@@ -138,7 +186,7 @@ describe('DataManager', () => {
     const recipes = Array.from({ length: 600 }, (_, i) => ({
       name: `Recipe ${i}`,
       ingredients: ['test'],
-      nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 }
+      nutrition: { calories: 100, protein: 5, carbs: 10, fat: 5 },
     }));
 
     global.fetch = jest

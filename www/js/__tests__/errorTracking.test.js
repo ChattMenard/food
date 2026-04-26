@@ -1,4 +1,8 @@
-import { ErrorTracking, getErrorTracking, initErrorTracking } from '../utils/errorTracking.js';
+import {
+  ErrorTracking,
+  getErrorTracking,
+  initErrorTracking,
+} from '../utils/errorTracking.js';
 
 describe('ErrorTracking', () => {
   let tracker;
@@ -24,7 +28,11 @@ describe('ErrorTracking', () => {
 
   describe('init', () => {
     it('initializes with config', () => {
-      tracker.init({ dsn: 'test-dsn', environment: 'production', release: '2.0.0' });
+      tracker.init({
+        dsn: 'test-dsn',
+        environment: 'production',
+        release: '2.0.0',
+      });
       expect(tracker.dsn).toBe('test-dsn');
       expect(tracker.environment).toBe('production');
       expect(tracker.release).toBe('2.0.0');
@@ -113,7 +121,9 @@ describe('ErrorTracking', () => {
 
     it('captures errors from wrapped function', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const fn = jest.fn(() => { throw new Error('Test error'); });
+      const fn = jest.fn(() => {
+        throw new Error('Test error');
+      });
       const wrapped = tracker.wrap(fn, 'testFunction');
       expect(() => wrapped()).toThrow('Test error');
       expect(consoleSpy).toHaveBeenCalled();
@@ -139,7 +149,9 @@ describe('ErrorTracking', () => {
 
     it('captures errors from wrapped async function', async () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const fn = jest.fn(async () => { throw new Error('Test error'); });
+      const fn = jest.fn(async () => {
+        throw new Error('Test error');
+      });
       const wrapped = tracker.wrapAsync(fn, 'testFunction');
       await expect(wrapped()).rejects.toThrow('Test error');
       expect(consoleSpy).toHaveBeenCalled();

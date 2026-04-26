@@ -17,7 +17,7 @@ describe('MealPrep', () => {
       getMealPlan: mockGetMealPlan,
       getRecipes: mockGetRecipes,
       getPreferences: mockGetPreferences,
-      announce: mockAnnounce
+      announce: mockAnnounce,
     });
   });
 
@@ -41,7 +41,7 @@ describe('MealPrep', () => {
         { name: 'Recipe B', servings: 4, time: 90 },
         { name: 'Recipe C', servings: 2, time: 30 },
         { name: 'Recipe D', servings: 8, time: 150 },
-        { name: 'Recipe E', servings: 4, time: 45 }
+        { name: 'Recipe E', servings: 4, time: 45 },
       ]);
 
       const suggestions = mealPrep.getBatchCookingSuggestions();
@@ -52,7 +52,7 @@ describe('MealPrep', () => {
     it('filters out recipes with low servings', () => {
       mockGetRecipes.mockReturnValue([
         { name: 'Recipe A', servings: 2, time: 30 },
-        { name: 'Recipe B', servings: 3, time: 45 }
+        { name: 'Recipe B', servings: 3, time: 45 },
       ]);
 
       const suggestions = mealPrep.getBatchCookingSuggestions();
@@ -62,7 +62,7 @@ describe('MealPrep', () => {
     it('filters out recipes with high time', () => {
       mockGetRecipes.mockReturnValue([
         { name: 'Recipe A', servings: 6, time: 150 },
-        { name: 'Recipe B', servings: 8, time: 200 }
+        { name: 'Recipe B', servings: 8, time: 200 },
       ]);
 
       const suggestions = mealPrep.getBatchCookingSuggestions();
@@ -82,7 +82,7 @@ describe('MealPrep', () => {
         { name: 'Recipe C', servings: 6, time: 60 },
         { name: 'Recipe D', servings: 7, time: 60 },
         { name: 'Recipe E', servings: 8, time: 60 },
-        { name: 'Recipe F', servings: 9, time: 60 }
+        { name: 'Recipe F', servings: 9, time: 60 },
       ]);
 
       const suggestions = mealPrep.getBatchCookingSuggestions();
@@ -93,7 +93,7 @@ describe('MealPrep', () => {
       mockGetRecipes.mockReturnValue([
         { name: 'Recipe A', servings: 4, time: 60 },
         { name: 'Recipe B', servings: 8, time: 60 },
-        { name: 'Recipe C', servings: 6, time: 60 }
+        { name: 'Recipe C', servings: 6, time: 60 },
       ]);
 
       const suggestions = mealPrep.getBatchCookingSuggestions();
@@ -110,12 +110,12 @@ describe('MealPrep', () => {
         Tuesday: 'Pasta',
         Wednesday: 'Salad',
         Thursday: 'Pasta',
-        Friday: 'Salad'
+        Friday: 'Salad',
       });
 
       mockGetRecipes.mockReturnValue([
         { name: 'Pasta', servings: 4 },
-        { name: 'Salad', servings: 2 }
+        { name: 'Salad', servings: 2 },
       ]);
 
       const schedule = mealPrep.calculatePrepSchedule();
@@ -127,12 +127,10 @@ describe('MealPrep', () => {
     it('calculates savings based on servings', () => {
       mockGetMealPlan.mockReturnValue({
         Monday: 'Pasta',
-        Tuesday: 'Pasta'
+        Tuesday: 'Pasta',
       });
 
-      mockGetRecipes.mockReturnValue([
-        { name: 'Pasta', servings: 4 }
-      ]);
+      mockGetRecipes.mockReturnValue([{ name: 'Pasta', servings: 4 }]);
 
       const schedule = mealPrep.calculatePrepSchedule();
       expect(schedule[0].savings).toBe(8);
@@ -142,13 +140,13 @@ describe('MealPrep', () => {
       mockGetMealPlan.mockReturnValue({
         Monday: 'Pasta',
         Tuesday: 'Salad',
-        Wednesday: 'Soup'
+        Wednesday: 'Soup',
       });
 
       mockGetRecipes.mockReturnValue([
         { name: 'Pasta', servings: 4 },
         { name: 'Salad', servings: 2 },
-        { name: 'Soup', servings: 3 }
+        { name: 'Soup', servings: 3 },
       ]);
 
       const schedule = mealPrep.calculatePrepSchedule();
@@ -179,12 +177,12 @@ describe('MealPrep', () => {
         Tuesday: 'Pasta',
         Wednesday: 'Salad',
         Thursday: 'Salad',
-        Friday: 'Salad'
+        Friday: 'Salad',
       });
 
       mockGetRecipes.mockReturnValue([
         { name: 'Pasta', servings: 4 },
-        { name: 'Salad', servings: 2 }
+        { name: 'Salad', servings: 2 },
       ]);
 
       const schedule = mealPrep.calculatePrepSchedule();
@@ -203,7 +201,7 @@ describe('MealPrep', () => {
     it('prefers Saturday if it has more meals', () => {
       mockGetMealPlan.mockReturnValue({
         Saturday: 'Pasta',
-        Sunday: null
+        Sunday: null,
       });
 
       const day = mealPrep.suggestPrepDay();
@@ -213,7 +211,7 @@ describe('MealPrep', () => {
     it('prefers Sunday if it has more meals', () => {
       mockGetMealPlan.mockReturnValue({
         Saturday: null,
-        Sunday: 'Pasta'
+        Sunday: 'Pasta',
       });
 
       const day = mealPrep.suggestPrepDay();
@@ -223,7 +221,7 @@ describe('MealPrep', () => {
     it('returns Sunday if both have equal meals', () => {
       mockGetMealPlan.mockReturnValue({
         Saturday: 'Pasta',
-        Sunday: 'Salad'
+        Sunday: 'Salad',
       });
 
       const day = mealPrep.suggestPrepDay();

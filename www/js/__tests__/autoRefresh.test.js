@@ -1,4 +1,11 @@
-import { AutoRefreshManager, getAutoRefreshManager, triggerPantryUpdate, triggerMealPlanUpdate, triggerPreferencesUpdate, triggerMealLogged } from '../utils/autoRefresh.js';
+import {
+  AutoRefreshManager,
+  getAutoRefreshManager,
+  triggerPantryUpdate,
+  triggerMealPlanUpdate,
+  triggerPreferencesUpdate,
+  triggerMealLogged,
+} from '../utils/autoRefresh.js';
 
 describe('AutoRefreshManager', () => {
   let manager;
@@ -76,7 +83,9 @@ describe('AutoRefreshManager', () => {
     });
 
     it('handles callback errors gracefully', () => {
-      const callback1 = jest.fn(() => { throw new Error('Test error'); });
+      const callback1 = jest.fn(() => {
+        throw new Error('Test error');
+      });
       const callback2 = jest.fn();
       manager.on('pantry', callback1);
       manager.on('pantry', callback2);
@@ -107,7 +116,7 @@ describe('AutoRefreshManager', () => {
     it('overrides db.put method', () => {
       const db = {
         put: jest.fn().mockResolvedValue('result'),
-        delete: jest.fn().mockResolvedValue('result')
+        delete: jest.fn().mockResolvedValue('result'),
       };
       manager.setupIndexedDBNotifications(db);
       expect(db.put).not.toBe(jest.fn());
@@ -116,7 +125,7 @@ describe('AutoRefreshManager', () => {
     it('overrides db.delete method', () => {
       const db = {
         put: jest.fn().mockResolvedValue('result'),
-        delete: jest.fn().mockResolvedValue('result')
+        delete: jest.fn().mockResolvedValue('result'),
       };
       manager.setupIndexedDBNotifications(db);
       expect(db.delete).not.toBe(jest.fn());
@@ -157,28 +166,40 @@ describe('AutoRefreshManager', () => {
     it('adds pantry-updated event listener', () => {
       const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
       manager.setupCustomEvents();
-      expect(addEventListenerSpy).toHaveBeenCalledWith('pantry-updated', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith(
+        'pantry-updated',
+        expect.any(Function)
+      );
       addEventListenerSpy.mockRestore();
     });
 
     it('adds meal-plan-updated event listener', () => {
       const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
       manager.setupCustomEvents();
-      expect(addEventListenerSpy).toHaveBeenCalledWith('meal-plan-updated', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith(
+        'meal-plan-updated',
+        expect.any(Function)
+      );
       addEventListenerSpy.mockRestore();
     });
 
     it('adds preferences-updated event listener', () => {
       const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
       manager.setupCustomEvents();
-      expect(addEventListenerSpy).toHaveBeenCalledWith('preferences-updated', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith(
+        'preferences-updated',
+        expect.any(Function)
+      );
       addEventListenerSpy.mockRestore();
     });
 
     it('adds meal-logged event listener', () => {
       const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
       manager.setupCustomEvents();
-      expect(addEventListenerSpy).toHaveBeenCalledWith('meal-logged', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith(
+        'meal-logged',
+        expect.any(Function)
+      );
       addEventListenerSpy.mockRestore();
     });
   });
@@ -195,8 +216,10 @@ describe('AutoRefreshManager', () => {
       const callback = jest.fn();
       manager.on('pantry', callback);
       manager.setupCustomEvents();
-      
-      window.dispatchEvent(new CustomEvent('pantry-updated', { detail: { data: 'test' } }));
+
+      window.dispatchEvent(
+        new CustomEvent('pantry-updated', { detail: { data: 'test' } })
+      );
       expect(callback).toHaveBeenCalledWith({ data: 'test' });
     });
   });
@@ -214,12 +237,12 @@ describe('AutoRefreshManager', () => {
       const fetchFn = jest.fn().mockResolvedValue({ data: 'fresh' });
       const callback = jest.fn();
       manager.on('test', callback);
-      
+
       manager.setupPeriodicRefresh('test', fetchFn, 1000);
-      
+
       jest.advanceTimersByTime(1000);
       await Promise.resolve();
-      
+
       expect(fetchFn).toHaveBeenCalled();
       expect(callback).toHaveBeenCalledWith({ data: 'fresh' });
     });
@@ -228,19 +251,19 @@ describe('AutoRefreshManager', () => {
       const fetchFn = jest.fn().mockRejectedValue(new Error('Fetch error'));
       const callback = jest.fn();
       manager.on('test', callback);
-      
+
       manager.setupPeriodicRefresh('test', fetchFn, 1000);
-      
+
       jest.advanceTimersByTime(1000);
       await Promise.resolve();
-      
+
       expect(callback).not.toHaveBeenCalled();
     });
 
     it('uses default interval of 60 seconds if not specified', () => {
       const fetchFn = jest.fn();
       manager.setupPeriodicRefresh('test', fetchFn);
-      
+
       jest.advanceTimersByTime(60000);
       expect(fetchFn).toHaveBeenCalled();
     });
@@ -259,9 +282,9 @@ describe('AutoRefreshManager', () => {
       const callback = jest.fn();
       manager.on('pantry', callback);
       manager.triggerDebounced('pantry', { data: 'test' });
-      
+
       expect(callback).not.toHaveBeenCalled();
-      
+
       jest.advanceTimersByTime(1000);
       expect(callback).toHaveBeenCalledWith({ data: 'test' });
     });
@@ -269,7 +292,7 @@ describe('AutoRefreshManager', () => {
     it('resets pending refresh after trigger', () => {
       manager.triggerDebounced('pantry', { data: 'test' });
       expect(manager.pendingRefresh).toBe(true);
-      
+
       jest.advanceTimersByTime(1000);
       expect(manager.pendingRefresh).toBe(false);
     });
@@ -287,14 +310,14 @@ describe('AutoRefreshManager', () => {
     it('triggers debounced refresh on put', async () => {
       const db = {
         put: jest.fn().mockResolvedValue('result'),
-        delete: jest.fn().mockResolvedValue('result')
+        delete: jest.fn().mockResolvedValue('result'),
       };
       const callback = jest.fn();
       manager.on('pantry', callback);
-      
+
       manager.setupIndexedDBNotifications(db);
       await db.put('pantry', { id: 1 });
-      
+
       expect(callback).not.toHaveBeenCalled();
       jest.advanceTimersByTime(1000);
       expect(callback).toHaveBeenCalled();
@@ -303,14 +326,14 @@ describe('AutoRefreshManager', () => {
     it('triggers debounced refresh on delete', async () => {
       const db = {
         put: jest.fn().mockResolvedValue('result'),
-        delete: jest.fn().mockResolvedValue('result')
+        delete: jest.fn().mockResolvedValue('result'),
       };
       const callback = jest.fn();
       manager.on('pantry', callback);
-      
+
       manager.setupIndexedDBNotifications(db);
       await db.delete('pantry', 1);
-      
+
       expect(callback).not.toHaveBeenCalled();
       jest.advanceTimersByTime(1000);
       expect(callback).toHaveBeenCalledWith({ key: 1, deleted: true });

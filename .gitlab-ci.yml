@@ -1,85 +1,53 @@
 # GitLab CI/CD Pipeline
-# Triggers: push to main/develop branches, merge requests
+# Strict gates: lint + unit + build verification + E2E smoke
+# Non-blocking reports: format drift + dependency audit
 
 stages:
-  - test
+  - validate
   - e2e
-  - lint
-  - build
-  - security
+  - report
 
-# Unit & Integration Tests
-unit-tests:
-  stage: test
-  image: node:18
+variables:
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+
+default:
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
-      - node_modules/
-  script:
-    - npm ci
-    - npm run test:coverage
-  artifacts:
-    paths:
-      - coverage/
-    expire_in: 7 days
-  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+      - .npm/
 
-# E2E Tests (Playwright)
-e2e-tests:
-  stage: e2e
-  image: node:18
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
-  services:
-    - name: selenium/standalone-chrome
-      alias: chrome
-  script:
-    - npm ci
-    - npx playwright install --with-deps
-    - npm run test:e2e
-  artifacts:
-    when: always
-    paths:
-      - test-results/
-    expire_in: 7 days
-
-# Lint & Format Check
-lint:
-  stage: lint
-  image: node:18
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
+validate:
+  stage: validate
+  image: node:20
   script:
     - npm ci
     - npm run lint
-    - npm run format:check
-  allow_failure: true
+    - npm run test:ci
+    - npm run build:css:once
 
-# Build Verification
-build:
-  stage: build
-  image: node:18
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
+e2e-smoke:
+  stage: e2e
+  image: mcr.microsoft.com/playwright:v1.50.0-jammy
   script:
     - npm ci
-    - npm run build --if-present
+    - npm run test:e2e:ci
   artifacts:
+    when: always
     paths:
-      - www/dist/
+      - playwright-report/
+      - test-results/
     expire_in: 7 days
 
-# Security Audit
-security:
-  stage: security
-  image: node:18
+format-report:
+  stage: report
+  image: node:20
   script:
-    - npm audit --production
-  allow_failure: true
+    - npm ci
+    - npm run format:check
+
+dependency-audit:
+  stage: report
+  image: node:20
+  script:
+    - npm ci
+    - npm audit --omit=dev

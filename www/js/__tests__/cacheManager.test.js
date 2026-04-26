@@ -246,9 +246,15 @@ describe('CacheManager', () => {
     it('loads cache from localStorage', () => {
       const data = {
         entries: [
-          { key: 'key1', value: 'value1', timestamp: Date.now(), lastAccessed: Date.now(), accessCount: 0 }
+          {
+            key: 'key1',
+            value: 'value1',
+            timestamp: Date.now(),
+            lastAccessed: Date.now(),
+            accessCount: 0,
+          },
         ],
-        savedAt: Date.now()
+        savedAt: Date.now(),
       };
       localStorage.setItem('app-cache', JSON.stringify(data));
       const newCache = new CacheManager({ ttl: 1000, maxSize: 3 });
@@ -259,9 +265,15 @@ describe('CacheManager', () => {
     it('ignores expired entries on load', () => {
       const data = {
         entries: [
-          { key: 'key1', value: 'value1', timestamp: Date.now() - 2000, lastAccessed: Date.now() - 2000, accessCount: 0 }
+          {
+            key: 'key1',
+            value: 'value1',
+            timestamp: Date.now() - 2000,
+            lastAccessed: Date.now() - 2000,
+            accessCount: 0,
+          },
         ],
-        savedAt: Date.now()
+        savedAt: Date.now(),
       };
       localStorage.setItem('app-cache', JSON.stringify(data));
       const newCache = new CacheManager({ ttl: 1000, maxSize: 3 });

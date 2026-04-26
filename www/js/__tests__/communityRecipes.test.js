@@ -8,7 +8,7 @@ describe('CommunityRecipes', () => {
     mockDb = {
       put: jest.fn().mockResolvedValue(),
       get: jest.fn(),
-      getAll: jest.fn().mockResolvedValue([])
+      getAll: jest.fn().mockResolvedValue([]),
     };
     manager = new CommunityRecipes(mockDb);
     window.analytics = { track: jest.fn() };
@@ -32,7 +32,7 @@ describe('CommunityRecipes', () => {
         ingredients: ['ingredient1', 'ingredient2'],
         instructions: 'Step 1, Step 2',
         time: 30,
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -45,7 +45,7 @@ describe('CommunityRecipes', () => {
         ingredients: ['ingredient1'],
         instructions: 'Step 1',
         time: 30,
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -59,7 +59,7 @@ describe('CommunityRecipes', () => {
         ingredients: ['ingredient1'],
         instructions: 'Step 1',
         time: 30,
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -72,7 +72,7 @@ describe('CommunityRecipes', () => {
         name: 'Test Recipe',
         instructions: 'Step 1',
         time: 30,
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -86,7 +86,7 @@ describe('CommunityRecipes', () => {
         ingredients: [],
         instructions: 'Step 1',
         time: 30,
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -99,7 +99,7 @@ describe('CommunityRecipes', () => {
         name: 'Test Recipe',
         ingredients: ['ingredient1'],
         time: 30,
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -113,7 +113,7 @@ describe('CommunityRecipes', () => {
         ingredients: ['ingredient1'],
         instructions: '   ',
         time: 30,
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -126,7 +126,7 @@ describe('CommunityRecipes', () => {
         name: 'Test Recipe',
         ingredients: ['ingredient1'],
         instructions: 'Step 1',
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -140,7 +140,7 @@ describe('CommunityRecipes', () => {
         ingredients: ['ingredient1'],
         instructions: 'Step 1',
         time: -5,
-        servings: 4
+        servings: 4,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -153,7 +153,7 @@ describe('CommunityRecipes', () => {
         name: 'Test Recipe',
         ingredients: ['ingredient1'],
         instructions: 'Step 1',
-        time: 30
+        time: 30,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -167,7 +167,7 @@ describe('CommunityRecipes', () => {
         ingredients: ['ingredient1'],
         instructions: 'Step 1',
         time: 30,
-        servings: 0
+        servings: 0,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -181,7 +181,7 @@ describe('CommunityRecipes', () => {
         ingredients: [],
         instructions: '',
         time: -1,
-        servings: 0
+        servings: 0,
       };
 
       const result = manager.validateRecipe(recipe);
@@ -192,9 +192,15 @@ describe('CommunityRecipes', () => {
 
   describe('reportRecipe', () => {
     it('reports recipe successfully', async () => {
-      const result = await manager.reportRecipe('recipe123', 'inappropriate content');
+      const result = await manager.reportRecipe(
+        'recipe123',
+        'inappropriate content'
+      );
       expect(result.success).toBe(true);
-      expect(window.analytics.track).toHaveBeenCalledWith('recipe_reported', { recipeId: 'recipe123', reason: 'inappropriate content' });
+      expect(window.analytics.track).toHaveBeenCalledWith('recipe_reported', {
+        recipeId: 'recipe123',
+        reason: 'inappropriate content',
+      });
     });
 
     it('handles missing analytics', async () => {
@@ -211,7 +217,7 @@ describe('CommunityRecipes', () => {
         ingredients: ['ingredient1'],
         instructions: 'Step 1',
         time: 30,
-        servings: 4
+        servings: 4,
       };
 
       const result = await manager.submitRecipe(recipe);
@@ -220,7 +226,10 @@ describe('CommunityRecipes', () => {
       expect(result.status).toBe('pending');
       expect(result.likes).toBe(0);
       expect(result.saves).toBe(0);
-      expect(mockDb.put).toHaveBeenCalledWith('communitySubmissions', expect.objectContaining({ name: 'Test Recipe' }));
+      expect(mockDb.put).toHaveBeenCalledWith(
+        'communitySubmissions',
+        expect.objectContaining({ name: 'Test Recipe' })
+      );
     });
 
     it('throws error for invalid recipe', async () => {
@@ -229,7 +238,7 @@ describe('CommunityRecipes', () => {
         ingredients: [],
         instructions: '',
         time: -1,
-        servings: 0
+        servings: 0,
       };
 
       await expect(manager.submitRecipe(recipe)).rejects.toThrow();
@@ -240,7 +249,7 @@ describe('CommunityRecipes', () => {
     it('returns approved recipes', async () => {
       mockDb.getAll.mockResolvedValue([
         { id: '1', name: 'Recipe 1', status: 'approved', likes: 10 },
-        { id: '2', name: 'Recipe 2', status: 'pending', likes: 5 }
+        { id: '2', name: 'Recipe 2', status: 'pending', likes: 5 },
       ]);
 
       const recipes = await manager.getCommunityRecipes();
@@ -250,8 +259,20 @@ describe('CommunityRecipes', () => {
 
     it('filters by cuisine', async () => {
       mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'Recipe 1', status: 'approved', cuisine: 'Italian', likes: 10 },
-        { id: '2', name: 'Recipe 2', status: 'approved', cuisine: 'Mexican', likes: 5 }
+        {
+          id: '1',
+          name: 'Recipe 1',
+          status: 'approved',
+          cuisine: 'Italian',
+          likes: 10,
+        },
+        {
+          id: '2',
+          name: 'Recipe 2',
+          status: 'approved',
+          cuisine: 'Mexican',
+          likes: 5,
+        },
       ]);
 
       const recipes = await manager.getCommunityRecipes({ cuisine: 'Italian' });
@@ -261,8 +282,20 @@ describe('CommunityRecipes', () => {
 
     it('filters by dietary', async () => {
       mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'Recipe 1', status: 'approved', dietary: ['vegan'], likes: 10 },
-        { id: '2', name: 'Recipe 2', status: 'approved', dietary: ['gluten-free'], likes: 5 }
+        {
+          id: '1',
+          name: 'Recipe 1',
+          status: 'approved',
+          dietary: ['vegan'],
+          likes: 10,
+        },
+        {
+          id: '2',
+          name: 'Recipe 2',
+          status: 'approved',
+          dietary: ['gluten-free'],
+          likes: 5,
+        },
       ]);
 
       const recipes = await manager.getCommunityRecipes({ dietary: 'vegan' });
@@ -272,7 +305,7 @@ describe('CommunityRecipes', () => {
     it('sorts by likes', async () => {
       mockDb.getAll.mockResolvedValue([
         { id: '1', name: 'Recipe 1', status: 'approved', likes: 5 },
-        { id: '2', name: 'Recipe 2', status: 'approved', likes: 10 }
+        { id: '2', name: 'Recipe 2', status: 'approved', likes: 10 },
       ]);
 
       const recipes = await manager.getCommunityRecipes();
@@ -286,14 +319,21 @@ describe('CommunityRecipes', () => {
 
       const result = await manager.likeRecipe('1');
       expect(result.likes).toBe(6);
-      expect(mockDb.put).toHaveBeenCalledWith('communitySubmissions', expect.objectContaining({ likes: 6 }));
-      expect(window.analytics.track).toHaveBeenCalledWith('recipe_liked', { recipeId: '1' });
+      expect(mockDb.put).toHaveBeenCalledWith(
+        'communitySubmissions',
+        expect.objectContaining({ likes: 6 })
+      );
+      expect(window.analytics.track).toHaveBeenCalledWith('recipe_liked', {
+        recipeId: '1',
+      });
     });
 
     it('throws error for non-existent recipe', async () => {
       mockDb.get.mockResolvedValue(null);
 
-      await expect(manager.likeRecipe('nonexistent')).rejects.toThrow('Recipe not found');
+      await expect(manager.likeRecipe('nonexistent')).rejects.toThrow(
+        'Recipe not found'
+      );
     });
   });
 
@@ -304,13 +344,17 @@ describe('CommunityRecipes', () => {
 
       const result = await manager.saveRecipe('1');
       expect(result.saves).toBe(3);
-      expect(window.analytics.track).toHaveBeenCalledWith('recipe_saved', { recipeId: '1' });
+      expect(window.analytics.track).toHaveBeenCalledWith('recipe_saved', {
+        recipeId: '1',
+      });
     });
 
     it('throws error for non-existent recipe', async () => {
       mockDb.get.mockResolvedValue(null);
 
-      await expect(manager.saveRecipe('nonexistent')).rejects.toThrow('Recipe not found');
+      await expect(manager.saveRecipe('nonexistent')).rejects.toThrow(
+        'Recipe not found'
+      );
     });
   });
 
@@ -334,7 +378,7 @@ describe('CommunityRecipes', () => {
     it('returns user submissions', async () => {
       mockDb.getAll.mockResolvedValue([
         { id: '1', name: 'My Recipe 1' },
-        { id: '2', name: 'My Recipe 2' }
+        { id: '2', name: 'My Recipe 2' },
       ]);
 
       const submissions = await manager.getMySubmissions();
@@ -347,7 +391,10 @@ describe('CommunityRecipes', () => {
       const recipe = { id: '1', name: 'Recipe 1', reviews: [] };
       mockDb.get.mockResolvedValue(recipe);
 
-      const result = await manager.addReview('1', { rating: 5, comment: 'Great!' });
+      const result = await manager.addReview('1', {
+        rating: 5,
+        comment: 'Great!',
+      });
       expect(result.reviews).toHaveLength(1);
       expect(result.rating).toBe(5);
       expect(result.reviews[0].rating).toBe(5);
@@ -357,22 +404,37 @@ describe('CommunityRecipes', () => {
       const recipe = { id: '1', name: 'Recipe 1', reviews: [{ rating: 4 }] };
       mockDb.get.mockResolvedValue(recipe);
 
-      const result = await manager.addReview('1', { rating: 5, comment: 'Great!' });
+      const result = await manager.addReview('1', {
+        rating: 5,
+        comment: 'Great!',
+      });
       expect(result.rating).toBe(4.5);
     });
 
     it('throws error for non-existent recipe', async () => {
       mockDb.get.mockResolvedValue(null);
 
-      await expect(manager.addReview('nonexistent', { rating: 5 })).rejects.toThrow('Recipe not found');
+      await expect(
+        manager.addReview('nonexistent', { rating: 5 })
+      ).rejects.toThrow('Recipe not found');
     });
   });
 
   describe('searchRecipes', () => {
     it('searches by recipe name', async () => {
       mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'Pasta Carbonara', status: 'approved', ingredients: ['pasta'] },
-        { id: '2', name: 'Chicken Salad', status: 'approved', ingredients: ['chicken'] }
+        {
+          id: '1',
+          name: 'Pasta Carbonara',
+          status: 'approved',
+          ingredients: ['pasta'],
+        },
+        {
+          id: '2',
+          name: 'Chicken Salad',
+          status: 'approved',
+          ingredients: ['chicken'],
+        },
       ]);
 
       const results = await manager.searchRecipes('pasta');
@@ -382,8 +444,18 @@ describe('CommunityRecipes', () => {
 
     it('searches by ingredient', async () => {
       mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'Pasta Dish', status: 'approved', ingredients: ['pasta', 'tomato'] },
-        { id: '2', name: 'Chicken Salad', status: 'approved', ingredients: ['chicken'] }
+        {
+          id: '1',
+          name: 'Pasta Dish',
+          status: 'approved',
+          ingredients: ['pasta', 'tomato'],
+        },
+        {
+          id: '2',
+          name: 'Chicken Salad',
+          status: 'approved',
+          ingredients: ['chicken'],
+        },
       ]);
 
       const results = await manager.searchRecipes('tomato');
@@ -392,7 +464,12 @@ describe('CommunityRecipes', () => {
 
     it('returns empty array for no matches', async () => {
       mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'Pasta Dish', status: 'approved', ingredients: ['pasta'] }
+        {
+          id: '1',
+          name: 'Pasta Dish',
+          status: 'approved',
+          ingredients: ['pasta'],
+        },
       ]);
 
       const results = await manager.searchRecipes('nonexistent');
@@ -401,7 +478,12 @@ describe('CommunityRecipes', () => {
 
     it('case insensitive search', async () => {
       mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'Pasta Carbonara', status: 'approved', ingredients: ['pasta'] }
+        {
+          id: '1',
+          name: 'Pasta Carbonara',
+          status: 'approved',
+          ingredients: ['pasta'],
+        },
       ]);
 
       const results = await manager.searchRecipes('PASTA');

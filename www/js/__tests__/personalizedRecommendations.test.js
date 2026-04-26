@@ -17,7 +17,7 @@ describe('PersonalizedRecommendations', () => {
       getMealPlan: mockGetMealPlan,
       getRecipes: mockGetRecipes,
       getPreferences: mockGetPreferences,
-      getRecipeRatings: mockGetRecipeRatings
+      getRecipeRatings: mockGetRecipeRatings,
     });
   });
 
@@ -40,7 +40,7 @@ describe('PersonalizedRecommendations', () => {
       mockGetRecipes.mockReturnValue([
         { name: 'Pasta', ingredients: [] },
         { name: 'Salad', ingredients: [] },
-        { name: 'Soup', ingredients: [] }
+        { name: 'Soup', ingredients: [] },
       ]);
       mockGetRecipeRatings.mockReturnValue({ Pasta: 5, Salad: 3, Soup: 4 });
       mockGetPreferences.mockReturnValue({});
@@ -55,11 +55,11 @@ describe('PersonalizedRecommendations', () => {
       mockGetMealPlan.mockReturnValue({
         Monday: 'Pasta',
         Tuesday: 'Pasta',
-        Wednesday: 'Salad'
+        Wednesday: 'Salad',
       });
       mockGetRecipes.mockReturnValue([
         { name: 'Pasta', ingredients: [] },
-        { name: 'Salad', ingredients: [] }
+        { name: 'Salad', ingredients: [] },
       ]);
       mockGetRecipeRatings.mockReturnValue({});
       mockGetPreferences.mockReturnValue({});
@@ -72,11 +72,9 @@ describe('PersonalizedRecommendations', () => {
     it('deduplicates recipes', () => {
       mockGetMealPlan.mockReturnValue({
         Monday: 'Pasta',
-        Tuesday: 'Pasta'
+        Tuesday: 'Pasta',
       });
-      mockGetRecipes.mockReturnValue([
-        { name: 'Pasta', ingredients: [] }
-      ]);
+      mockGetRecipes.mockReturnValue([{ name: 'Pasta', ingredients: [] }]);
       mockGetRecipeRatings.mockReturnValue({ Pasta: 5 });
       mockGetPreferences.mockReturnValue({});
 
@@ -92,7 +90,7 @@ describe('PersonalizedRecommendations', () => {
         { name: 'Recipe C', ingredients: [] },
         { name: 'Recipe D', ingredients: [] },
         { name: 'Recipe E', ingredients: [] },
-        { name: 'Recipe F', ingredients: [] }
+        { name: 'Recipe F', ingredients: [] },
       ]);
       mockGetRecipeRatings.mockReturnValue({
         'Recipe A': 5,
@@ -100,7 +98,7 @@ describe('PersonalizedRecommendations', () => {
         'Recipe C': 5,
         'Recipe D': 5,
         'Recipe E': 5,
-        'Recipe F': 5
+        'Recipe F': 5,
       });
       mockGetPreferences.mockReturnValue({});
 
@@ -112,7 +110,7 @@ describe('PersonalizedRecommendations', () => {
       mockGetMealPlan.mockReturnValue({});
       mockGetRecipes.mockReturnValue([
         { name: 'Vegetable Soup', ingredients: ['vegetable', 'broth'] },
-        { name: 'Chicken Salad', ingredients: ['chicken', 'lettuce'] }
+        { name: 'Chicken Salad', ingredients: ['chicken', 'lettuce'] },
       ]);
       mockGetRecipeRatings.mockReturnValue({});
       mockGetPreferences.mockReturnValue({ diets: ['vegetarian'] });
@@ -135,13 +133,19 @@ describe('PersonalizedRecommendations', () => {
 
   describe('passesDiet', () => {
     it('passes vegetarian diet for vegetable recipe', () => {
-      const recipe = { name: 'Vegetable Soup', ingredients: ['carrot', 'broth'] };
+      const recipe = {
+        name: 'Vegetable Soup',
+        ingredients: ['carrot', 'broth'],
+      };
       const result = recommendations.passesDiet(recipe, 'vegetarian');
       expect(result).toBe(true);
     });
 
     it('fails vegetarian diet for meat recipe', () => {
-      const recipe = { name: 'Chicken Soup', ingredients: ['chicken', 'broth'] };
+      const recipe = {
+        name: 'Chicken Soup',
+        ingredients: ['chicken', 'broth'],
+      };
       const result = recommendations.passesDiet(recipe, 'vegetarian');
       expect(result).toBe(false);
     });
@@ -195,7 +199,10 @@ describe('PersonalizedRecommendations', () => {
     });
 
     it('checks ingredients for diet compliance', () => {
-      const recipe = { name: 'Hidden Meat', ingredients: ['vegetables', 'chicken'] };
+      const recipe = {
+        name: 'Hidden Meat',
+        ingredients: ['vegetables', 'chicken'],
+      };
       const result = recommendations.passesDiet(recipe, 'vegetarian');
       expect(result).toBe(false);
     });
