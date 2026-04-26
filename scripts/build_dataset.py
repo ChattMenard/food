@@ -117,6 +117,20 @@ def safe_number(value, default=0):
         return default
 
 
+def validate_dataset(recipes, strict=False):
+    """Basic validation of built recipe dataset."""
+    assert len(recipes) > 0, "Dataset is empty"
+    required_keys = {"id", "name", "ingredients", "minutes"}
+    for i, recipe in enumerate(recipes[:100]):
+        missing = required_keys - set(recipe.keys())
+        if missing:
+            msg = f"Recipe {i} missing keys: {missing}"
+            if strict:
+                raise ValueError(msg)
+            print(f"  WARNING: {msg}")
+    print(f"  Validation passed: {len(recipes):,} recipes")
+
+
 class MainDataBuilder:
     def __init__(self, input_parquet=None):
         self.input_parquet = self.resolve_input_path(input_parquet)
@@ -318,7 +332,7 @@ class MainDataBuilder:
             return parsed
         return 0
 
-    def build_enhanced_dataset(self, output_dir="www/data", min_rating=4.0, max_recipes=10000):
+    def build_enhanced_dataset(self, output_dir="www/data", min_rating=4.0, max_recipes=10000, min_reviews=5):
         print(f"Processing {len(self.df):,} recipes from {self.input_parquet}")
 
         candidates = []
@@ -334,7 +348,7 @@ class MainDataBuilder:
 
             rating = safe_number(self.pick(row, ["rating", "AggregatedRating"], 0))
             review_count = int(safe_number(self.pick(row, ["review_count", "ReviewCount", "reviews"], 0), 0))
-            if rating < min_rating or review_count < 5:
+            if rating < min_rating or review_count < min_reviews:
                 continue
 
             score = float(rating * np.log1p(review_count))
@@ -456,6 +470,7 @@ def main():
     parser.add_argument("--output-dir", default="www/data", help="Output folder for built data files")
     parser.add_argument("--min-rating", type=float, default=4.0, help="Minimum rating filter")
     parser.add_argument("--max-recipes", type=int, default=10000, help="Maximum recipes to include")
+    parser.add_argument("--min-reviews", type=int, default=5, help="Minimum review count filter")
     args = parser.parse_args()
 
     builder = MainDataBuilder(args.input)
@@ -463,6 +478,7 @@ def main():
         output_dir=args.output_dir,
         min_rating=args.min_rating,
         max_recipes=args.max_recipes,
+        min_reviews=args.min_reviews,
     )
 
 
