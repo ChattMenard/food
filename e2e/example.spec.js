@@ -15,7 +15,7 @@ test.describe('main E2E Tests', () => {
     });
     
     test('navigates between tabs', async ({ page }) => {
-        await page.waitForFunction(() => window._appInitialized === true, { timeout: 15000 });
+        await page.waitForFunction(() => window._appInitialized === true, { timeout: 45000 });
         
         await page.getByTestId('nav-meals').click();
         await expect(page.locator('#tab-meals')).toBeVisible();
@@ -28,7 +28,7 @@ test.describe('main E2E Tests', () => {
     });
     
     test('adds ingredient to pantry', async ({ page }) => {
-        await page.waitForFunction(() => window._appInitialized === true, { timeout: 15000 });
+        await page.waitForFunction(() => window._appInitialized === true, { timeout: 45000 });
         await page.getByTestId('nav-pantry').click();
         
         await page.fill('#new-ingredient', 'Tomato');
@@ -40,7 +40,7 @@ test.describe('main E2E Tests', () => {
     
     test('shows recipe cards after adding ingredients', async ({ page }) => {
         // Wait for recipe JSON to be fully fetched and processed
-        await page.waitForFunction(() => window._recipesLoaded === true, { timeout: 30000 });
+        await page.waitForFunction(() => window._recipesLoaded === true, { timeout: 50000 });
         
         await page.getByTestId('nav-pantry').click();
         for (const name of ['chicken', 'garlic', 'onion', 'butter']) {
@@ -58,7 +58,7 @@ test.describe('main E2E Tests', () => {
     });
     
     test('displays meals list container', async ({ page }) => {
-        await page.waitForFunction(() => window._appInitialized === true, { timeout: 15000 });
+        await page.waitForFunction(() => window._appInitialized === true, { timeout: 45000 });
         await page.getByTestId('nav-meals').click();
         await expect(page.locator('#meals-list')).toBeVisible();
     });

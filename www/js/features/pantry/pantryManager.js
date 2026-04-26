@@ -1,5 +1,4 @@
 import { parseIngredients } from '../../utils/ingredientParser.js';
-import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 const INGREDIENT_CATEGORIES = {
     'Produce': ['lettuce', 'spinach', 'kale', 'cabbage', 'broccoli', 'carrots', 'potatoes', 'onions', 'garlic', 'tomatoes', 'peppers', 'cucumber', 'zucchini', 'bananas', 'apples', 'oranges', 'berries', 'mushrooms', 'avocado', 'lemon', 'lime', 'herbs', 'parsley', 'cilantro', 'basil', 'thyme', 'rosemary'],
@@ -189,6 +188,9 @@ export class PantryManager {
         const status = document.getElementById('speech-status');
         
         try {
+            // Dynamically import Capacitor plugin (only available in native apps)
+            const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+            
             const { available } = await SpeechRecognition.available();
             if (!available) {
                 status.textContent = 'Error: Speech recognition not available';
@@ -212,6 +214,9 @@ export class PantryManager {
                 status.textContent = `Error: ${data.error}`;
                 setTimeout(() => this.stopSpeechRecognition(), 1500);
             });
+            
+            // Store reference for cleanup
+            this._SpeechRecognition = SpeechRecognition;
         } catch (error) {
             console.error('Capacitor speech recognition error:', error);
             status.textContent = 'Error: Speech recognition failed';
@@ -292,9 +297,12 @@ export class PantryManager {
             this._capacitorErrorListener = null;
         }
 
-        try {
-            await SpeechRecognition.stop();
-        } catch (_error) {}
+        if (this._SpeechRecognition) {
+            try {
+                await this._SpeechRecognition.stop();
+            } catch (_error) {}
+            this._SpeechRecognition = null;
+        }
 
         const modal = document.getElementById('speech-modal');
         modal.classList.add('hidden');

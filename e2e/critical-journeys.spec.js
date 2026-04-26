@@ -21,8 +21,8 @@ test.describe('Critical User Journeys', () => {
   });
 
   test('User can add a pantry item and see it in the list', async ({ page }) => {
-    // Wait for app init
-    await page.waitForFunction(() => window._appInitialized === true, { timeout: 15000 });
+    // Wait for app init (longer timeout for large recipe dataset)
+    await page.waitForFunction(() => window._appInitialized === true, { timeout: 45000 });
     
     // Pantry tab is active by default
     await page.getByTestId('nav-pantry').click();

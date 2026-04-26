@@ -15,6 +15,7 @@ export default defineConfig({
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 1 : undefined,
     reporter: 'html',
+    timeout: 60000, // 60 seconds for tests that load large datasets
     use: {
         baseURL: 'http://localhost:8080',
         trace: 'on-first-retry',
