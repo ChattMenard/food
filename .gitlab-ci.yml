@@ -20,7 +20,7 @@ validate:
   stage: validate
   image: node:20
   script:
-    - npm ci
+    - npm ci --legacy-peer-deps
     - npm run lint
     - npm run test:ci
     - npm run build:css:once
@@ -29,7 +29,7 @@ e2e-smoke:
   stage: e2e
   image: mcr.microsoft.com/playwright:v1.50.0-jammy
   script:
-    - npm ci
+    - npm ci --legacy-peer-deps
     - npm run test:e2e:ci
   artifacts:
     when: always
@@ -42,12 +42,12 @@ format-report:
   stage: report
   image: node:20
   script:
-    - npm ci
+    - npm ci --legacy-peer-deps
     - npm run format:check
 
 dependency-audit:
   stage: report
   image: node:20
   script:
-    - npm ci
+    - npm ci --legacy-peer-deps
     - npm audit --omit=dev
