@@ -1,0 +1,13 @@
+Current Dataset Summary
+========================
+
+Total validated recipes: 188435
+Sample provided: 100 recipes
+
+Coverage Stats:
+  - With ratings: 188435 (100.0%)
+  - With times: 188435 (100.0%)
+  - With servings: 7835 (4.2%)
+  - With instructions: 188435 (100.0%)
+
+Average ingredients per recipe: 9.4

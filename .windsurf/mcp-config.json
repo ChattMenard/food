@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "pdf": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-pdf"],
+      "description": "PDF processing and text extraction"
+    },
+    "inspector": {
+      "command": "npx", 
+      "args": ["@modelcontextprotocol/inspector"],
+      "description": "MCP protocol inspector for debugging"
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["figma-mcp"],
+      "description": "Figma design integration"
+    },
+    "ref-tools": {
+      "command": "npx",
+      "args": ["ref-tools-mcp"],
+      "description": "Reference and documentation tools"
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["puppeteer-mcp-server"],
+      "description": "Browser automation with Puppeteer"
+    },
+    "jsonresume": {
+      "command": "npx",
+      "args": ["@jsonresume/mcp"],
+      "description": "JSON resume enhancement"
+    },
+    "hyper-shell": {
+      "command": "npx",
+      "args": ["hyper-mcp-shell"],
+      "description": "Interactive MCP shell"
+    },
+    "mcp-use": {
+      "command": "npx",
+      "args": ["mcp-use"],
+      "description": "Comprehensive MCP framework"
+    }
+  }
+}
