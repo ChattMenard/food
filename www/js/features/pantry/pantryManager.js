@@ -166,21 +166,18 @@ export class PantryManager {
     async startSpeechRecognition() {
         const modal = document.getElementById('speech-modal');
         const status = document.getElementById('speech-status');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        modal.classList.add('active');
         status.textContent = 'Listening…';
-
         try {
-            // Check if running on Android (Capacitor)
             if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() === 'android') {
                 await this.startCapacitorSpeechRecognition();
             } else {
-                this.startWebSpeechRecognition();
+                await this.startWebSpeechRecognition();
             }
         } catch (error) {
             console.error('Speech recognition error:', error);
             status.textContent = 'Error: Speech recognition failed';
-            setTimeout(() => this.stopSpeechRecognition(), 1500);
+            setTimeout(() => this.stopSpeechRecognition(), 3500);
         }
     }
 
@@ -234,14 +231,40 @@ export class PantryManager {
         }
     }
 
-    startWebSpeechRecognition() {
+    _friendlyMicError(errorCode) {
+        const messages = {
+            'not-allowed': 'Microphone access denied. Please allow mic access in your browser settings and try again.',
+            'no-speech': 'No speech detected. Please try again and speak clearly.',
+            'audio-capture': 'No microphone found. Please connect a mic and try again.',
+            'network': 'Network error. Check your connection and try again.',
+            'aborted': 'Speech recognition was cancelled.',
+            'service-not-allowed': 'Speech service not available. Try using Chrome or Edge.',
+        };
+        return messages[errorCode] || `Speech recognition error: ${errorCode}`;
+    }
+
+    async startWebSpeechRecognition() {
         const WebSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const status = document.getElementById('speech-status');
         
         if (!WebSpeechRecognition) {
-            status.textContent = 'Error: Speech not supported';
-            setTimeout(() => this.stopSpeechRecognition(), 1500);
+            status.textContent = 'Speech recognition is not supported in this browser. Try Chrome or Edge.';
+            setTimeout(() => this.stopSpeechRecognition(), 3000);
             return;
+        }
+
+        // Pre-check microphone permission
+        try {
+            if (navigator.permissions) {
+                const result = await navigator.permissions.query({ name: 'microphone' });
+                if (result.state === 'denied') {
+                    status.textContent = 'Microphone access is blocked. Please enable it in browser settings (click the lock icon in the address bar).';
+                    setTimeout(() => this.stopSpeechRecognition(), 4000);
+                    return;
+                }
+            }
+        } catch (_e) {
+            // permissions API may not support 'microphone' query in all browsers
         }
 
         const recognition = new WebSpeechRecognition();
@@ -256,13 +279,16 @@ export class PantryManager {
         };
 
         recognition.onerror = (event) => {
-            status.textContent = `Error: ${event.error}`;
-            setTimeout(() => this.stopSpeechRecognition(), 1500);
+            status.textContent = this._friendlyMicError(event.error);
+            setTimeout(() => this.stopSpeechRecognition(), 3500);
         };
 
-        recognition.onend = () => this.stopSpeechRecognition();
-
-        recognition.start();
+        try {
+            recognition.start();
+        } catch (error) {
+            status.textContent = this._friendlyMicError(error.message || 'unknown');
+            setTimeout(() => this.stopSpeechRecognition(), 3500);
+        }
     }
 
     handleSpeechResult(transcript, status) {
@@ -315,7 +341,6 @@ export class PantryManager {
         }
 
         const modal = document.getElementById('speech-modal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        modal.classList.remove('active');
     }
 }
