@@ -183,51 +183,44 @@ export class PantryManager {
 
     async startCapacitorSpeechRecognition() {
         const status = document.getElementById('speech-status');
-        
         try {
-            console.log('[Speech] Starting Capacitor speech recognition...');
-            // Dynamically import Capacitor plugin (only available in native apps)
-            const speechPlugin = await import('@capacitor-community/speech-recognition');
-            const SpeechRecognition = speechPlugin.SpeechRecognition;
-            console.log('[Speech] Plugin imported successfully');
-            
+            const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
             const { available } = await SpeechRecognition.available();
-            console.log('[Speech] Available:', available);
             if (!available) {
-                status.textContent = 'Error: Speech recognition not available';
+                status.textContent = 'Speech recognition is not available on this device.';
                 setTimeout(() => this.stopSpeechRecognition(), 1500);
                 return;
             }
 
-            console.log('[Speech] Requesting permissions...');
-            const permResult = await SpeechRecognition.requestPermissions();
-            console.log('[Speech] Permission result:', permResult);
-            
-            console.log('[Speech] Starting recognition...');
+            const { permissionState } = await SpeechRecognition.requestPermissions();
+            if (permissionState !== 'granted') {
+                status.textContent = 'Microphone permission is required. Please allow access and try again.';
+                setTimeout(() => this.stopSpeechRecognition(), 2500);
+                return;
+            }
+
             await SpeechRecognition.start({
                 language: 'en-US',
-                partialResults: false,
-                maxAlternatives: 1
+                maxResults: 5,
+                partialResults: true,
+                prompt: 'Say an ingredient name',
+                popup: true
             });
-            console.log('[Speech] Recognition started');
 
             this._capacitorListener = SpeechRecognition.addListener('result', (data) => {
-                console.log('[Speech] Result received:', data);
                 const transcript = data.matches?.[0]?.toLowerCase().trim() || '';
                 this.handleSpeechResult(transcript, status);
             });
 
             this._capacitorErrorListener = SpeechRecognition.addListener('error', (data) => {
-                console.error('[Speech] Error received:', data);
-                status.textContent = `Error: ${data.error}`;
+                status.textContent = this._friendlyMicError(data.error);
                 setTimeout(() => this.stopSpeechRecognition(), 1500);
             });
-            
-            // Store reference for cleanup
+
             this._SpeechRecognition = SpeechRecognition;
         } catch (error) {
             console.error('[Speech] Capacitor speech recognition error:', error);
-            status.textContent = `Error: ${error.message || 'Speech recognition failed'}`;
+            status.textContent = this._friendlyMicError(error.code || error.message || 'speech-init-failed');
             setTimeout(() => this.stopSpeechRecognition(), 1500);
         }
     }
