@@ -192,10 +192,14 @@
             border: 1.5px solid var(--border);
             border-radius: 12px;
             font-size: 15px;
+            font-weight: 500;
             background: white;
             color: var(--text);
             appearance: none;
             -webkit-appearance: none;
+        }
+        .field::placeholder {
+            color: var(--text-muted);
         }
         .field:focus { outline: none; border-color: var(--brand); }
         select.field { padding-right: 36px; background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23f97316' d='M6 8L0 0h12z'/%3E%3C/svg%3E") no-repeat right 14px center; }
@@ -565,6 +569,10 @@
         [data-theme="dark"] .field {
             background: #1f2937;
             border-color: #374151;
+            color: #f3f4f6;
+        }
+        [data-theme="dark"] .field::placeholder {
+            color: #9ca3af;
         }
         [data-theme="dark"] select.field {
             background-color: #1f2937;

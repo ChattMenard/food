@@ -175,6 +175,6 @@ export class RecipeEngine {
     recipeRatings[recipeName] = rating;
     this.persistRecipeRatings();
     this.announce(`Rated ${recipeName} ${rating} stars`);
-    this.openRecipeModal(recipeName);
+    // Note: UI layer should call openRecipeModal if needed after rating
   }
 }

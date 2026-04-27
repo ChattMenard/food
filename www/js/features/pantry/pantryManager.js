@@ -187,7 +187,8 @@ export class PantryManager {
         try {
             console.log('[Speech] Starting Capacitor speech recognition...');
             // Dynamically import Capacitor plugin (only available in native apps)
-            const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+            const speechPlugin = await import('@capacitor-community/speech-recognition');
+            const SpeechRecognition = speechPlugin.SpeechRecognition;
             console.log('[Speech] Plugin imported successfully');
             
             const { available } = await SpeechRecognition.available();
