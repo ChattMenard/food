@@ -1,11 +1,11 @@
 {
-  "name": "main",
+  "name": "pantry-ai",
   "version": "1.0.0",
-  "description": "Main - AI-Powered Meal Planner",
+  "description": "Pantry AI - AI-Powered Meal Planner & Shopping Assistant",
   "type": "module",
   "scripts": {
-    "start": "lsof -ti :8080 | xargs -r kill; npx serve -p 8080 www",
-    "stop": "lsof -ti :8080 | xargs -r kill",
+    "start": "node scripts/kill-port.js 8080 && npx serve -p 8080 www",
+    "stop": "node scripts/kill-port.js 8080",
     "build:css": "./node_modules/.bin/tailwindcss -i www/css/tailwind.css -o www/css/output.css --watch",
     "build:css:once": "./node_modules/.bin/tailwindcss -i www/css/tailwind.css -o www/css/output.css",
     "build:ts": "tsc",
@@ -22,11 +22,11 @@
     "format": "prettier --write www/js/**/*.{js,ts}",
     "format:check": "prettier --check www/js/**/*.{js,ts}",
     "validate-dataset": "python3 scripts/build_dataset.py --validate-only",
-    "android": "npm run sync && CAPACITOR_ANDROID_STUDIO_PATH=/home/x99/Downloads/android-studio/bin/studio.sh npx cap open android",
-    "android:build": "JAVA_HOME=/home/x99/Downloads/android-studio/jbr PATH=/home/x99/Downloads/android-studio/jbr/bin:$PATH ./android/gradlew -p android :app:assembleDebug",
+    "android": "npm run sync && npx cap open android",
+    "android:build": "./android/gradlew -p android :app:assembleDebug",
     "deploy": "bash scripts/deploy-android.sh",
     "ios": "cap add ios && cap open ios",
-    "sync": "ANDROID_HOME=~/Android/Sdk JAVA_HOME=/home/x99/Downloads/android-studio/jbr cap sync"
+    "sync": "npx cap sync"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
