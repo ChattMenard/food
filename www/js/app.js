@@ -22,6 +22,10 @@ import groceryDelivery from './features/grocery/groceryDelivery.js';
 import deviceSyncManager from './data/deviceSyncManager.js';
 import pushNotifications from './utils/pushNotifications.js';
 import db from './data/db.js';
+import { inject } from '@vercel/analytics';
+
+// Initialize Vercel Web Analytics
+inject();
 
 // Data
 let pantry = [];
