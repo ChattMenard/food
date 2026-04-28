@@ -4,13 +4,24 @@
  * Handles automatic UI refresh when data changes
  */
 
+class ListenerMap extends Map<string, Set<Function>> {
+  override get(key: string): Set<Function> {
+    let v = super.get(key);
+    if (!v) {
+      v = new Set<Function>();
+      super.set(key, v);
+    }
+    return v;
+  }
+}
+
 export class AutoRefreshManager {
-  private listeners: Map<string, Set<Function>>;
-  private refreshInterval: number;
-  private pendingRefresh: boolean;
+  public listeners: ListenerMap;
+  public refreshInterval: number;
+  public pendingRefresh: boolean;
 
   constructor() {
-    this.listeners = new Map();
+    this.listeners = new ListenerMap();
     this.refreshInterval = 1000; // 1 second debounce
     this.pendingRefresh = false;
   }
@@ -33,7 +44,7 @@ export class AutoRefreshManager {
    * @param {string} key - Data key to listen for
    * @param {Function} callback - Callback function
    */
-  on(key, callback) {
+  on(key: string, callback: Function): void {
     if (!this.listeners.has(key)) {
       this.listeners.set(key, new Set());
     }
@@ -45,7 +56,7 @@ export class AutoRefreshManager {
    * @param {string} key - Data key
    * @param {Function} callback - Callback function
    */
-  off(key, callback) {
+  off(key: string, callback: Function): void {
     if (this.listeners.has(key)) {
       this.listeners.get(key).delete(callback);
     }
@@ -56,7 +67,7 @@ export class AutoRefreshManager {
    * @param {string} key - Data key that changed
    * @param {*} data - New data
    */
-  trigger(key, data) {
+  trigger(key: string, data: any): void {
     if (this.listeners.has(key)) {
       const callbacks = this.listeners.get(key);
       callbacks.forEach((callback) => {
@@ -74,7 +85,7 @@ export class AutoRefreshManager {
    * @param {string} key - Data key that changed
    * @param {*} data - New data
    */
-  triggerDebounced(key, data) {
+  triggerDebounced(key: string, data: any): void {
     if (this.pendingRefresh) return;
 
     this.pendingRefresh = true;
@@ -88,17 +99,17 @@ export class AutoRefreshManager {
    * Setup IndexedDB change notifications
    * @param {Object} db - IndexedDB instance
    */
-  setupIndexedDBNotifications(db) {
+  setupIndexedDBNotifications(db: any): void {
     // Override put/delete methods to trigger refreshes
     const originalPut = db.put.bind(db);
-    db.put = async (storeName, item) => {
+    db.put = async (storeName: string, item: any) => {
       const result = await originalPut(storeName, item);
       this.triggerDebounced(storeName, item);
       return result;
     };
 
     const originalDelete = db.delete.bind(db);
-    db.delete = async (storeName, key) => {
+    db.delete = async (storeName: string, key: any) => {
       const result = await originalDelete(storeName, key);
       this.triggerDebounced(storeName, { key, deleted: true });
       return result;
@@ -108,22 +119,22 @@ export class AutoRefreshManager {
   /**
    * Setup custom event-based refresh
    */
-  setupCustomEvents() {
+  setupCustomEvents(): void {
     // Listen for custom events from other modules
     window.addEventListener('pantry-updated', (event) => {
-      this.trigger('pantry', event.detail);
+      this.trigger('pantry', (event as CustomEvent).detail);
     });
 
     window.addEventListener('meal-plan-updated', (event) => {
-      this.trigger('mealPlan', event.detail);
+      this.trigger('mealPlan', (event as CustomEvent).detail);
     });
 
     window.addEventListener('preferences-updated', (event) => {
-      this.trigger('preferences', event.detail);
+      this.trigger('preferences', (event as CustomEvent).detail);
     });
 
     window.addEventListener('meal-logged', (event) => {
-      this.trigger('nutritionLog', event.detail);
+      this.trigger('nutritionLog', (event as CustomEvent).detail);
     });
   }
 
@@ -132,7 +143,7 @@ export class AutoRefreshManager {
    * @param {string} eventName - Event name
    * @param {*} detail - Event detail
    */
-  dispatchEvent(eventName, detail) {
+  dispatchEvent(eventName: string, detail: any): void {
     const event = new CustomEvent(eventName, { detail });
     window.dispatchEvent(event);
   }
@@ -143,7 +154,7 @@ export class AutoRefreshManager {
    * @param {Function} fetchFn - Function to fetch fresh data
    * @param {number} interval - Refresh interval in ms
    */
-  setupPeriodicRefresh(key, fetchFn, interval = 60000) {
+  setupPeriodicRefresh(key: string, fetchFn: () => Promise<any>, interval: number = 60000): void {
     setInterval(async () => {
       try {
         const data = await fetchFn();
@@ -161,7 +172,7 @@ export class AutoRefreshManager {
    * Clear all listeners for a key
    * @param {string} key - Data key
    */
-  clear(key) {
+  clear(key: string): void {
     if (this.listeners.has(key)) {
       this.listeners.get(key).clear();
     }
@@ -170,13 +181,13 @@ export class AutoRefreshManager {
   /**
    * Clear all listeners
    */
-  clearAll() {
+  clearAll(): void {
     this.listeners.clear();
   }
 }
 
 // Global auto-refresh manager instance
-let globalAutoRefreshManager = null;
+let globalAutoRefreshManager: AutoRefreshManager | null = null;
 
 /**
  * Get or create the global auto-refresh manager
@@ -194,7 +205,7 @@ export function getAutoRefreshManager() {
  * Helper to trigger pantry update
  * @param {Array} pantry - Pantry data
  */
-export function triggerPantryUpdate(pantry) {
+export function triggerPantryUpdate(pantry: any[]): void {
   const manager = getAutoRefreshManager();
   manager.dispatchEvent('pantry-updated', pantry);
 }
@@ -203,7 +214,7 @@ export function triggerPantryUpdate(pantry) {
  * Helper to trigger meal plan update
  * @param {Object} mealPlan - Meal plan data
  */
-export function triggerMealPlanUpdate(mealPlan) {
+export function triggerMealPlanUpdate(mealPlan: any): void {
   const manager = getAutoRefreshManager();
   manager.dispatchEvent('meal-plan-updated', mealPlan);
 }
@@ -212,7 +223,7 @@ export function triggerMealPlanUpdate(mealPlan) {
  * Helper to trigger preferences update
  * @param {Object} preferences - Preferences data
  */
-export function triggerPreferencesUpdate(preferences) {
+export function triggerPreferencesUpdate(preferences: any): void {
   const manager = getAutoRefreshManager();
   manager.dispatchEvent('preferences-updated', preferences);
 }
@@ -221,7 +232,7 @@ export function triggerPreferencesUpdate(preferences) {
  * Helper to trigger meal logged event
  * @param {Object} mealData - Meal data
  */
-export function triggerMealLogged(mealData) {
+export function triggerMealLogged(mealData: any): void {
   const manager = getAutoRefreshManager();
   manager.dispatchEvent('meal-logged', mealData);
 }

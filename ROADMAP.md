@@ -3,6 +3,14 @@
 > This document tracks the current state and future direction of the Fridge to Fork project.
 > Last updated: April 28, 2026
 
+## Current Reality Check
+
+- **1,074 compilation errors** — codebase does not compile
+- **0 JS files remain** — all 80 files are .ts (41 source + 39 test)
+- **Tests cannot run** — they depend on broken type definitions
+- **Cannot audit** without working tests
+- **Original JS reference**: `/home/x99/Desktop/old_food_stuff/www/js/`
+
 ---
 
 ## ✅ Completed Work
@@ -54,93 +62,59 @@
 
 ## 🏗️ Current Architecture
 
-```
+```text
 www/js/
 ├── core/
-│   └── appState.js          # In-memory state + pub-sub
+│   └── appState.ts          # In-memory state + pub-sub
 ├── data/
-│   ├── db.js                # IndexedDB single source of truth
-│   ├── dataManager.js       # Recipe/ingredient loading
-│   ├── storageManager.js    # Storage utilities
-│   ├── mutationQueue.js     # Durable mutation queue
-│   ├── syncProcessor.js     # Background sync with retry
-│   ├── migrationManager.js  # Schema evolution
-│   ├── mutationHandlers.js  # Mutation type handlers
-│   └── deviceSyncManager.js # Cross-device sync engine
+│   ├── db.ts                # IndexedDB single source of truth
+│   ├── dataManager.ts       # Recipe/ingredient loading
+│   ├── storageManager.ts    # Storage utilities
+│   ├── mutationQueue.ts     # Durable mutation queue
+│   ├── syncProcessor.ts     # Background sync with retry
+│   ├── migrationManager.ts  # Schema evolution
+│   ├── mutationHandlers.ts  # Mutation type handlers
+│   └── deviceSyncManager.ts # Cross-device sync engine
 ├── logic/
-│   ├── ingredientVectors.js # Recipe similarity (tested)
-│   ├── recipeEngine.js      # Recipe operations
-│   ├── costTracker.js       # Budget tracking (tested)
-│   └── searchIndex.js       # Search functionality
+│   ├── ingredientVectors.ts # Recipe similarity (tested)
+│   ├── recipeEngine.ts      # Recipe operations
+│   ├── costTracker.ts       # Budget tracking (tested)
+│   └── searchIndex.ts       # Search functionality
 ├── features/
-│   ├── pantry/              # Pantry management
-│   │   ├── pantryManager.js
-│   │   ├── leftoverTracker.js
-│   │   ├── seasonalIngredients.js
-│   │   └── wasteReduction.js
-│   ├── meals/               # Meal planning
-│   │   ├── mealPlanner.js
-│   │   └── personalizedRecommendations.js
-│   ├── plan/                # Meal plan templates
-│   │   ├── budgetMealPlanner.js (tested)
-│   │   ├── mealPrepPlanner.js (tested)
-│   │   ├── mealPlanSharing.js
-│   │   └── mealPlanTemplates.js
-│   ├── nutrition/           # Nutrition tracking
-│   │   ├── nutritionGoals.js (tested)
-│   │   ├── nutritionDashboard.js
-│   │   └── mealHistoryAnalytics.js
-│   ├── grocery/             # Grocery delivery
-│   │   └── groceryDelivery.js (tested)
-│   └── preferencesManager.js
-├── ai/
-│   └── geminiAI.js          # AI with validation, caching, rate limiting
+│   └── preferencesManager.ts
 ├── ui/
-│   ├── uiManager.js         # UI coordination
-│   └── components/          # Reusable UI components
-│       └── NutritionDashboard.js
+│   ├── uiManager.ts         # UI coordination
+│   └── errorBoundary.ts     # Error boundary
 ├── utils/
-│   ├── ingredientParser.js  # Shared parsing logic (tested)
-│   ├── networkRetry.js      # Network resilience
-│   ├── cacheManager.js      # TTL + LRU caching
-│   ├── backgroundSync.js    # Background sync utilities
-│   ├── pushNotifications.js # Push notification utilities
-│   ├── analytics.js         # Analytics tracking
-│   ├── errorTracking.js     # Error monitoring
-│   ├── abTesting.js         # A/B testing framework
-│   ├── autoRefresh.js       # Auto-refresh functionality
-│   ├── androidBackButton.js # Android back button handling
-│   ├── deepLinking.js       # Deep link handling
-│   ├── dietFilters.js       # Diet filtering utilities
-│   ├── shareSheet.js        # Share sheet functionality
-│   └── config.js            # Configuration
-├── native/
-│   ├── androidIntents.js    # Android intents integration
-│   ├── nativePush.js        # Native push notifications
-│   ├── siriShortcuts.js     # Siri shortcuts integration
-│   └── widgetManager.js     # Widget management
+│   ├── ingredientParser.ts  # Shared parsing logic (tested)
+│   ├── networkRetry.ts      # Network resilience
+│   ├── cacheManager.ts      # TTL + LRU caching
+│   ├── backgroundSync.ts    # Background sync utilities
+│   ├── pushNotifications.ts # Push notification utilities
+│   ├── analytics.ts         # Analytics tracking
+│   ├── errorTracking.ts     # Error monitoring
+│   ├── abTesting.ts         # A/B testing framework
+│   ├── autoRefresh.ts       # Auto-refresh functionality
+│   ├── androidBackButton.ts # Android back button handling
+│   ├── deepLinking.ts       # Deep link handling
+│   ├── dietFilters.ts       # Diet filtering utilities
+│   ├── shareSheet.ts        # Share sheet functionality
+│   ├── config.ts            # Configuration
+│   ├── offlineManager.ts    # Offline management
+│   ├── performanceMonitor.ts # Performance monitoring
+│   ├── sanitizer.ts         # Input sanitization
+│   └── logger.ts            # Logging utility
 ├── auth/
-│   ├── authManager.js       # Authentication management
-│   └── googleAuthProvider.js # Google auth provider
-├── advanced/
-│   ├── authManager.js       # Advanced auth features
-│   ├── barcodeScanner.js    # Barcode scanning
-│   ├── communityRecipes.js # Community recipe features
-│   ├── crossDeviceSync.js   # Cross-device sync
-│   ├── groceryDelivery.js   # Grocery delivery integration
-│   ├── pushNotifications.js # Advanced push notifications
-│   ├── receiptScanner.js    # Receipt scanning
-│   └── recipeImages.js     # Recipe image handling
-└── __tests__/
-    ├── budgetMealPlanner.test.js
-    ├── costTracker.test.js
-    ├── deviceSyncManager.test.js
-    ├── groceryDelivery.test.js
-    ├── ingredientParser.test.js
-    ├── ingredientVectors.test.js
-    ├── mealPrepPlanner.test.js
-    ├── nutritionGoals.test.js
-    └── pushNotifications.test.js
+│   └── authManager.ts       # Authentication management
+├── analytics/
+│   └── analyticsManager.ts  # Analytics manager
+├── security/
+│   └── csp.ts               # Content Security Policy
+├── types/
+│   ├── global.d.ts          # Global type declarations
+│   └── index.ts             # Shared type definitions
+├── app.ts                   # Main application entry
+└── __tests__/               # 39 test files
 ```
 
 ---
@@ -280,43 +254,29 @@ www/js/
    - validate: ~8-10s (lint + unit tests + CSS build)
    - Full test suite: 806 tests passing in ~7.5s
 
-### Phase 9: TypeScript Migration (In Progress)
-- [ ] **TypeScript configuration and build tooling**
-  - Set up tsconfig.json with strict mode
-  - Configure TypeScript build pipeline
-  - Update package.json scripts for TS compilation
-- [ ] **Core type definitions**
-  - Define interfaces for Recipe, Ingredient, MealPlan, Preferences
-  - Create types for database operations and API responses
-  - Establish type contracts between modules
-- [ ] **Core layer conversion** (appState.js)
-  - Convert state management to TypeScript
-  - Add type safety to pub-sub patterns
-  - Ensure proper typing for database operations
-- [ ] **Data layer conversion** (db.js, dataManager.js)
-  - Typed IndexedDB operations
-  - Schema validation with TypeScript
-  - Migration manager type safety
-- [ ] **Logic layer conversion** (costTracker, ingredientVectors)
-  - Typed calculation engines
-  - Algorithm type safety
-  - Data processing contracts
-- [ ] **Features layer conversion** (budgetMealPlanner, mealPrepPlanner)
-  - Typed feature modules
-  - Input validation with TypeScript
-  - Output type contracts
-- [ ] **AI layer conversion** (geminiAI.js)
-  - Typed AI responses
-  - Validation with TypeScript
-  - API contract types
-- [ ] **Test suite conversion**
-  - Convert all 39 test suites to TypeScript
-  - Add type assertions and proper mocking
-  - Maintain 99.8% pass rate
+### Phase 9: TypeScript Migration (In Progress — Types Broken)
+
+All files renamed to .ts but 1,074 compilation errors remain. Tests cannot run.
+
+- [x] **TypeScript configuration and build tooling**
+  - tsconfig.json configured
+  - TypeScript build pipeline working
+  - package.json scripts for TS compilation
+- [x] **File conversion** — All 41 source + 39 test files renamed .js → .ts
+- [ ] **Core type definitions** — BROKEN
+  - Interfaces missing properties (MEAL_REMINDER, SHOPPING_REMINDER, offlineQueue, etc.)
+  - Global type declarations incomplete (window.dataManager, globalShareSheet)
+  - Index signatures missing on object types
+- [ ] **Implicit any parameters** — 234 errors
+  - Callbacks, data, key, url params untyped
+  - Catch blocks need `error: unknown` narrowing
+- [ ] **Module resolution** — 29 cannot-find-module errors
+- [ ] **Test suite types** — BROKEN
+  - Jest mock configurations need typing
+  - Test data structures have type mismatches
 - [ ] **Build pipeline updates**
   - TypeScript compilation in CI/CD
   - Updated ESLint rules for TS
-  - Performance optimization
 
 ### Phase 10: Code Quality & Refactoring (Post-TypeScript)
 - [ ] **Large file refactoring**
@@ -337,21 +297,14 @@ www/js/
 
 ## 📝 Notes
 
-- All high-priority structural work is complete
-- Codebase is now maintainable and extensible
-- Project structure: 102 JS files across 13 directories (core, data, logic, features, ai, ui, utils, native, auth, advanced, types, __tests__)
-- Test coverage: 39 comprehensive test suites with 804 tests passing, 2 failing (99.75% pass rate)
-  - budgetMealPlanner, costTracker, deviceSyncManager, groceryDelivery, ingredientParser, ingredientVectors, mealPrepPlanner, nutritionGoals, pushNotifications, recipeEngine (2 minor failures), integration.offline-sync, dataManager, appState, storageManager, leftoverTracker, plus 24 additional test suites covering auth, utils, features, and advanced modules
-- E2E coverage: 3 test suites with 19 tests covering critical user journeys
-  - example.spec.js (7 tests), offline.spec.js (3 tests), critical-journeys.spec.js (6 tests)
-- AI validation prevents malformed responses
-- Phase 4 (resilience) complete - system handles stress
-- Phase 5 (features) complete - comprehensive feature expansion with 11 major features
-- Phase 6 (sync) complete - cross-device sync + push notifications + auth foundation
-- Phase 7 (native platform) complete - iOS/Android widgets, Siri shortcuts, Google Assistant, native push
-- Phase 8 (testing infrastructure) complete - comprehensive test coverage, CI/CD pipeline, code quality tools
-- Native platform integration with dedicated native/ and auth/ directories
-- Advanced features directory with SaaS-ready modules (barcode scanning, receipt scanning, community recipes)
+- **NOT production-ready** — 1,074 compilation errors block everything
+- All 80 files are TypeScript (.ts) but type annotations are broken
+- Tests cannot run until types are fixed
+- Original JS preserved at `/home/x99/Desktop/old_food_stuff/www/js/` for reference
+- Core architecture (IndexedDB, pub-sub, AI validation) is structurally sound
+- Phases 1-8 (pre-TypeScript) are functionally complete
+- Phase 9 (TypeScript migration) is the current blocker
+- Cannot audit or move forward until compilation succeeds
 
 ### Recent Updates (April 27, 2026)
 - **Advanced Recipe Intelligence**: Enhanced ingredient substitution system
@@ -393,24 +346,26 @@ www/js/
 ## 🔄 TypeScript Migration Status (April 28, 2026)
 
 ### Current Progress
-- **Status**: In Progress - 43% complete
-- **TypeScript Files**: 84/194 files converted
-- **JavaScript Files Remaining**: 110 files
-- **Compilation Errors**: 55 remaining (down from 135+)
-- **Test Files**: 39/39 converted to TypeScript
+- **Status**: In Progress — Files renamed, types broken
+- **TypeScript Files**: 80 (41 source + 39 test)
+- **JavaScript Files Remaining**: 0
+- **Compilation Errors**: 1,074
+- **Test Files**: 39 converted (cannot run)
 
-### Recent Achievements
-- ✅ Fixed import syntax errors across all TypeScript files
-- ✅ Updated TypeScript configuration with Jest and Node.js types
-- ✅ Resolved core compilation issues in appState, db, and authManager
-- ✅ Fixed Jest mock configurations in test files
-- ✅ Added proper TypeScript property declarations
+### Top Error Sources
+- **TS2339** (540): Missing properties on types
+- **TS7006** (234): Implicit `any` parameters
+- **TS2551** (70): Property name mismatches
+- **TS2345** (38): Argument type mismatches
+- **TS2307** (29): Cannot find module
+- **TS18046** (24): `error` is `unknown` in catch blocks
+- **TS7053** (20): String index on non-indexable type
 
 ### Next Milestones
-- **Target**: <20 compilation errors (production ready)
-- **Short-term**: Convert utility modules (38 files)
-- **Medium-term**: Achieve 75% TypeScript coverage
-- **Long-term**: Complete migration with strict TypeScript mode
+- **Immediate**: Fix type definitions to get compilation under 100 errors
+- **Short-term**: Get `npx jest` passing
+- **Medium-term**: Zero compilation errors, enable strict mode
+- **Long-term**: Full type safety, audit against old_food_stuff
 
 ---
 

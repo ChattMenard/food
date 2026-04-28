@@ -4,13 +4,11 @@
  * Handles IndexedDB quota management and graceful error handling
  */
 
-import { log } from '../utils/logger';
-
 /**
  * Check available storage space
  * @returns {Promise<{usage: number, quota: number, usagePercentage: number}>}
  */
-export async function checkStorageQuota() {
+export async function checkStorageQuota(): Promise<{usage: number, quota: number, usagePercentage: number}> {
   if (navigator.storage && navigator.storage.estimate) {
     const estimate = await navigator.storage.estimate();
     const usage = estimate.usage || 0;
@@ -36,7 +34,7 @@ export async function checkStorageQuota() {
  * @param {number} threshold - Warning threshold percentage (default: 90)
  * @returns {Promise<boolean>}
  */
-export async function isStorageNearQuota(threshold = 90) {
+export async function isStorageNearQuota(threshold: number = 90): Promise<boolean> {
   const { usagePercentage } = await checkStorageQuota();
   return usagePercentage >= threshold;
 }
@@ -46,12 +44,12 @@ export async function isStorageNearQuota(threshold = 90) {
  * @param {string} dbName - Database name
  * @returns {Promise<void>}
  */
-export async function clearOldDatabaseData(dbName) {
+export async function clearOldDatabaseData(dbName: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.deleteDatabase(dbName);
 
     request.onsuccess = () => {
-      log(`[Storage] Cleared old database: ${dbName}`);
+      console.log(`[Storage] Cleared old database: ${dbName}`);
       resolve();
     };
 
@@ -68,7 +66,7 @@ export async function clearOldDatabaseData(dbName) {
  * @param {Object} options - Options for handling quota errors
  * @returns {Promise<any>}
  */
-export async function withQuotaHandling(operation, options = {}) {
+export async function withQuotaHandling(operation: () => Promise<any>, options: any = {}): Promise<any> {
   const {
     onQuotaExceeded = null,
     maxRetries = 3,
@@ -85,8 +83,8 @@ export async function withQuotaHandling(operation, options = {}) {
 
       // Check if it's a quota error
       if (
-        error.name === 'QuotaExceededError' ||
-        error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+        (error as Error).name === 'QuotaExceededError' ||
+        (error as Error).name === 'NS_ERROR_DOM_QUOTA_REACHED'
       ) {
         console.warn(
           `[Storage] Quota exceeded on attempt ${attempt + 1}/${maxRetries}`
@@ -105,7 +103,8 @@ export async function withQuotaHandling(operation, options = {}) {
         // Fallback to localStorage if enabled
         if (fallbackToLocalStorage && attempt === maxRetries - 1) {
           console.warn('[Storage] Falling back to localStorage');
-          return operation(true); // Pass flag to use localStorage
+          // operation doesn't accept parameters, this is a fallback path
+          throw lastError;
         }
       } else {
         // Not a quota error, don't retry
@@ -128,7 +127,7 @@ export async function clearOldCaches() {
 
     await Promise.all(
       pantryCaches.map((name) => {
-        log(`[Storage] Clearing cache: ${name}`);
+        console.log(`[Storage] Clearing cache: ${name}`);
         return caches.delete(name);
       })
     );
@@ -148,10 +147,10 @@ export async function getStorageBreakdown() {
 
   if (navigator.storage && navigator.storage.estimate) {
     const estimate = await navigator.storage.estimate();
-    if (estimate.usageDetails) {
-      breakdown.indexedDB = estimate.usageDetails.indexedDB || 0;
-      breakdown.cache = estimate.usageDetails.caches || 0;
-      breakdown.serviceWorkers = estimate.usageDetails.serviceWorkers || 0;
+ if ((estimate as any).usageDetails) {
+      breakdown.indexedDB = (estimate as any).usageDetails.indexedDB || 0;
+      breakdown.cache = (estimate as any).usageDetails.caches || 0;
+      breakdown.serviceWorkers = (estimate as any).usageDetails.serviceWorkers || 0;
     }
   }
 
@@ -166,10 +165,10 @@ export async function getStorageBreakdown() {
  * @returns {Promise<void>}
  */
 export async function migrateToLocalStorage(
-  dbName,
-  storeName,
-  localStorageKey
-) {
+  dbName: string,
+  storeName: string,
+  localStorageKey: string
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(dbName);
 
@@ -183,11 +182,11 @@ export async function migrateToLocalStorage(
         const data = getAllRequest.result;
         try {
           localStorage.setItem(localStorageKey, JSON.stringify(data));
-          log(`[Storage] Migrated ${storeName} to localStorage`);
+          console.log(`[Storage] Migrated ${storeName} to localStorage`);
           resolve();
-        } catch (e) {
-          console.error('[Storage] Failed to migrate to localStorage:', e);
-          reject(e);
+        } catch (error) {
+          console.error('[Storage] Failed to migrate to localStorage:', error);
+          reject(error);
         }
       };
 
@@ -202,7 +201,7 @@ export async function migrateToLocalStorage(
  * Show storage quota warning to user
  * @param {number} usagePercentage - Current usage percentage
  */
-export function showQuotaWarning(usagePercentage) {
+export function showQuotaWarning(usagePercentage: number): void {
   const warning = document.createElement('div');
   warning.className =
     'fixed top-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm';

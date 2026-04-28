@@ -399,6 +399,150 @@ class PantryDB {
     
     return this.transactionDone(transaction);
   }
+
+  // ============================================================================
+  // Test Helper Methods
+  // ============================================================================
+
+  /**
+   * Add a single pantry item
+   * @param item - Pantry item to add
+   * @returns Promise that resolves when operation is complete
+   */
+  async addPantryItem(item: PantryItem): Promise<void> {
+    return this.put('pantry', item);
+  }
+
+  /**
+   * Log a nutrition entry
+   * @param date - Date of entry
+   * @param recipeId - Recipe ID
+   * @param servings - Number of servings
+   * @returns Promise that resolves to the logged entry
+   */
+  async logNutrition(date: string, recipeId: number, servings: number): Promise<any> {
+    const recipe = await this.get<Recipe>('recipes', recipeId);
+    if (!recipe) {
+      throw new Error(`Recipe ${recipeId} not found`);
+    }
+
+    const entry = {
+      date,
+      recipeId,
+      recipeName: recipe.name,
+      servings,
+      nutrition: {
+        calories: (recipe.nutrition?.calories || 0) * servings,
+        protein: (recipe.nutrition?.protein || 0) * servings,
+        fat: (recipe.nutrition?.fat || 0) * servings,
+        carbs: (recipe.nutrition?.carbs || 0) * servings,
+      },
+    };
+
+    await this.put('nutritionLog', entry);
+    return entry;
+  }
+
+  /**
+   * Get daily nutrition totals
+   * @param date - Date to get nutrition for
+   * @returns Promise that resolves to daily nutrition data
+   */
+  async getDailyNutrition(date: string): Promise<any> {
+    const allEntries = await this.getAll<any>('nutritionLog');
+    const dayEntries = allEntries.filter((entry: any) => entry.date === date);
+
+    const totals = {
+      calories: 0,
+      protein: 0,
+      fat: 0,
+      carbs: 0,
+    };
+
+    for (const entry of dayEntries) {
+      totals.calories += entry.nutrition?.calories || 0;
+      totals.protein += entry.nutrition?.protein || 0;
+      totals.fat += entry.nutrition?.fat || 0;
+      totals.carbs += entry.nutrition?.carbs || 0;
+    }
+
+    return {
+      date,
+      meals: dayEntries,
+      totals,
+    };
+  }
+
+  /**
+   * Build a search index for recipes
+   * @param recipes - Array of recipes to index
+   * @returns Promise that resolves when index is built
+   */
+  async buildSearchIndex(recipes: Recipe[]): Promise<void> {
+    // Clear existing index
+    await this.clear('searchIndex');
+
+    const transaction = this.db!.transaction('searchIndex', 'readwrite');
+    const store = transaction.objectStore('searchIndex');
+
+    const termMap: Record<string, number[]> = {};
+
+    for (const recipe of recipes) {
+      const searchTerms = [
+        (recipe.name || '').toLowerCase(),
+        ...((recipe as any).ingredients_clean || []).map((i: string) => i.toLowerCase()),
+        (recipe.cuisine || '').toLowerCase(),
+      ];
+
+      for (const term of searchTerms) {
+        if (term && term.trim()) {
+          if (!termMap[term]) {
+            termMap[term] = [];
+          }
+          if (!termMap[term].includes(recipe.id as number)) {
+            termMap[term].push(recipe.id as number);
+          }
+        }
+      }
+    }
+
+    // Store each unique term with its recipe IDs
+    let index = 0;
+    for (const [term, ids] of Object.entries(termMap)) {
+      store.put({ _term: term, ids }, index++);
+    }
+
+    return this.transactionDone(transaction);
+  }
+
+  /**
+   * Search recipes using the search index
+   * @param query - Search query
+   * @returns Promise that resolves to matching recipe IDs
+   */
+  async searchRecipes(query: string): Promise<Recipe[]> {
+    const queryLower = query.toLowerCase();
+    const matchingIds = new Set<number>();
+
+    // Get all entries from searchIndex
+    const allEntries = await this.getAll<any>('searchIndex');
+    
+    for (const entry of allEntries) {
+      if (Array.isArray(entry.ids) && entry._term && entry._term.includes(queryLower)) {
+        entry.ids.forEach((id: number) => matchingIds.add(id));
+      }
+    }
+
+    const results: Recipe[] = [];
+    for (const id of matchingIds) {
+      const recipe = await this.get<Recipe>('recipes', id);
+      if (recipe) {
+        results.push(recipe);
+      }
+    }
+
+    return results;
+  }
 }
 
 // Export singleton instance

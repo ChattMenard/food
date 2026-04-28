@@ -12,20 +12,20 @@ import {
 } from '../utils/pushNotifications';
 
 describe('PushNotificationManager', () => {
-  let notificationManager;
+  let notificationManager: PushNotificationManager;
 
   beforeEach(async () => {
     notificationManager = new PushNotificationManager();
-    await db.delete('preferences', notificationManager.storageKey);
+    await db.delete('preferences', (notificationManager as any).storageKey);
   });
 
   describe('initialization', () => {
     it('should start with default permission', () => {
-      expect(notificationManager.permission).toBe(PERMISSION.DEFAULT);
+      expect((notificationManager as any).permission).toBe(PERMISSION.DEFAULT);
     });
 
     it('should have empty scheduled notifications', () => {
-      expect(notificationManager.scheduledNotifications.size).toBe(0);
+      expect((notificationManager as any).scheduledNotifications.size).toBe(0);
     });
 
     it('should check if notifications are supported', () => {
@@ -47,249 +47,477 @@ describe('PushNotificationManager', () => {
 
   describe('permission handling', () => {
     it('should track permission state', () => {
-      notificationManager.permission = PERMISSION.GRANTED;
-      expect(notificationManager.permission).toBe(PERMISSION.GRANTED);
+      (notificationManager as any).permission = PERMISSION.GRANTED;
+      expect(notificationManager.getStatus().permission).toBe(PERMISSION.GRANTED);
     });
 
-    it('should detect denied permission', () => {
-      notificationManager.permission = PERMISSION.DENIED;
+    it('should request permission', async () => {
+      // Mock Notification.requestPermission
+      const mockRequestPermission = jest.fn().mockResolvedValue(PERMISSION.GRANTED);
+      (global as any).Notification.requestPermission = mockRequestPermission;
+
+      const result = await notificationManager.requestPermission();
+      
+      expect(result).toBe(PERMISSION.GRANTED);
+      expect(mockRequestPermission).toHaveBeenCalled();
+      expect(notificationManager.getStatus().permission).toBe(PERMISSION.GRANTED);
+    });
+
+    it('should handle permission denial', async () => {
+      const mockRequestPermission = jest.fn().mockResolvedValue(PERMISSION.DENIED);
+      (global as any).Notification.requestPermission = mockRequestPermission;
+
+      const result = await notificationManager.requestPermission();
+      
+      expect(result).toBe(PERMISSION.DENIED);
       expect(notificationManager.getStatus().enabled).toBe(false);
+    });
+
+    it('should handle permission errors', async () => {
+      const mockRequestPermission = jest.fn().mockRejectedValue(new Error('Permission error'));
+      (global as any).Notification.requestPermission = mockRequestPermission;
+
+      await expect(notificationManager.requestPermission()).rejects.toThrow('Permission error');
+    });
+  });
+
+  describe('notification scheduling', () => {
+    beforeEach(async () => {
+      await notificationManager.init();
+      (notificationManager as any).permission = PERMISSION.GRANTED;
+    });
+
+    it('should schedule notification', async () => {
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Meal Reminder',
+        body: 'Time to prepare dinner',
+        scheduledTime: new Date(Date.now() + 60000), // 1 minute from now
+      };
+
+      const id = await notificationManager.schedule(notification);
+      
+      expect(id).toBeDefined();
+      expect(typeof id).toBe('string');
+      expect((notificationManager as any).scheduledNotifications.has(id)).toBe(true);
+    });
+
+    it('should validate notification data', async () => {
+      const invalidNotification = {
+        type: 'invalid-type' as any,
+        title: '',
+        body: 'Test',
+        scheduledTime: new Date(),
+      };
+
+      await expect(notificationManager.schedule(invalidNotification)).rejects.toThrow('Invalid notification data');
+    });
+
+    it('should not schedule in the past', async () => {
+      const pastNotification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Past Notification',
+        body: 'This should fail',
+        scheduledTime: new Date(Date.now() - 60000), // 1 minute ago
+      };
+
+      await expect(notificationManager.schedule(pastNotification)).rejects.toThrow('Scheduled time must be in the future');
+    });
+
+    it('should cancel scheduled notification', async () => {
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'To be cancelled',
+        body: 'Test',
+        scheduledTime: new Date(Date.now() + 60000),
+      };
+
+      const id = await notificationManager.schedule(notification);
+      expect((notificationManager as any).scheduledNotifications.has(id)).toBe(true);
+
+      await notificationManager.cancel(id);
+      expect((notificationManager as any).scheduledNotifications.has(id)).toBe(false);
+    });
+
+    it('should handle cancelling non-existent notification', async () => {
+      await expect(notificationManager.cancel('non-existent-id')).rejects.toThrow('Notification not found');
     });
   });
 
   describe('notification types', () => {
-    it('should define meal prep type', () => {
-      const type = NOTIFICATION_TYPES.mealPrep;
-      expect(type.title).toBe('Meal Prep Reminder');
-      expect(type.schedule).toBe('weekly');
-      expect(type.defaultEnabled).toBe(true);
-    });
-
-    it('should define expiration type', () => {
-      const type = NOTIFICATION_TYPES.expiration;
-      expect(type.title).toBe('Food Expiration');
-      expect(type.schedule).toBe('daily');
-    });
-
-    it('should define grocery delivery type', () => {
-      const type = NOTIFICATION_TYPES.groceryDelivery;
-      expect(type.title).toBe('Grocery Delivery');
-      expect(type.defaultEnabled).toBe(false);
-    });
-
-    it('should define nutrition goal type', () => {
-      const type = NOTIFICATION_TYPES.nutritionGoal;
-      expect(type.title).toBe('Nutrition Goals');
-      expect(type.schedule).toBe('daily');
-    });
-
-    it('should define sync complete type', () => {
-      const type = NOTIFICATION_TYPES.syncComplete;
-      expect(type.title).toBe('Sync Status');
-      expect(type.schedule).toBe('immediate');
-    });
-  });
-
-  describe('settings', () => {
-    it('should get default settings', () => {
-      const defaults = notificationManager.getDefaultSettings();
-
-      expect(defaults.mealPrep.enabled).toBe(true);
-      expect(defaults.expiration.enabled).toBe(true);
-      expect(defaults.groceryDelivery.enabled).toBe(false);
-    });
-
-    it('should get all type settings', async () => {
-      await notificationManager.init();
-      const settings = notificationManager.getTypeSettings();
-
-      expect(settings.length).toBe(Object.keys(NOTIFICATION_TYPES).length);
-      expect(settings[0]).toHaveProperty('settings');
-    });
-
-    it('should enable notification type', async () => {
-      await notificationManager.init();
-      await notificationManager.setTypeEnabled('groceryDelivery', true);
-
-      expect(notificationManager.typeSettings.groceryDelivery.enabled).toBe(
-        true
-      );
-      expect(notificationManager.getEnabledTypes()).toContain(
-        'groceryDelivery'
-      );
-    });
-
-    it('should disable notification type', async () => {
-      await notificationManager.init();
-      await notificationManager.setTypeEnabled('mealPrep', false);
-
-      expect(notificationManager.typeSettings.mealPrep.enabled).toBe(false);
-      expect(notificationManager.getEnabledTypes()).not.toContain('mealPrep');
-    });
-
-    it('should throw for unknown type', async () => {
-      await expect(
-        notificationManager.setTypeEnabled('unknown', true)
-      ).rejects.toThrow('Unknown notification type');
-    });
-  });
-
-  describe('scheduling', () => {
     beforeEach(async () => {
       await notificationManager.init();
     });
 
-    it('should schedule daily notification', () => {
-      notificationManager.scheduleDaily('expiration');
+    it('should enable notification types', async () => {
+      await notificationManager.enableType(NOTIFICATION_TYPES.mealPrep);
+      await notificationManager.enableType(NOTIFICATION_TYPES.groceryDelivery);
 
-      expect(notificationManager.scheduledNotifications.has('expiration')).toBe(
-        true
-      );
+      const status = notificationManager.getStatus();
+      expect(status.enabledTypes).toContain(NOTIFICATION_TYPES.mealPrep);
+      expect(status.enabledTypes).toContain(NOTIFICATION_TYPES.groceryDelivery);
     });
 
-    it('should schedule weekly notification', () => {
-      notificationManager.scheduleWeekly('mealPrep');
+    it('should disable notification types', async () => {
+      await notificationManager.enableType(NOTIFICATION_TYPES.mealPrep);
+      await notificationManager.disableType(NOTIFICATION_TYPES.mealPrep);
 
-      expect(notificationManager.scheduledNotifications.has('mealPrep')).toBe(
-        true
-      );
+      const status = notificationManager.getStatus();
+      expect(status.enabledTypes).not.toContain(NOTIFICATION_TYPES.mealPrep);
     });
 
-    it('should cancel scheduled notification', () => {
-      notificationManager.scheduleDaily('expiration');
-      notificationManager.cancelScheduledType('expiration');
+    it('should check if type is enabled', async () => {
+      await notificationManager.enableType(NOTIFICATION_TYPES.mealPrep);
 
-      expect(notificationManager.scheduledNotifications.has('expiration')).toBe(
-        false
-      );
+      expect(notificationManager.isTypeEnabled(NOTIFICATION_TYPES.mealPrep)).toBe(true);
+      expect(notificationManager.isTypeEnabled(NOTIFICATION_TYPES.groceryDelivery)).toBe(false);
     });
 
-    it('should schedule all enabled types', () => {
-      notificationManager.typeSettings.mealPrep.enabled = true;
-      notificationManager.typeSettings.expiration.enabled = true;
-
-      notificationManager.scheduleAllEnabled();
-
-      expect(notificationManager.scheduledNotifications.size).toBe(2);
+    it('should validate notification type', async () => {
+      await expect(notificationManager.enableType('invalid-type' as any)).rejects.toThrow('Invalid notification type');
+      await expect(notificationManager.disableType('invalid-type' as any)).rejects.toThrow('Invalid notification type');
     });
   });
 
-  describe('notification triggers', () => {
+  describe('immediate notifications', () => {
     beforeEach(async () => {
       await notificationManager.init();
-      notificationManager.permission = PERMISSION.GRANTED; // Mock granted
+      (notificationManager as any).permission = PERMISSION.GRANTED;
+      await notificationManager.enableType(NOTIFICATION_TYPES.mealPrep);
     });
 
-    it('should skip trigger if type disabled', async () => {
-      notificationManager.typeSettings.mealPrep.enabled = false;
+    it('should show immediate notification', async () => {
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Immediate Test',
+        body: 'This should appear now',
+      };
 
-      const result = await notificationManager.triggerMealPrep({ recipes: [] });
-      expect(result).toBeUndefined();
+      // Mock Notification constructor
+      const mockNotification = {
+        show: jest.fn(),
+        close: jest.fn(),
+        addEventListener: jest.fn(),
+      };
+      (global as any).Notification = jest.fn().mockImplementation((title, options) => {
+        expect(title).toBe(notification.title);
+        expect(options.body).toBe(notification.body);
+        expect(options.icon).toBeDefined();
+        return mockNotification;
+      });
+
+      await notificationManager.show(notification);
+      
+      expect(mockNotification.show).toHaveBeenCalled();
     });
 
-    it('should skip trigger if permission not granted', async () => {
-      notificationManager.permission = PERMISSION.DENIED;
+    it('should not show if permission denied', async () => {
+      (notificationManager as any).permission = PERMISSION.DENIED;
 
-      const result = await notificationManager.show('Test', {});
-      expect(result.shown).toBe(false);
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Should not show',
+        body: 'Test',
+      };
+
+      await expect(notificationManager.show(notification)).rejects.toThrow('Permission not granted');
     });
 
-    it('should trigger expiration notification', async () => {
-      notificationManager.typeSettings.expiration.enabled = true;
+    it('should not show if type disabled', async () => {
+      await notificationManager.disableType(NOTIFICATION_TYPES.mealPrep);
 
-      const items = [
-        { name: 'Milk', daysLeft: 2 },
-        { name: 'Eggs', daysLeft: 3 },
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Should not show',
+        body: 'Test',
+      };
+
+      await expect(notificationManager.show(notification)).rejects.toThrow('Notification type not enabled');
+    });
+  });
+
+  describe('persistence', () => {
+    beforeEach(async () => {
+      await notificationManager.init();
+    });
+
+    it('should save preferences to database', async () => {
+      await notificationManager.enableType(NOTIFICATION_TYPES.mealPrep);
+      await notificationManager.enableType(NOTIFICATION_TYPES.groceryDelivery);
+
+      const saved = await db.get('preferences', (notificationManager as any).storageKey);
+      expect(saved.enabledTypes).toContain(NOTIFICATION_TYPES.mealPrep);
+      expect(saved.enabledTypes).toContain(NOTIFICATION_TYPES.groceryDelivery);
+    });
+
+    it('should load preferences from database', async () => {
+      // Save preferences directly to database
+      const preferences = {
+        enabledTypes: [NOTIFICATION_TYPES.mealPrep],
+        permission: PERMISSION.GRANTED,
+      };
+      await db.put('preferences', preferences, (notificationManager as any).storageKey);
+
+      // Create new manager to test loading
+      const newManager = new PushNotificationManager();
+      await newManager.init();
+
+      expect(newManager.isTypeEnabled(NOTIFICATION_TYPES.mealPrep)).toBe(true);
+      expect(newManager.isTypeEnabled(NOTIFICATION_TYPES.groceryDelivery)).toBe(false);
+    });
+
+    it('should handle corrupted preferences', async () => {
+      // Save corrupted data
+      await db.put('preferences', 'invalid-data', (notificationManager as any).storageKey);
+
+      // Should not throw and should use defaults
+      await expect(notificationManager.init()).resolves.toBeUndefined();
+      expect(notificationManager.getStatus().enabledTypes).toEqual([]);
+    });
+  });
+
+  describe('scheduled notification execution', () => {
+    beforeEach(async () => {
+      await notificationManager.init();
+      (notificationManager as any).permission = PERMISSION.GRANTED;
+      await notificationManager.enableType(NOTIFICATION_TYPES.mealPrep);
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should execute scheduled notification', async () => {
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Scheduled Test',
+        body: 'This should appear after delay',
+        scheduledTime: new Date(Date.now() + 5000), // 5 seconds from now
+      };
+
+      const mockNotification = {
+        show: jest.fn(),
+        close: jest.fn(),
+        addEventListener: jest.fn(),
+      };
+      (global as any).Notification = jest.fn().mockReturnValue(mockNotification);
+
+      const id = await notificationManager.schedule(notification);
+      
+      // Fast-forward time
+      jest.advanceTimersByTime(5000);
+
+      // Wait for async execution
+      await jest.runAllTimers();
+
+      expect(mockNotification.show).toHaveBeenCalled();
+      expect((notificationManager as any).scheduledNotifications.has(id)).toBe(false);
+    });
+
+    it('should handle multiple scheduled notifications', async () => {
+      const notifications = [
+        {
+          type: NOTIFICATION_TYPES.mealPrep,
+          title: 'First',
+          body: 'First notification',
+          scheduledTime: new Date(Date.now() + 3000),
+        },
+        {
+          type: NOTIFICATION_TYPES.groceryDelivery,
+          title: 'Second',
+          body: 'Second notification',
+          scheduledTime: new Date(Date.now() + 6000),
+        },
       ];
 
-      // Mock notification
-      global.Notification = jest.fn();
+      await notificationManager.enableType(NOTIFICATION_TYPES.groceryDelivery);
 
-      const result = await notificationManager.triggerExpiration(items);
-      expect(result).toBeDefined();
-    });
+      const mockNotification = {
+        show: jest.fn(),
+        close: jest.fn(),
+        addEventListener: jest.fn(),
+      };
+      (global as any).Notification = jest.fn().mockReturnValue(mockNotification);
 
-    it('should skip empty expiration list', async () => {
-      notificationManager.typeSettings.expiration.enabled = true;
+      const ids = await Promise.all(notifications.map(n => notificationManager.schedule(n)));
+      
+      // Fast-forward time
+      jest.advanceTimersByTime(6000);
+      await jest.runAllTimers();
 
-      const result = await notificationManager.triggerExpiration([]);
-      expect(result).toBeUndefined();
-    });
-
-    it('should trigger grocery reminder', async () => {
-      notificationManager.typeSettings.groceryDelivery.enabled = true;
-      global.Notification = jest.fn();
-
-      const result = await notificationManager.triggerGroceryReminder([
-        'item1',
-        'item2',
-      ]);
-      expect(result).toBeDefined();
-    });
-
-    it('should trigger nutrition update', async () => {
-      notificationManager.typeSettings.nutritionGoal.enabled = true;
-      global.Notification = jest.fn();
-
-      const result = await notificationManager.triggerNutritionUpdate({
-        percentage: 75,
+      expect(mockNotification.show).toHaveBeenCalledTimes(2);
+      ids.forEach(id => {
+        expect((notificationManager as any).scheduledNotifications.has(id)).toBe(false);
       });
-      expect(result).toBeDefined();
     });
 
-    it('should trigger sync complete', async () => {
-      notificationManager.typeSettings.syncComplete.enabled = true;
-      global.Notification = jest.fn();
+    it('should not execute if permission revoked', async () => {
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Should not execute',
+        body: 'Test',
+        scheduledTime: new Date(Date.now() + 5000),
+      };
 
-      const result = await notificationManager.triggerSyncComplete({
-        deviceName: 'Phone',
-      });
-      expect(result).toBeDefined();
+      const id = await notificationManager.schedule(notification);
+      
+      // Revoke permission before execution
+      (notificationManager as any).permission = PERMISSION.DENIED;
+
+      jest.advanceTimersByTime(5000);
+      await jest.runAllTimers();
+
+      expect((notificationManager as any).scheduledNotifications.has(id)).toBe(false);
     });
   });
 
-  describe('pub-sub', () => {
-    it('should notify on settings change', async () => {
+  describe('notification interactions', () => {
+    beforeEach(async () => {
       await notificationManager.init();
-      const callback = jest.fn();
-      notificationManager.subscribe(callback);
-
-      await notificationManager.setTypeEnabled('mealPrep', false);
-
-      expect(callback).toHaveBeenCalledWith(
-        'settings-change',
-        expect.any(Object)
-      );
+      (notificationManager as any).permission = PERMISSION.GRANTED;
+      await notificationManager.enableType(NOTIFICATION_TYPES.mealPrep);
     });
 
-    it('should allow unsubscribing', async () => {
-      await notificationManager.init();
-      const callback = jest.fn();
-      const unsubscribe = notificationManager.subscribe(callback);
+    it('should handle notification click', async () => {
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Clickable',
+        body: 'Click me',
+        data: { recipeId: '123' },
+      };
 
-      unsubscribe();
-      await notificationManager.setTypeEnabled('mealPrep', true);
+      const mockNotification = {
+        show: jest.fn(),
+        close: jest.fn(),
+        addEventListener: jest.fn(),
+      };
+      (global as any).Notification = jest.fn().mockReturnValue(mockNotification);
 
-      // Settings change events should still fire
-      expect(notificationManager.typeSettings.mealPrep.enabled).toBe(true);
+      await notificationManager.show(notification);
+
+      // Simulate click event
+      const clickHandler = mockNotification.addEventListener.mock.calls.find(
+        (call: any) => call[0] === 'click'
+      )?.[1];
+
+      if (clickHandler) {
+        clickHandler();
+      }
+
+      // Should handle click appropriately (e.g., navigate to recipe)
+      expect(mockNotification.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
+    });
+
+    it('should handle notification close', async () => {
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Closable',
+        body: 'Close me',
+      };
+
+      const mockNotification = {
+        show: jest.fn(),
+        close: jest.fn(),
+        addEventListener: jest.fn(),
+      };
+      (global as any).Notification = jest.fn().mockReturnValue(mockNotification);
+
+      await notificationManager.show(notification);
+
+      // Simulate close event
+      const closeHandler = mockNotification.addEventListener.mock.calls.find(
+        (call: any) => call[0] === 'close'
+      )?.[1];
+
+      if (closeHandler) {
+        closeHandler();
+      }
+
+      expect(mockNotification.addEventListener).toHaveBeenCalledWith('close', expect.any(Function));
     });
   });
 
-  describe('constants', () => {
-    it('should have PERMISSION constants', () => {
-      expect(PERMISSION.GRANTED).toBe('granted');
-      expect(PERMISSION.DENIED).toBe('denied');
-      expect(PERMISSION.DEFAULT).toBe('default');
+  describe('error handling', () => {
+    it('should handle missing Notification API', () => {
+      // Temporarily remove Notification API
+      const originalNotification = (global as any).Notification;
+      delete (global as any).Notification;
+
+      const manager = new PushNotificationManager();
+      expect(manager.isSupported()).toBe(false);
+
+      // Restore Notification API
+      (global as any).Notification = originalNotification;
     });
 
-    it('should have NOTIFICATION_TYPES with all required fields', () => {
-      Object.values(NOTIFICATION_TYPES).forEach((type) => {
-        expect(type).toHaveProperty('id');
-        expect(type).toHaveProperty('title');
-        expect(type).toHaveProperty('description');
-        expect(type).toHaveProperty('defaultEnabled');
-        expect(type).toHaveProperty('schedule');
+    it('should handle Notification constructor errors', async () => {
+      await notificationManager.init();
+      (notificationManager as any).permission = PERMISSION.GRANTED;
+      await notificationManager.enableType(NOTIFICATION_TYPES.mealPrep);
+
+      (global as any).Notification = jest.fn().mockImplementation(() => {
+        throw new Error('Notification failed');
       });
+
+      const notification = {
+        type: NOTIFICATION_TYPES.mealPrep,
+        title: 'Error Test',
+        body: 'This should fail',
+      };
+
+      await expect(notificationManager.show(notification)).rejects.toThrow('Notification failed');
+    });
+
+    it('should handle database errors', async () => {
+      // Mock database to throw error
+      const originalGet = db.get;
+      db.get = jest.fn().mockRejectedValue(new Error('Database error'));
+
+      await expect(notificationManager.init()).rejects.toThrow('Database error');
+
+      // Restore original method
+      db.get = originalGet;
+    });
+  });
+
+  describe('utility methods', () => {
+    beforeEach(async () => {
+      await notificationManager.init();
+    });
+
+    it('should get all notification types', () => {
+      const allTypes = notificationManager.getAllTypes();
+      
+      expect(Array.isArray(allTypes)).toBe(true);
+      expect(allTypes).toContain(NOTIFICATION_TYPES.mealPrep);
+      expect(allTypes).toContain(NOTIFICATION_TYPES.groceryDelivery);
+      expect(allTypes).toContain(NOTIFICATION_TYPES.expiration);
+      expect(allTypes).toContain(NOTIFICATION_TYPES.nutritionGoal);
+      expect(allTypes).toContain(NOTIFICATION_TYPES.syncComplete);
+    });
+
+    it('should format notification title', () => {
+      const formatted = (notificationManager as any).formatTitle(NOTIFICATION_TYPES.mealPrep);
+      expect(typeof formatted).toBe('string');
+      expect(formatted.length).toBeGreaterThan(0);
+    });
+
+    it('should generate notification ID', () => {
+      const id1 = (notificationManager as any).generateId();
+      const id2 = (notificationManager as any).generateId();
+      
+      expect(typeof id1).toBe('string');
+      expect(typeof id2).toBe('string');
+      expect(id1).not.toBe(id2);
+    });
+
+    it('should validate notification time', () => {
+      const validTime = new Date(Date.now() + 60000);
+      const invalidTime = new Date(Date.now() - 60000);
+
+      expect((notificationManager as any).isValidTime(validTime)).toBe(true);
+      expect((notificationManager as any).isValidTime(invalidTime)).toBe(false);
     });
   });
 });

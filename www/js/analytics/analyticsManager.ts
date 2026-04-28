@@ -5,6 +5,15 @@
  */
 
 class AnalyticsManager {
+  isProduction: boolean;
+  analyticsId: string;
+  isEnabled: boolean;
+  eventQueue: any[];
+  maxQueueSize: number;
+  sessionStartTime: number;
+  userId: string;
+  sessionId: string;
+
   constructor() {
     this.isProduction = this.detectProductionEnvironment();
     this.analyticsId = this.getAnalyticsId();
@@ -18,7 +27,7 @@ class AnalyticsManager {
     this.setupAnalytics();
   }
 
-  detectProductionEnvironment() {
+  detectProductionEnvironment(): boolean {
     return (
       window.location.hostname !== 'localhost' &&
       window.location.hostname !== '127.0.0.1' &&
@@ -29,13 +38,13 @@ class AnalyticsManager {
     );
   }
 
-  getAnalyticsId() {
+  getAnalyticsId(): string {
     return import.meta.env?.ANALYTICS_ID || 
            window?.ANALYTICS_ID || 
            '';
   }
 
-  setupAnalytics() {
+  setupAnalytics(): void {
     if (!this.isEnabled) {
       console.log('Analytics disabled - not in production or no analytics ID');
       return;
@@ -60,7 +69,7 @@ class AnalyticsManager {
     this.trackSessionStart();
   }
 
-  initializeGoogleAnalytics() {
+  initializeGoogleAnalytics(): void {
     // Load Google Analytics script
     if (!window.gtag) {
       const script = document.createElement('script');
@@ -83,7 +92,7 @@ class AnalyticsManager {
     }
   }
 
-  setupEventTracking() {
+  setupEventTracking(): void {
     // Track button clicks
     document.addEventListener('click', (event) => {
       const target = event.target.closest('button, [role="button"], .btn, [onclick]');

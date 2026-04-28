@@ -98,9 +98,9 @@ export class ABTesting {
    * @param {Object} experiment - Experiment config
    * @returns {string} Assigned variant
    */
-  assignVariant(experimentName, experiment) {
+  assignVariant(experimentName: string, experiment: any): string {
     const hash = this.hashString(this.userId + experimentName);
-    const totalWeight = experiment.weights.reduce((a, b) => a + b, 0);
+    const totalWeight = experiment.weights.reduce((a: number, b: number) => a + b, 0);
     let normalizedHash = hash % totalWeight;
 
     for (let i = 0; i < experiment.variants.length; i++) {
@@ -118,7 +118,7 @@ export class ABTesting {
    * @param {string} str - String to hash
    * @returns {number} Hash value
    */
-  hashString(str) {
+  hashString(str: string): number {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);

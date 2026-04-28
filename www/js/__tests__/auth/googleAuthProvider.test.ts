@@ -6,7 +6,7 @@ jest.mock('@codetrix-studio/capacitor-google-auth', () => ({
     initialize: jest.fn().mockResolvedValue({ success: true }),
     signIn: jest.fn().mockResolvedValue({ name: 'Test User', email: 'test@example.com', id: 'google-123' }),
     signOut: jest.fn().mockResolvedValue(undefined),
-    refresh: jest.fn().mockImplementation(() => Promise.resolve({ token: 'new-token' }))
+    refresh: jest.fn().mockResolvedValue({ token: 'new-token' })
   }
 }));
 

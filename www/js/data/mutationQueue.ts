@@ -15,7 +15,7 @@ import db from './db';
  * @param {string} params.entityId - Unique entity identifier (e.g., "pantry:apple")
  * @returns {Promise<Object>} The queued mutation object
  */
-export async function enqueue({ type, payload, entityId }) {
+export async function enqueue({ type, payload, entityId }: { type: string, payload: any, entityId: string }) {
   const mutation = {
     id: crypto.randomUUID(),
     type,
@@ -26,7 +26,7 @@ export async function enqueue({ type, payload, entityId }) {
     status: 'pending',
   };
 
-  await db.addMutation(mutation);
+  await (db as any).addMutation(mutation);
 
   console.log('[MutationQueue] Enqueued:', mutation.id, type, entityId);
   return mutation;
@@ -44,8 +44,8 @@ export async function getPending() {
  * Mark mutation as synced
  * @param {string} id
  */
-export async function markSynced(id) {
-  await db.markMutationSynced(id);
+export async function markSynced(id: string): Promise<void> {
+  await (db as any).markMutationSynced(id);
   console.log('[MutationQueue] Marked synced:', id);
 }
 
@@ -54,8 +54,8 @@ export async function markSynced(id) {
  * @param {string} id
  * @param {string} error
  */
-export async function markFailed(id, error) {
-  await db.markMutationFailed(id, error);
+export async function markFailed(id: string, error: string): Promise<void> {
+  await (db as any).markMutationFailed(id, error);
   console.log('[MutationQueue] Marked failed:', id, error);
 }
 
@@ -64,8 +64,8 @@ export async function markFailed(id, error) {
  * @param {string} id
  * @returns {Promise<number>} New retry count
  */
-export async function incrementRetry(id) {
-  const count = await db.incrementMutationRetry(id);
+export async function incrementRetry(id: string): Promise<number> {
+  const count = await (db as any).incrementMutationRetry(id);
   console.log('[MutationQueue] Retry incremented:', id, count);
   return count;
 }

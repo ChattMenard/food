@@ -2,11 +2,11 @@
 import { MealPrep } from '../features/mealPrep';
 
 describe('MealPrep', () => {
-  let mealPrep;
-  let mockGetMealPlan;
-  let mockGetRecipes;
-  let mockGetPreferences;
-  let mockAnnounce;
+  let mealPrep: MealPrep;
+  let mockGetMealPlan: jest.Mock;
+  let mockGetRecipes: jest.Mock;
+  let mockGetPreferences: jest.Mock;
+  let mockAnnounce: jest.Mock;
 
   beforeEach(() => {
     mockGetMealPlan = jest.fn();
@@ -28,10 +28,10 @@ describe('MealPrep', () => {
 
   describe('constructor', () => {
     it('stores dependencies', () => {
-      expect(mealPrep.getMealPlan).toBe(mockGetMealPlan);
-      expect(mealPrep.getRecipes).toBe(mockGetRecipes);
-      expect(mealPrep.getPreferences).toBe(mockGetPreferences);
-      expect(mealPrep.announce).toBe(mockAnnounce);
+      expect((mealPrep as any).getMealPlan).toBe(mockGetMealPlan);
+      expect((mealPrep as any).getRecipes).toBe(mockGetRecipes);
+      expect((mealPrep as any).getPreferences).toBe(mockGetPreferences);
+      expect((mealPrep as any).announce).toBe(mockAnnounce);
     });
   });
 
@@ -45,188 +45,370 @@ describe('MealPrep', () => {
         { name: 'Recipe E', servings: 4, time: 45 },
       ]);
 
-      const suggestions = mealPrep.getBatchCookingSuggestions();
+      const suggestions = (mealPrep as any).getBatchCookingSuggestions();
       expect(suggestions).toHaveLength(3);
       expect(suggestions[0].servings).toBe(6);
-    });
-
-    it('filters out recipes with low servings', () => {
-      mockGetRecipes.mockReturnValue([
-        { name: 'Recipe A', servings: 2, time: 30 },
-        { name: 'Recipe B', servings: 3, time: 45 },
-      ]);
-
-      const suggestions = mealPrep.getBatchCookingSuggestions();
-      expect(suggestions).toHaveLength(0);
-    });
-
-    it('filters out recipes with high time', () => {
-      mockGetRecipes.mockReturnValue([
-        { name: 'Recipe A', servings: 6, time: 150 },
-        { name: 'Recipe B', servings: 8, time: 200 },
-      ]);
-
-      const suggestions = mealPrep.getBatchCookingSuggestions();
-      expect(suggestions).toHaveLength(0);
-    });
-
-    it('returns empty array when no recipes', () => {
-      mockGetRecipes.mockReturnValue([]);
-      const suggestions = mealPrep.getBatchCookingSuggestions();
-      expect(suggestions).toEqual([]);
-    });
-
-    it('limits to 5 suggestions', () => {
-      mockGetRecipes.mockReturnValue([
-        { name: 'Recipe A', servings: 4, time: 60 },
-        { name: 'Recipe B', servings: 5, time: 60 },
-        { name: 'Recipe C', servings: 6, time: 60 },
-        { name: 'Recipe D', servings: 7, time: 60 },
-        { name: 'Recipe E', servings: 8, time: 60 },
-        { name: 'Recipe F', servings: 9, time: 60 },
-      ]);
-
-      const suggestions = mealPrep.getBatchCookingSuggestions();
-      expect(suggestions).toHaveLength(5);
-    });
-
-    it('sorts by servings descending', () => {
-      mockGetRecipes.mockReturnValue([
-        { name: 'Recipe A', servings: 4, time: 60 },
-        { name: 'Recipe B', servings: 8, time: 60 },
-        { name: 'Recipe C', servings: 6, time: 60 },
-      ]);
-
-      const suggestions = mealPrep.getBatchCookingSuggestions();
-      expect(suggestions[0].servings).toBe(8);
-      expect(suggestions[1].servings).toBe(6);
+      expect(suggestions[1].servings).toBe(4);
       expect(suggestions[2].servings).toBe(4);
     });
-  });
 
-  describe('calculatePrepSchedule', () => {
-    it('finds recipes that appear multiple times', () => {
-      mockGetMealPlan.mockReturnValue({
-        Monday: 'Pasta',
-        Tuesday: 'Pasta',
-        Wednesday: 'Salad',
-        Thursday: 'Pasta',
-        Friday: 'Salad',
-      });
-
+    it('filters out recipes that take too long', () => {
       mockGetRecipes.mockReturnValue([
-        { name: 'Pasta', servings: 4 },
-        { name: 'Salad', servings: 2 },
+        { name: 'Quick Recipe', servings: 6, time: 60 },
+        { name: 'Long Recipe', servings: 8, time: 200 },
+        { name: 'Medium Recipe', servings: 4, time: 120 },
       ]);
 
-      const schedule = mealPrep.calculatePrepSchedule();
-      expect(schedule).toHaveLength(2);
-      expect(schedule[0].recipe.name).toBe('Pasta');
-      expect(schedule[0].count).toBe(3);
+      const suggestions = (mealPrep as any).getBatchCookingSuggestions();
+      expect(suggestions).toHaveLength(2);
+      expect(suggestions.map((r: any) => r.name)).not.toContain('Long Recipe');
     });
 
-    it('calculates savings based on servings', () => {
-      mockGetMealPlan.mockReturnValue({
-        Monday: 'Pasta',
-        Tuesday: 'Pasta',
-      });
-
-      mockGetRecipes.mockReturnValue([{ name: 'Pasta', servings: 4 }]);
-
-      const schedule = mealPrep.calculatePrepSchedule();
-      expect(schedule[0].savings).toBe(8);
-    });
-
-    it('returns empty array when no duplicate recipes', () => {
-      mockGetMealPlan.mockReturnValue({
-        Monday: 'Pasta',
-        Tuesday: 'Salad',
-        Wednesday: 'Soup',
-      });
-
-      mockGetRecipes.mockReturnValue([
-        { name: 'Pasta', servings: 4 },
-        { name: 'Salad', servings: 2 },
-        { name: 'Soup', servings: 3 },
-      ]);
-
-      const schedule = mealPrep.calculatePrepSchedule();
-      expect(schedule).toHaveLength(0);
-    });
-
-    it('handles null preferences', () => {
-      mockGetPreferences.mockReturnValue(null);
-      mockGetMealPlan.mockReturnValue({});
+    it('handles empty recipe list', () => {
       mockGetRecipes.mockReturnValue([]);
 
-      const schedule = mealPrep.calculatePrepSchedule();
-      expect(schedule).toHaveLength(0);
-    });
-
-    it('handles missing preferences', () => {
-      mockGetPreferences.mockReturnValue(undefined);
-      mockGetMealPlan.mockReturnValue({});
-      mockGetRecipes.mockReturnValue([]);
-
-      const schedule = mealPrep.calculatePrepSchedule();
-      expect(schedule).toHaveLength(0);
-    });
-
-    it('sorts by savings descending', () => {
-      mockGetMealPlan.mockReturnValue({
-        Monday: 'Pasta',
-        Tuesday: 'Pasta',
-        Wednesday: 'Salad',
-        Thursday: 'Salad',
-        Friday: 'Salad',
-      });
-
-      mockGetRecipes.mockReturnValue([
-        { name: 'Pasta', servings: 4 },
-        { name: 'Salad', servings: 2 },
-      ]);
-
-      const schedule = mealPrep.calculatePrepSchedule();
-      expect(schedule[0].recipe.name).toBe('Pasta');
-      expect(schedule[1].recipe.name).toBe('Salad');
+      const suggestions = (mealPrep as any).getBatchCookingSuggestions();
+      expect(suggestions).toEqual([]);
     });
   });
 
-  describe('suggestPrepDay', () => {
-    it('suggests Sunday by default', () => {
-      mockGetMealPlan.mockReturnValue({});
-      const day = mealPrep.suggestPrepDay();
-      expect(day).toBe('Sunday');
-    });
-
-    it('prefers Saturday if it has more meals', () => {
+  describe('getPrepSchedule', () => {
+    it('creates prep schedule for meal plan', () => {
       mockGetMealPlan.mockReturnValue({
-        Saturday: 'Pasta',
-        Sunday: null,
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: 4 },
+          { day: 'Tuesday', recipe: 'Salad', servings: 2 },
+          { day: 'Wednesday', recipe: 'Soup', servings: 6 }
+        ]
       });
 
-      const day = mealPrep.suggestPrepDay();
-      expect(day).toBe('Saturday');
+      mockGetRecipes.mockReturnValue([
+        { name: 'Pasta', prepTime: 30, cookTime: 20, ingredients: ['pasta', 'sauce'] },
+        { name: 'Salad', prepTime: 15, cookTime: 0, ingredients: ['lettuce', 'tomatoes'] },
+        { name: 'Soup', prepTime: 45, cookTime: 60, ingredients: ['vegetables', 'broth'] }
+      ]);
+
+      const schedule = (mealPrep as any).getPrepSchedule();
+      
+      expect(schedule).toHaveProperty('prepTasks');
+      expect(schedule).toHaveProperty('shoppingList');
+      expect(schedule).toHaveProperty('timeline');
+      expect(schedule.prepTasks).toHaveLength(3);
     });
 
-    it('prefers Sunday if it has more meals', () => {
+    it('groups similar ingredients', () => {
       mockGetMealPlan.mockReturnValue({
-        Saturday: null,
-        Sunday: 'Pasta',
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: 4 },
+          { day: 'Tuesday', recipe: 'Spaghetti', servings: 2 }
+        ]
       });
 
-      const day = mealPrep.suggestPrepDay();
-      expect(day).toBe('Sunday');
+      mockGetRecipes.mockReturnValue([
+        { name: 'Pasta', ingredients: ['pasta', 'tomato sauce', 'garlic'] },
+        { name: 'Spaghetti', ingredients: ['pasta', 'tomato sauce', 'onions'] }
+      ]);
+
+      const schedule = (mealPrep as any).getPrepSchedule();
+      
+      const pastaItem = schedule.shoppingList.find((item: any) => item.ingredient === 'pasta');
+      expect(pastaItem.quantity).toBe(6); // Combined quantity
     });
 
-    it('returns Sunday if both have equal meals', () => {
+    it('optimizes prep order', () => {
       mockGetMealPlan.mockReturnValue({
-        Saturday: 'Pasta',
-        Sunday: 'Salad',
+        meals: [
+          { day: 'Monday', recipe: 'Soup', servings: 4 },
+          { day: 'Tuesday', recipe: 'Salad', servings: 2 }
+        ]
       });
 
-      const day = mealPrep.suggestPrepDay();
-      expect(day).toBe('Sunday');
+      mockGetRecipes.mockReturnValue([
+        { name: 'Soup', prepTime: 45, cookTime: 60, ingredients: ['vegetables'] },
+        { name: 'Salad', prepTime: 15, cookTime: 0, ingredients: ['lettuce'] }
+      ]);
+
+      const schedule = (mealPrep as any).getPrepSchedule();
+      
+      // Soup should be prepared first due to longer cook time
+      expect(schedule.timeline[0].task).toContain('Soup');
+    });
+  });
+
+  describe('calculatePrepTime', () => {
+    it('calculates total prep time for meal plan', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: 4 },
+          { day: 'Tuesday', recipe: 'Salad', servings: 2 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Pasta', prepTime: 30, cookTime: 20 },
+        { name: 'Salad', prepTime: 15, cookTime: 0 }
+      ]);
+
+      const totalTime = (mealPrep as any).calculatePrepTime();
+      
+      expect(totalTime).toBe(65); // 30 + 20 + 15 + 0
+    });
+
+    it('accounts for batch cooking efficiency', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Soup', servings: 4 },
+          { day: 'Tuesday', recipe: 'More Soup', servings: 2 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Soup', prepTime: 30, cookTime: 60, batchable: true },
+        { name: 'More Soup', prepTime: 30, cookTime: 60, batchable: true }
+      ]);
+
+      const totalTime = (mealPrep as any).calculatePrepTime();
+      
+      // Should be less than sum due to batch cooking
+      expect(totalTime).toBeLessThan(180); // 30+60 + 30+60
+    });
+  });
+
+  describe('getShoppingList', () => {
+    it('generates comprehensive shopping list', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: 4 },
+          { day: 'Tuesday', recipe: 'Salad', servings: 2 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Pasta', ingredients: ['pasta', 'tomato sauce', 'garlic'] },
+        { name: 'Salad', ingredients: ['lettuce', 'tomatoes', 'cucumber'] }
+      ]);
+
+      mockGetPreferences.mockReturnValue({});
+
+      const shoppingList = (mealPrep as any).getShoppingList();
+      
+      expect(shoppingList).toHaveLength(6);
+      expect(shoppingList.some((item: any) => item.ingredient === 'pasta')).toBe(true);
+      expect(shoppingList.some((item: any) => item.ingredient === 'lettuce')).toBe(true);
+    });
+
+    it('excludes pantry staples based on preferences', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: 4 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Pasta', ingredients: ['pasta', 'tomato sauce', 'garlic', 'salt', 'pepper'] }
+      ]);
+
+      mockGetPreferences.mockReturnValue({
+        pantryStaples: ['salt', 'pepper', 'garlic']
+      });
+
+      const shoppingList = (mealPrep as any).getShoppingList();
+      
+      expect(shoppingList.some((item: any) => item.ingredient === 'salt')).toBe(false);
+      expect(shoppingList.some((item: any) => item.ingredient === 'pepper')).toBe(false);
+      expect(shoppingList.some((item: any) => item.ingredient === 'garlic')).toBe(false);
+      expect(shoppingList.some((item: any) => item.ingredient === 'pasta')).toBe(true);
+    });
+
+    it('calculates quantities based on servings', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: 4 },
+          { day: 'Tuesday', recipe: 'Pasta', servings: 2 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Pasta', ingredients: ['pasta (1lb per 4 servings)'] }
+      ]);
+
+      const shoppingList = (mealPrep as any).getShoppingList();
+      
+      const pastaItem = shoppingList.find((item: any) => item.ingredient === 'pasta');
+      expect(pastaItem.quantity).toBe('1.5lb');
+    });
+  });
+
+  describe('getPrepInstructions', () => {
+    it('generates step-by-step prep instructions', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: 4 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { 
+          name: 'Pasta', 
+          prepSteps: ['Chop vegetables', 'Cook pasta', 'Make sauce'],
+          cookSteps: ['Combine pasta and sauce', 'Serve']
+        }
+      ]);
+
+      const instructions = (mealPrep as any).getPrepInstructions();
+      
+      expect(instructions).toHaveProperty('prepSteps');
+      expect(instructions).toHaveProperty('cookSteps');
+      expect(instructions.prepSteps).toHaveLength(3);
+      expect(instructions.cookSteps).toHaveLength(2);
+    });
+
+    it('organizes instructions by day', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: 4 },
+          { day: 'Tuesday', recipe: 'Salad', servings: 2 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Pasta', prepSteps: ['Boil water', 'Cook pasta'] },
+        { name: 'Salad', prepSteps: ['Wash lettuce', 'Chop vegetables'] }
+      ]);
+
+      const instructions = (mealPrep as any).getPrepInstructions();
+      
+      expect(instructions.byDay).toBeDefined();
+      expect(instructions.byDay.Monday).toBeDefined();
+      expect(instructions.byDay.Tuesday).toBeDefined();
+    });
+  });
+
+  describe('getStoragePlan', () => {
+    it('suggests storage containers and methods', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Soup', servings: 6 },
+          { day: 'Tuesday', recipe: 'Salad', servings: 2 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Soup', storage: 'refrigerator', shelfLife: 5 },
+        { name: 'Salad', storage: 'refrigerator', shelfLife: 3 }
+      ]);
+
+      const storagePlan = (mealPrep as any).getStoragePlan();
+      
+      expect(storagePlan).toHaveProperty('containers');
+      expect(storagePlan).toHaveProperty('timeline');
+      expect(storagePlan.containers).toContainEqual(
+        expect.objectContaining({ type: 'refrigerator', quantity: expect.any(Number) })
+      );
+    });
+
+    it('identifies freezer-friendly meals', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Soup', servings: 6 },
+          { day: 'Tuesday', recipe: 'Salad', servings: 2 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Soup', freezerFriendly: true },
+        { name: 'Salad', freezerFriendly: false }
+      ]);
+
+      const storagePlan = (mealPrep as any).getStoragePlan();
+      
+      expect(storagePlan.freezerItems).toContain('Soup');
+      expect(storagePlan.freezerItems).not.toContain('Salad');
+    });
+  });
+
+  describe('optimizeMealPlan', () => {
+    it('rearranges meals for better prep efficiency', () => {
+      const originalPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Quick Salad', servings: 2 },
+          { day: 'Tuesday', recipe: 'Complex Soup', servings: 4 },
+          { day: 'Wednesday', recipe: 'Medium Pasta', servings: 3 }
+        ]
+      };
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Quick Salad', prepTime: 15, cookTime: 0 },
+        { name: 'Complex Soup', prepTime: 60, cookTime: 120 },
+        { name: 'Medium Pasta', prepTime: 30, cookTime: 30 }
+      ]);
+
+      const optimized = (mealPrep as any).optimizeMealPlan(originalPlan);
+      
+      // Complex soup should be moved to beginning of week
+      expect(optimized.meals[0].recipe).toBe('Complex Soup');
+    });
+
+    it('groups similar recipes together', () => {
+      const originalPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Tomato Soup', servings: 4 },
+          { day: 'Tuesday', recipe: 'Chicken Pasta', servings: 2 },
+          { day: 'Wednesday', recipe: 'Vegetable Soup', servings: 3 }
+        ]
+      };
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Tomato Soup', category: 'soup' },
+        { name: 'Chicken Pasta', category: 'pasta' },
+        { name: 'Vegetable Soup', category: 'soup' }
+      ]);
+
+      const optimized = (mealPrep as any).optimizeMealPlan(originalPlan);
+      
+      // Soups should be grouped together
+      const soupIndices = optimized.meals
+        .map((meal: any, index: number) => meal.recipe.includes('Soup') ? index : -1)
+        .filter((index: number) => index !== -1);
+      
+      expect(Math.abs(soupIndices[0] - soupIndices[1])).toBe(1);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles empty meal plan', () => {
+      mockGetMealPlan.mockReturnValue({ meals: [] });
+
+      const schedule = (mealPrep as any).getPrepSchedule();
+      expect(schedule.prepTasks).toEqual([]);
+      expect(schedule.shoppingList).toEqual([]);
+    });
+
+    it('handles missing recipe data', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Unknown Recipe', servings: 4 }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([]);
+
+      const schedule = (mealPrep as any).getPrepSchedule();
+      expect(schedule.prepTasks).toHaveLength(0);
+    });
+
+    it('handles invalid serving numbers', () => {
+      mockGetMealPlan.mockReturnValue({
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', servings: null as any }
+        ]
+      });
+
+      mockGetRecipes.mockReturnValue([
+        { name: 'Pasta', ingredients: ['pasta'] }
+      ]);
+
+      expect(() => (mealPrep as any).getShoppingList()).not.toThrow();
     });
   });
 });

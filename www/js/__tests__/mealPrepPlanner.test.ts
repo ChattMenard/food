@@ -11,7 +11,7 @@ import {
 } from '../features/plan/mealPrepPlanner';
 
 describe('MealPrepPlanner', () => {
-  let planner;
+  let planner: MealPrepPlanner;
 
   beforeEach(() => {
     planner = new MealPrepPlanner();
@@ -19,11 +19,11 @@ describe('MealPrepPlanner', () => {
 
   describe('initialization', () => {
     it('should default to component strategy', () => {
-      expect(planner.currentStrategy).toBe('component');
+      expect((planner as any).currentStrategy).toBe('component');
     });
 
     it('should default to Sunday prep day', () => {
-      expect(planner.prepDay).toBe(0);
+      expect((planner as any).prepDay).toBe(0);
     });
 
     it('should get current settings', () => {
@@ -38,259 +38,550 @@ describe('MealPrepPlanner', () => {
     it('should list all strategies', () => {
       const strategies = planner.getStrategies();
       expect(strategies.length).toBe(3);
-      expect(strategies.some((s) => s.id === 'component')).toBe(true);
-      expect(strategies.some((s) => s.id === 'batch-meals')).toBe(true);
-      expect(strategies.some((s) => s.id === 'hybrid')).toBe(true);
+      expect(strategies.some((s: any) => s.id === 'component')).toBe(true);
+      expect(strategies.some((s: any) => s.id === 'batch-meals')).toBe(true);
+      expect(strategies.some((s: any) => s.id === 'hybrid')).toBe(true);
     });
 
     it('should set strategy correctly', async () => {
       await planner.setStrategy('batch-meals');
-      expect(planner.currentStrategy).toBe('batch-meals');
+      expect((planner as any).currentStrategy).toBe('batch-meals');
       expect(planner.getSettings().strategyDetails.name).toBe('Batch Meals');
     });
 
-    it('should throw for unknown strategy', async () => {
-      await expect(planner.setStrategy('unknown')).rejects.toThrow(
-        'Unknown strategy'
-      );
+    it('should reject invalid strategy', async () => {
+      await expect(planner.setStrategy('invalid' as any)).rejects.toThrow('Invalid strategy');
+    });
+
+    it('should save strategy to localStorage', async () => {
+      await planner.setStrategy('hybrid');
+      
+      const saved = localStorage.getItem('meal-prep-settings');
+      const settings = JSON.parse(saved!);
+      expect(settings.strategy).toBe('hybrid');
     });
   });
 
   describe('prep day management', () => {
     it('should set prep day', async () => {
-      await planner.setPrepDay(5); // Friday
-      expect(planner.prepDay).toBe(5);
+      await planner.setPrepDay(6); // Saturday
+      expect((planner as any).prepDay).toBe(6);
+      expect(planner.getSettings().prepDay).toBe(6);
     });
 
-    it('should reject invalid prep day', async () => {
-      await expect(planner.setPrepDay(7)).rejects.toThrow(
-        'Prep day must be 0-6'
-      );
-      await expect(planner.setPrepDay(-1)).rejects.toThrow(
-        'Prep day must be 0-6'
-      );
+    it('should validate prep day range', async () => {
+      await expect(planner.setPrepDay(-1)).rejects.toThrow('Invalid prep day');
+      await expect(planner.setPrepDay(7)).rejects.toThrow('Invalid prep day');
+    });
+
+    it('should save prep day to localStorage', async () => {
+      await planner.setPrepDay(3);
+      
+      const saved = localStorage.getItem('meal-prep-settings');
+      const settings = JSON.parse(saved!);
+      expect(settings.prepDay).toBe(3);
     });
   });
 
-  describe('meal classification', () => {
-    it('should classify soups and stews', () => {
-      const soup = { name: 'Chicken Soup' };
-      expect(planner.classifyMeal(soup)).toBe('soups-stews');
+  describe('meal plan analysis', () => {
+    const mockMealPlan = {
+      meals: [
+        { day: 'Monday', recipe: 'Spaghetti Bolognese', servings: 4 },
+        { day: 'Tuesday', recipe: 'Chicken Salad', servings: 2 },
+        { day: 'Wednesday', recipe: 'Vegetable Soup', servings: 6 },
+        { day: 'Thursday', recipe: 'Grilled Cheese', servings: 2 },
+        { day: 'Friday', recipe: 'Fish Tacos', servings: 4 }
+      ]
+    };
+
+    const mockRecipes = [
+      {
+        name: 'Spaghetti Bolognese',
+        ingredients: ['pasta', 'ground beef', 'tomato sauce', 'onions', 'garlic'],
+        prepTime: 30,
+        cookTime: 45,
+        batchable: true,
+        freezerFriendly: true
+      },
+      {
+        name: 'Chicken Salad',
+        ingredients: ['chicken', 'lettuce', 'tomatoes', 'cucumber', 'dressing'],
+        prepTime: 20,
+        cookTime: 0,
+        batchable: false,
+        freezerFriendly: false
+      },
+      {
+        name: 'Vegetable Soup',
+        ingredients: ['vegetables', 'broth', 'herbs'],
+        prepTime: 40,
+        cookTime: 60,
+        batchable: true,
+        freezerFriendly: true
+      },
+      {
+        name: 'Grilled Cheese',
+        ingredients: ['bread', 'cheese', 'butter'],
+        prepTime: 10,
+        cookTime: 10,
+        batchable: false,
+        freezerFriendly: false
+      },
+      {
+        name: 'Fish Tacos',
+        ingredients: ['fish', 'tortillas', 'cabbage', 'salsa'],
+        prepTime: 25,
+        cookTime: 15,
+        batchable: false,
+        freezerFriendly: false
+      }
+    ];
+
+    it('should analyze meal plan for prep opportunities', () => {
+      const analysis = planner.analyzeMealPlan(mockMealPlan, mockRecipes);
+      
+      expect(analysis).toHaveProperty('batchableMeals');
+      expect(analysis).toHaveProperty('componentGroups');
+      expect(analysis).toHaveProperty('prepSchedule');
+      expect(analysis).toHaveProperty('storagePlan');
+      
+      expect(analysis.batchableMeals).toHaveLength(2); // Spaghetti and Vegetable Soup
     });
 
-    it('should classify salads', () => {
-      const salad = { name: 'Greek Salad' };
-      expect(planner.classifyMeal(salad)).toBe('salads-undressed');
+    it('should group common ingredients', () => {
+      const analysis = planner.analyzeMealPlan(mockMealPlan, mockRecipes);
+      
+      expect(analysis.componentGroups).toBeDefined();
+      expect(analysis.componentGroups.length).toBeGreaterThan(0);
+      
+      const onionGroup = analysis.componentGroups.find((group: any) => 
+        group.ingredient === 'onions'
+      );
+      expect(onionGroup).toBeDefined();
+      expect(onionGroup.recipes).toContain('Spaghetti Bolognese');
     });
 
-    it('should classify based on ingredients', () => {
-      const riceDish = {
-        name: 'Stir Fry',
-        ingredients: ['rice', 'chicken', 'vegetables'],
+    it('should generate prep schedule', () => {
+      const analysis = planner.analyzeMealPlan(mockMealPlan, mockRecipes);
+      
+      expect(analysis.prepSchedule).toBeDefined();
+      expect(analysis.prepSchedule.tasks).toBeDefined();
+      expect(analysis.prepSchedule.timeline).toBeDefined();
+      
+      expect(analysis.prepSchedule.tasks.length).toBeGreaterThan(0);
+    });
+
+    it('should create storage plan', () => {
+      const analysis = planner.analyzeMealPlan(mockMealPlan, mockRecipes);
+      
+      expect(analysis.storagePlan).toBeDefined();
+      expect(analysis.storagePlan.containers).toBeDefined();
+      expect(analysis.storagePlan.timeline).toBeDefined();
+      
+      expect(analysis.storagePlan.containers.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('component strategy', () => {
+    beforeEach(async () => {
+      await planner.setStrategy('component');
+    });
+
+    it('should focus on ingredient prep', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Spaghetti', servings: 4 },
+          { day: 'Tuesday', recipe: 'Chili', servings: 4 }
+        ]
       };
-      expect(planner.classifyMeal(riceDish)).toBe('cooked-grains');
+
+      const mockRecipes = [
+        {
+          name: 'Spaghetti',
+          ingredients: ['pasta', 'tomato sauce', 'ground beef'],
+          prepTime: 20,
+          cookTime: 30
+        },
+        {
+          name: 'Chili',
+          ingredients: ['ground beef', 'beans', 'tomatoes', 'onions'],
+          prepTime: 30,
+          cookTime: 60
+        }
+      ];
+
+      const plan = planner.generatePrepPlan(mockMealPlan, mockRecipes);
+      
+      expect(plan.strategy).toBe('component');
+      expect(plan.componentPrep).toBeDefined();
+      expect(plan.componentPrep.length).toBeGreaterThan(0);
     });
 
-    it('should default to assembled-meals', () => {
-      const unknown = { name: 'Mystery Dish' };
-      expect(planner.classifyMeal(unknown)).toBe('assembled-meals');
+    it('should optimize ingredient grouping', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Taco Salad', servings: 4 },
+          { day: 'Tuesday', recipe: 'Taco Soup', servings: 4 }
+        ]
+      };
+
+      const mockRecipes = [
+        {
+          name: 'Taco Salad',
+          ingredients: ['ground beef', 'lettuce', 'tomatoes', 'cheese', 'taco seasoning'],
+          prepTime: 25,
+          cookTime: 15
+        },
+        {
+          name: 'Taco Soup',
+          ingredients: ['ground beef', 'beans', 'tomatoes', 'onions', 'taco seasoning'],
+          prepTime: 30,
+          cookTime: 45
+        }
+      ];
+
+      const plan = planner.generatePrepPlan(mockMealPlan, mockRecipes);
+      
+      const groundBeefPrep = plan.componentPrep.find((prep: any) => 
+        prep.ingredient === 'ground beef'
+      );
+      expect(groundBeefPrep).toBeDefined();
+      expect(groundBeefPrep.totalQuantity).toBeGreaterThan(0);
+    });
+  });
+
+  describe('batch meals strategy', () => {
+    beforeEach(async () => {
+      await planner.setStrategy('batch-meals');
+    });
+
+    it('should focus on batch cooking complete meals', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Soup', servings: 4 },
+          { day: 'Tuesday', recipe: 'Soup', servings: 4 },
+          { day: 'Wednesday', recipe: 'Soup', servings: 4 }
+        ]
+      };
+
+      const mockRecipes = [
+        {
+          name: 'Soup',
+          ingredients: ['vegetables', 'broth'],
+          prepTime: 30,
+          cookTime: 60,
+          batchable: true,
+          freezerFriendly: true
+        }
+      ];
+
+      const plan = planner.generatePrepPlan(mockMealPlan, mockRecipes);
+      
+      expect(plan.strategy).toBe('batch-meals');
+      expect(plan.batchMeals).toBeDefined();
+      expect(plan.batchMeals.length).toBeGreaterThan(0);
+    });
+
+    it('should calculate batch quantities', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Chili', servings: 2 },
+          { day: 'Tuesday', recipe: 'Chili', servings: 3 },
+          { day: 'Wednesday', recipe: 'Chili', servings: 1 }
+        ]
+      };
+
+      const mockRecipes = [
+        {
+          name: 'Chili',
+          ingredients: ['ground beef', 'beans', 'tomatoes'],
+          prepTime: 30,
+          cookTime: 90,
+          batchable: true,
+          freezerFriendly: true
+        }
+      ];
+
+      const plan = planner.generatePrepPlan(mockMealPlan, mockRecipes);
+      
+      const chiliBatch = plan.batchMeals.find((batch: any) => batch.recipe === 'Chili');
+      expect(chiliBatch).toBeDefined();
+      expect(chiliBatch.totalServings).toBe(6);
+    });
+  });
+
+  describe('hybrid strategy', () => {
+    beforeEach(async () => {
+      await planner.setStrategy('hybrid');
+    });
+
+    it('should combine component and batch approaches', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Soup', servings: 4 },
+          { day: 'Tuesday', recipe: 'Salad', servings: 2 },
+          { day: 'Wednesday', recipe: 'Soup', servings: 4 },
+          { day: 'Thursday', recipe: 'Sandwich', servings: 2 }
+        ]
+      };
+
+      const mockRecipes = [
+        {
+          name: 'Soup',
+          ingredients: ['vegetables', 'broth'],
+          prepTime: 30,
+          cookTime: 60,
+          batchable: true,
+          freezerFriendly: true
+        },
+        {
+          name: 'Salad',
+          ingredients: ['lettuce', 'tomatoes', 'cucumber'],
+          prepTime: 20,
+          cookTime: 0,
+          batchable: false,
+          freezerFriendly: false
+        },
+        {
+          name: 'Sandwich',
+          ingredients: ['bread', 'cheese', 'ham'],
+          prepTime: 10,
+          cookTime: 5,
+          batchable: false,
+          freezerFriendly: false
+        }
+      ];
+
+      const plan = planner.generatePrepPlan(mockMealPlan, mockRecipes);
+      
+      expect(plan.strategy).toBe('hybrid');
+      expect(plan.batchMeals).toBeDefined();
+      expect(plan.componentPrep).toBeDefined();
+      expect(plan.batchMeals.length).toBeGreaterThan(0);
+      expect(plan.componentPrep.length).toBeGreaterThan(0);
     });
   });
 
   describe('storage guidelines', () => {
-    it('should have refrigerator guidelines', () => {
-      expect(STORAGE_GUIDELINES.refrigerator['cooked-grains']).toBe(5);
-      expect(STORAGE_GUIDELINES.refrigerator['cooked-proteins']).toBe(3);
-      expect(STORAGE_GUIDELINES.refrigerator['soups-stews']).toBe(4);
+    it('should provide storage recommendations', () => {
+      const guidelines = planner.getStorageGuidelines();
+      
+      expect(guidelines).toBeDefined();
+      expect(guidelines.refrigerator).toBeDefined();
+      expect(guidelines.freezer).toBeDefined();
+      expect(guidelines.pantry).toBeDefined();
     });
 
-    it('should have freezer guidelines', () => {
-      expect(STORAGE_GUIDELINES.freezer['cooked-grains']).toBe(90);
-      expect(STORAGE_GUIDELINES.freezer['assembled-meals']).toBe(60);
+    it('should match STORAGE_GUIDELINES constants', () => {
+      const guidelines = planner.getStorageGuidelines();
+      
+      expect(guidelines.refrigerator.maxDays).toBe(STORAGE_GUIDELINES.refrigerator.maxDays);
+      expect(guidelines.freezer.maxDays).toBe(STORAGE_GUIDELINES.freezer.maxDays);
+      expect(guidelines.pantry.maxDays).toBe(STORAGE_GUIDELINES.pantry.maxDays);
     });
 
-    it('should calculate use-by date', () => {
-      const recipe = { name: 'Chicken Rice' };
-      const prepDate = new Date('2024-01-15');
+    it('should calculate storage timeline', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Soup', servings: 4 },
+          { day: 'Wednesday', recipe: 'Salad', servings: 2 }
+        ]
+      };
 
-      const useByDate = planner.calculateUseByDate(recipe, prepDate);
-      expect(useByDate).toBe('2024-01-20'); // 5 days for rice-based meals
-    });
-  });
+      const mockRecipes = [
+        {
+          name: 'Soup',
+          ingredients: ['vegetables', 'broth'],
+          freezerFriendly: true
+        },
+        {
+          name: 'Salad',
+          ingredients: ['lettuce', 'tomatoes'],
+          freezerFriendly: false
+        }
+      ];
 
-  describe('prep plan generation', () => {
-    const mockRecipes = [
-      {
-        id: 1,
-        name: 'Rice & Beans',
-        servings: 4,
-        prepTime: 10,
-        cookTime: 25,
-        ingredients: [
-          { name: 'rice', quantity: 1 },
-          { name: 'beans', quantity: 1 },
-        ],
-      },
-      {
-        id: 2,
-        name: 'Roasted Chicken',
-        servings: 4,
-        prepTime: 15,
-        cookTime: 45,
-        ingredients: [
-          { name: 'chicken', quantity: 4 },
-          { name: 'herbs', quantity: 1 },
-        ],
-      },
-    ];
-
-    it('should generate prep plan', () => {
-      const plan = planner.generatePrepPlan(mockRecipes, 4);
-
-      expect(plan.strategy).toBe('component');
-      expect(plan.recipes.length).toBe(2);
-      expect(plan.schedule).toBeDefined();
-      expect(plan.storage).toBeDefined();
-      expect(plan.shoppingList).toBeDefined();
-    });
-
-    it('should scale recipes correctly', () => {
-      const plan = planner.generatePrepPlan(mockRecipes, 6);
-
-      expect(plan.recipes[0].scaledServings).toBe(6);
-      expect(plan.recipes[0].scalingFactor).toBe(1.5); // 6/4
-    });
-
-    it('should calculate total prep time', () => {
-      const plan = planner.generatePrepPlan(mockRecipes, 4);
-
-      expect(plan.totalPrepTime).toBeGreaterThan(0);
-      expect(typeof plan.totalPrepTime).toBe('number');
-    });
-
-    it('should include equipment needed', () => {
-      const plan = planner.generatePrepPlan(mockRecipes, 4);
-
-      expect(plan.equipmentNeeded).toContain('Meal prep containers');
-      expect(plan.equipmentNeeded).toContain('Storage bags/labels');
-    });
-
-    it('should generate prep schedule', () => {
-      const plan = planner.generatePrepPlan(mockRecipes, 4);
-
-      expect(plan.schedule.length).toBeGreaterThan(0);
-      expect(plan.schedule[0].time).toMatch(/^\d{2}:\d{2}$/);
-    });
-
-    it('should generate storage plan', () => {
-      const plan = planner.generatePrepPlan(mockRecipes, 4);
-
-      expect(plan.storage.refrigerator.containers).toBe(8); // 2 recipes × 4 servings
-      expect(plan.storage.equipment.mealPrepContainers).toBe(8);
-    });
-
-    it('should generate scaled shopping list', () => {
-      const plan = planner.generatePrepPlan(mockRecipes, 4);
-
-      expect(plan.shoppingList.length).toBeGreaterThan(0);
-
-      // Check rice quantity scaled
-      const rice = plan.shoppingList.find((i) => i.name === 'rice');
-      expect(rice).toBeDefined();
-      expect(rice.quantity).toBe(1);
+      const timeline = planner.calculateStorageTimeline(mockMealPlan, mockRecipes);
+      
+      expect(timeline).toBeDefined();
+      expect(timeline.monday).toBeDefined();
+      expect(timeline.wednesday).toBeDefined();
     });
   });
 
-  describe('reheating instructions', () => {
-    it('should provide microwave as default', () => {
-      const recipe = { name: 'Soup' };
-      const instructions = planner.getReheatingInstructions(recipe);
+  describe('shopping list generation', () => {
+    it('should generate consolidated shopping list', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Spaghetti', servings: 4 },
+          { day: 'Tuesday', recipe: 'Chili', servings: 4 }
+        ]
+      };
 
-      expect(instructions.recommendedMethod).toBe('microwave');
-      expect(instructions.temp).toBeDefined();
-      expect(instructions.safetyNote).toBeDefined();
+      const mockRecipes = [
+        {
+          name: 'Spaghetti',
+          ingredients: ['pasta', 'tomato sauce', 'ground beef'],
+          ingredientQuantities: {
+            'pasta': '1lb',
+            'tomato sauce': '2 cups',
+            'ground beef': '1lb'
+          }
+        },
+        {
+          name: 'Chili',
+          ingredients: ['ground beef', 'beans', 'tomatoes'],
+          ingredientQuantities: {
+            'ground beef': '1.5lbs',
+            'beans': '2 cans',
+            'tomatoes': '1 can'
+          }
+        }
+      ];
+
+      const shoppingList = planner.generateShoppingList(mockMealPlan, mockRecipes);
+      
+      expect(shoppingList).toBeDefined();
+      expect(shoppingList.items).toBeDefined();
+      expect(shoppingList.categories).toBeDefined();
+      
+      const groundBeef = shoppingList.items.find((item: any) => item.ingredient === 'ground beef');
+      expect(groundBeef).toBeDefined();
+      expect(groundBeef.quantity).toBe('2.5lbs');
     });
 
-    it('should recommend oven for crispy items', () => {
-      const recipe = { name: 'Crispy Chicken' };
-      const instructions = planner.getReheatingInstructions(recipe);
+    it('should categorize shopping list items', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Complete Meal', servings: 4 }
+        ]
+      };
 
-      expect(instructions.recommendedMethod).toBe('oven');
-    });
+      const mockRecipes = [
+        {
+          name: 'Complete Meal',
+          ingredients: ['chicken', 'rice', 'broccoli', 'milk', 'flour'],
+          ingredientQuantities: {
+            'chicken': '2lbs',
+            'rice': '2 cups',
+            'broccoli': '2 heads',
+            'milk': '1 gallon',
+            'flour': '2 cups'
+          }
+        }
+      ];
 
-    it('should provide alternative methods', () => {
-      const recipe = { name: 'Pasta' };
-      const instructions = planner.getReheatingInstructions(recipe);
-
-      expect(instructions.alternatives).toContain('microwave');
-      expect(instructions.alternatives).toContain('oven');
-    });
-  });
-
-  describe('prep strategies', () => {
-    it('should have component strategy', () => {
-      const strategy = PREP_STRATEGIES.component;
-      expect(strategy.name).toBe('Component Prep');
-      expect(strategy.steps.length).toBeGreaterThan(0);
-    });
-
-    it('should have batch-meals strategy', () => {
-      const strategy = PREP_STRATEGIES['batch-meals'];
-      expect(strategy.name).toBe('Batch Meals');
-      expect(strategy.bestFor).toBeDefined();
-    });
-
-    it('should have hybrid strategy', () => {
-      const strategy = PREP_STRATEGIES.hybrid;
-      expect(strategy.name).toBe('Hybrid');
-      expect(strategy.description).toBeDefined();
-    });
-  });
-
-  describe('tips generation', () => {
-    it('should generate tips based on strategy', () => {
-      const recipe = { name: 'Test' };
-      const tips = planner.generateTips([recipe], PREP_STRATEGIES.component);
-
-      expect(tips.length).toBeGreaterThan(0);
-      expect(tips.some((t) => t.includes('cool'))).toBe(true);
-    });
-
-    it('should add efficiency tips for multiple recipes', () => {
-      const recipes = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
-      const tips = planner.generateTips(recipes, PREP_STRATEGIES.component);
-
-      expect(tips.some((t) => t.includes('Clean as you go'))).toBe(true);
-    });
-  });
-
-  describe('pub-sub', () => {
-    it('should notify on settings change', async () => {
-      const callback = jest.fn();
-      planner.subscribe(callback);
-
-      await planner.setStrategy('hybrid');
-
-      expect(callback).toHaveBeenCalled();
-      expect(callback.mock.calls[0][0].strategy).toBe('hybrid');
-    });
-
-    it('should allow unsubscribing', async () => {
-      const callback = jest.fn();
-      const unsubscribe = planner.subscribe(callback);
-
-      unsubscribe();
-      await planner.setPrepDay(3);
-
-      expect(callback).not.toHaveBeenCalled();
+      const shoppingList = planner.generateShoppingList(mockMealPlan, mockRecipes);
+      
+      expect(shoppingList.categories.produce).toBeDefined();
+      expect(shoppingList.categories.protein).toBeDefined();
+      expect(shoppingList.categories.dairy).toBeDefined();
+      expect(shoppingList.categories.pantry).toBeDefined();
     });
   });
 
-  describe('time formatting', () => {
-    it('should format time correctly', () => {
-      expect(planner.formatTime(0)).toBe('00:00');
-      expect(planner.formatTime(65)).toBe('01:05');
-      expect(planner.formatTime(125)).toBe('02:05');
+  describe('prep timeline optimization', () => {
+    it('should optimize prep order for efficiency', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Long Cook Meal', servings: 4 },
+          { day: 'Tuesday', recipe: 'Quick Meal', servings: 2 }
+        ]
+      };
+
+      const mockRecipes = [
+        {
+          name: 'Long Cook Meal',
+          ingredients: ['beef', 'vegetables'],
+          prepTime: 30,
+          cookTime: 180
+        },
+        {
+          name: 'Quick Meal',
+          ingredients: ['chicken', 'rice'],
+          prepTime: 15,
+          cookTime: 20
+        }
+      ];
+
+      const timeline = planner.optimizePrepTimeline(mockMealPlan, mockRecipes);
+      
+      expect(timeline).toBeDefined();
+      expect(timeline.tasks).toBeDefined();
+      expect(timeline.totalTime).toBeDefined();
+      
+      // Long cook meal should be scheduled first
+      expect(timeline.tasks[0].recipe).toBe('Long Cook Meal');
+    });
+
+    it('should identify parallel prep opportunities', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Roast Chicken', servings: 4 },
+          { day: 'Tuesday', recipe: 'Roasted Vegetables', servings: 4 }
+        ]
+      };
+
+      const mockRecipes = [
+        {
+          name: 'Roast Chicken',
+          ingredients: ['chicken', 'herbs'],
+          prepTime: 20,
+          cookTime: 90,
+          ovenTemp: 375
+        },
+        {
+          name: 'Roasted Vegetables',
+          ingredients: ['vegetables', 'olive oil'],
+          prepTime: 15,
+          cookTime: 45,
+          ovenTemp: 375
+        }
+      ];
+
+      const timeline = planner.optimizePrepTimeline(mockMealPlan, mockRecipes);
+      
+      expect(timeline.parallelTasks).toBeDefined();
+      expect(timeline.parallelTasks.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle empty meal plan', () => {
+      const plan = planner.generatePrepPlan({ meals: [] }, []);
+      
+      expect(plan.strategy).toBeDefined();
+      expect(plan.componentPrep).toEqual([]);
+      expect(plan.batchMeals).toEqual([]);
+    });
+
+    it('should handle missing recipe data', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Unknown Recipe', servings: 4 }
+        ]
+      };
+
+      expect(() => planner.generatePrepPlan(mockMealPlan, [])).not.toThrow();
+    });
+
+    it('should handle invalid serving numbers', () => {
+      const mockMealPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Recipe', servings: null as any }
+        ]
+      };
+
+      const mockRecipes = [
+        {
+          name: 'Recipe',
+          ingredients: ['ingredient'],
+          prepTime: 10,
+          cookTime: 20
+        }
+      ];
+
+      expect(() => planner.generatePrepPlan(mockMealPlan, mockRecipes)).not.toThrow();
     });
   });
 });

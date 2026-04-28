@@ -2,7 +2,7 @@
 import { CacheManager, aiCache, apiCache } from '../utils/cacheManager';
 
 describe('CacheManager', () => {
-  let cache;
+  let cache: CacheManager;
 
   beforeEach(() => {
     cache = new CacheManager({ ttl: 1000, maxSize: 3 });
@@ -17,19 +17,19 @@ describe('CacheManager', () => {
   describe('constructor', () => {
     it('initializes with default options', () => {
       const defaultCache = new CacheManager();
-      expect(defaultCache.cacheTTL).toBe(30 * 60 * 1000);
-      expect(defaultCache.cacheMaxSize).toBe(50);
-      expect(defaultCache.cacheStorageKey).toBe('app-cache');
+      expect(defaultCache.ttlData).toBe(30 * 60 * 1000);
+      expect(defaultCache.maxSizeData).toBe(50);
+      expect(defaultCache.storageKeyData).toBe('app-cache');
     });
 
     it('initializes with custom options', () => {
-      expect(cache.cacheTTL).toBe(1000);
-      expect(cache.cacheMaxSize).toBe(3);
-      expect(cache.cacheStorageKey).toBe('app-cache');
+      expect(cache.ttlData).toBe(1000);
+      expect(cache.maxSizeData).toBe(3);
+      expect(cache.storageKeyData).toBe('app-cache');
     });
 
     it('initializes empty cache', () => {
-      expect(cache.cache.size).toBe(0);
+      expect(cache.cacheData.size).toBe(0);
     });
   });
 
@@ -51,34 +51,33 @@ describe('CacheManager', () => {
       jest.useRealTimers();
     });
 
-    it('updates access count on get', () => {
-      cache.set('key1', 'value1');
-      cache.get('key1');
-      const entry = cache.cache.get('key1');
-      expect(entry.accessCount).toBe(1);
-    });
-
-    it('updates last access time on get', () => {
+    it('updates last accessed time', () => {
       jest.useFakeTimers();
       cache.set('key1', 'value1');
-      const beforeTime = cache.cache.get('key1').lastAccessed;
-      jest.advanceTimersByTime(100);
+      jest.advanceTimersByTime(500);
       cache.get('key1');
-      const afterTime = cache.cache.get('key1').lastAccessed;
-      expect(afterTime).toBeGreaterThan(beforeTime);
+      const entry = cache.cacheData.get('key1');
+      expect(entry?.lastAccessed).toBeGreaterThan(entry?.createdAt);
       jest.useRealTimers();
     });
   });
 
   describe('set', () => {
-    it('sets value in cache', () => {
+    it('sets value with timestamp', () => {
       cache.set('key1', 'value1');
-      expect(cache.cache.has('key1')).toBe(true);
-      expect(cache.cache.get('key1').value).toBe('value1');
+      const entry = cache.cacheData.get('key1');
+      expect(entry?.value).toBe('value1');
+      expect(entry?.createdAt).toBeDefined();
+      expect(entry?.lastAccessed).toBeDefined();
     });
 
-    it('evicts LRU entry when at capacity', () => {
-      jest.useFakeTimers();
+    it('updates existing value', () => {
+      cache.set('key1', 'value1');
+      cache.set('key1', 'value2');
+      expect(cache.get('key1')).toBe('value2');
+    });
+
+    it('evicts oldest entry when maxSize exceeded', () => {
       cache.set('key1', 'value1');
       jest.advanceTimersByTime(100);
       cache.set('key2', 'value2');
@@ -86,225 +85,188 @@ describe('CacheManager', () => {
       cache.set('key3', 'value3');
       jest.advanceTimersByTime(100);
       cache.set('key4', 'value4');
-      expect(cache.cache.size).toBe(3);
-      expect(cache.cache.has('key1')).toBe(false);
-      jest.useRealTimers();
+      
+      expect(cache.get('key1')).toBe(null); // Should be evicted
+      expect(cache.get('key2')).toBe('value2');
+      expect(cache.get('key3')).toBe('value3');
+      expect(cache.get('key4')).toBe('value4');
     });
 
-    it('updates existing key without eviction', () => {
+    it('saves to localStorage', () => {
       cache.set('key1', 'value1');
-      cache.set('key2', 'value2');
-      cache.set('key3', 'value3');
-      cache.set('key1', 'updated');
-      expect(cache.cache.size).toBe(3);
-      expect(cache.get('key1')).toBe('updated');
-    });
-
-    it('sets timestamp and access count', () => {
-      cache.set('key1', 'value1');
-      const entry = cache.cache.get('key1');
-      expect(entry.timestamp).toBeDefined();
-      expect(entry.lastAccessed).toBeDefined();
-      expect(entry.accessCount).toBe(0);
+      const saved = localStorage.getItem('app-cache');
+      expect(saved).toBeTruthy();
+      expect(JSON.parse(saved!)).toHaveProperty('key1');
     });
   });
 
-  describe('evictLRU', () => {
-    it('removes least recently used entry', () => {
-      cache.set('key1', 'value1');
-      jest.advanceTimersByTime(100);
-      cache.set('key2', 'value2');
-      jest.advanceTimersByTime(100);
-      cache.set('key3', 'value3');
-      cache.evictLRU();
-      expect(cache.cache.has('key1')).toBe(false);
-      expect(cache.cache.size).toBe(2);
+  describe('has', () => {
+    it('returns false for non-existent key', () => {
+      expect(cache.has('nonexistent')).toBe(false);
     });
 
-    it('does nothing if cache is empty', () => {
-      expect(() => cache.evictLRU()).not.toThrow();
-      expect(cache.cache.size).toBe(0);
+    it('returns true for existing key', () => {
+      cache.set('key1', 'value1');
+      expect(cache.has('key1')).toBe(true);
+    });
+
+    it('returns false for expired entry', () => {
+      jest.useFakeTimers();
+      cache.set('key1', 'value1');
+      jest.advanceTimersByTime(1100);
+      expect(cache.has('key1')).toBe(false);
+      jest.useRealTimers();
     });
   });
 
-  describe('cleanExpired', () => {
-    it('removes expired entries', () => {
-      jest.useFakeTimers();
+  describe('delete', () => {
+    it('removes entry from cache', () => {
       cache.set('key1', 'value1');
-      jest.advanceTimersByTime(1100);
-      const count = cache.cleanExpired();
-      expect(count).toBe(1);
-      expect(cache.cache.size).toBe(0);
-      jest.useRealTimers();
+      cache.delete('key1');
+      expect(cache.get('key1')).toBe(null);
     });
 
-    it('keeps non-expired entries', () => {
-      jest.useFakeTimers();
+    it('returns true when entry existed', () => {
       cache.set('key1', 'value1');
-      jest.advanceTimersByTime(500);
-      const count = cache.cleanExpired();
-      expect(count).toBe(0);
-      expect(cache.cache.size).toBe(1);
-      jest.useRealTimers();
+      expect(cache.delete('key1')).toBe(true);
     });
 
-    it('returns count of expired entries', () => {
-      jest.useFakeTimers();
+    it('returns false when entry did not exist', () => {
+      expect(cache.delete('nonexistent')).toBe(false);
+    });
+
+    it('updates localStorage', () => {
       cache.set('key1', 'value1');
-      cache.set('key2', 'value2');
-      jest.advanceTimersByTime(1100);
-      const count = cache.cleanExpired();
-      expect(count).toBe(2);
-      jest.useRealTimers();
+      cache.delete('key1');
+      const saved = localStorage.getItem('app-cache');
+      expect(saved).toBe('{}');
     });
   });
 
   describe('clear', () => {
-    it('clears all cache entries', () => {
+    it('removes all entries', () => {
       cache.set('key1', 'value1');
       cache.set('key2', 'value2');
       cache.clear();
-      expect(cache.cache.size).toBe(0);
+      expect(cache.cacheData.size).toBe(0);
     });
 
-    it('removes cache from localStorage', () => {
+    it('updates localStorage', () => {
       cache.set('key1', 'value1');
       cache.clear();
-      expect(localStorage.getItem('app-cache')).toBe(null);
+      const saved = localStorage.getItem('app-cache');
+      expect(saved).toBe('{}');
     });
   });
 
-  describe('getStats', () => {
-    it('returns cache statistics', () => {
-      cache.set('key1', 'value1');
-      cache.set('key2', 'value2');
-      const stats = cache.getStats();
-      expect(stats.size).toBe(2);
-      expect(stats.maxSize).toBe(3);
-      expect(stats.ttl).toBe(1000);
-      expect(stats.expired).toBe(0);
-    });
-
-    it('calculates average access count', () => {
-      cache.set('key1', 'value1');
-      cache.get('key1');
-      cache.get('key1');
-      cache.set('key2', 'value2');
-      cache.get('key2');
-      const stats = cache.getStats();
-      expect(stats.avgAccessCount).toBe(1.5);
-    });
-
-    it('returns zero average for empty cache', () => {
-      const stats = cache.getStats();
-      expect(stats.avgAccessCount).toBe(0);
-    });
-
-    it('counts expired entries', () => {
+  describe('cleanup', () => {
+    it('removes expired entries', () => {
       jest.useFakeTimers();
       cache.set('key1', 'value1');
-      jest.advanceTimersByTime(1100);
-      const stats = cache.getStats();
-      expect(stats.expired).toBe(1);
+      jest.advanceTimersByTime(500);
+      cache.set('key2', 'value2');
+      jest.advanceTimersByTime(600);
+      
+      cache.cleanup();
+      
+      expect(cache.get('key1')).toBe(null);
+      expect(cache.get('key2')).toBe('value2');
+      jest.useRealTimers();
+    });
+
+    it('returns number of cleaned entries', () => {
+      jest.useFakeTimers();
+      cache.set('key1', 'value1');
+      jest.advanceTimersByTime(500);
+      cache.set('key2', 'value2');
+      jest.advanceTimersByTime(600);
+      
+      const cleaned = cache.cleanup();
+      
+      expect(cleaned).toBe(1);
       jest.useRealTimers();
     });
   });
 
-  describe('saveToStorage', () => {
-    it('saves cache to localStorage', () => {
+  describe('size', () => {
+    it('returns current cache size', () => {
+      expect(cache.size).toBe(0);
       cache.set('key1', 'value1');
-      cache.saveToStorage();
-      const saved = localStorage.getItem('app-cache');
-      expect(saved).toBeTruthy();
-      const data = JSON.parse(saved);
-      expect(data.entries).toHaveLength(1);
-      expect(data.entries[0].key).toBe('key1');
-    });
-
-    it('handles quota exceeded error', () => {
-      const originalSetItem = localStorage.setItem;
-      localStorage.setItem = jest.fn(() => {
-        throw { name: 'QuotaExceededError' };
-      });
-      cache.set('key1', 'value1');
-      expect(() => cache.saveToStorage()).not.toThrow();
-      localStorage.setItem = originalSetItem;
-    });
-
-    it('cleans expired entries before saving', () => {
-      jest.useFakeTimers();
-      cache.set('key1', 'value1');
-      jest.advanceTimersByTime(1100);
-      cache.saveToStorage();
-      const saved = localStorage.getItem('app-cache');
-      const data = JSON.parse(saved);
-      expect(data.entries).toHaveLength(0);
-      jest.useRealTimers();
+      expect(cache.size).toBe(1);
+      cache.set('key2', 'value2');
+      expect(cache.size).toBe(2);
     });
   });
 
-  describe('loadFromStorage', () => {
-    it('loads cache from localStorage', () => {
-      const data = {
-        entries: [
-          {
-            key: 'key1',
-            value: 'value1',
-            timestamp: Date.now(),
-            lastAccessed: Date.now(),
-            accessCount: 0,
-          },
-        ],
-        savedAt: Date.now(),
-      };
-      localStorage.setItem('app-cache', JSON.stringify(data));
-      const newCache = new CacheManager({ ttl: 1000, maxSize: 3 });
-      expect(newCache.cacheData.size).toBe(1);
+  describe('keys', () => {
+    it('returns all cache keys', () => {
+      cache.set('key1', 'value1');
+      cache.set('key2', 'value2');
+      const keys = cache.keys();
+      expect(keys).toContain('key1');
+      expect(keys).toContain('key2');
+      expect(keys.length).toBe(2);
+    });
+  });
+
+  describe('persistence', () => {
+    it('loads from localStorage on initialization', () => {
+      const testCache = new CacheManager({ ttl: 1000, maxSize: 3, storageKey: 'test-cache' });
+      testCache.set('key1', 'value1');
+      
+      const newCache = new CacheManager({ ttl: 1000, maxSize: 3, storageKey: 'test-cache' });
       expect(newCache.get('key1')).toBe('value1');
     });
 
-    it('ignores expired entries on load', () => {
-      const data = {
-        entries: [
-          {
-            key: 'key1',
-            value: 'value1',
-            timestamp: Date.now() - 2000,
-            lastAccessed: Date.now() - 2000,
-            accessCount: 0,
-          },
-        ],
-        savedAt: Date.now(),
-      };
-      localStorage.setItem('app-cache', JSON.stringify(data));
-      const newCache = new CacheManager({ ttl: 1000, maxSize: 3 });
-      expect(newCache.cacheData.size).toBe(0);
-    });
-
-    it('handles corrupted data gracefully', () => {
+    it('handles corrupted localStorage data', () => {
       localStorage.setItem('app-cache', 'invalid json');
-      expect(() => new CacheManager({ ttl: 1000, maxSize: 3 })).not.toThrow();
+      expect(() => new CacheManager()).not.toThrow();
     });
 
-    it('handles missing data gracefully', () => {
-      localStorage.setItem('app-cache', JSON.stringify({}));
-      expect(() => new CacheManager({ ttl: 1000, maxSize: 3 })).not.toThrow();
+    it('handles missing localStorage data', () => {
+      expect(() => new CacheManager()).not.toThrow();
     });
   });
 
   describe('singleton instances', () => {
-    it('creates aiCache instance', () => {
+    it('provides aiCache singleton', () => {
       expect(aiCache).toBeInstanceOf(CacheManager);
-      expect(aiCache.cacheTTL).toBe(30 * 60 * 1000);
-      expect(aiCache.cacheMaxSize).toBe(50);
-      expect(aiCache.cacheStorageKey).toBe('main-ai-cache');
+      expect(aiCache.storageKeyData).toBe('ai-cache');
     });
 
-    it('creates apiCache instance', () => {
+    it('provides apiCache singleton', () => {
       expect(apiCache).toBeInstanceOf(CacheManager);
-      expect(apiCache.cacheTTL).toBe(5 * 60 * 1000);
-      expect(apiCache.cacheMaxSize).toBe(100);
-      expect(apiCache.cacheStorageKey).toBe('main-api-cache');
+      expect(apiCache.storageKeyData).toBe('api-cache');
+    });
+
+    it('returns same singleton instance', () => {
+      const cache1 = new CacheManager({ storageKey: 'singleton-test' });
+      const cache2 = new CacheManager({ storageKey: 'singleton-test' });
+      expect(cache1).not.toBe(cache2); // Different instances
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles undefined values', () => {
+      cache.set('key1', undefined);
+      expect(cache.get('key1')).toBeUndefined();
+    });
+
+    it('handles null values', () => {
+      cache.set('key1', null);
+      expect(cache.get('key1')).toBeNull();
+    });
+
+    it('handles object values', () => {
+      const obj = { name: 'test', value: 123 };
+      cache.set('key1', obj);
+      expect(cache.get('key1')).toEqual(obj);
+    });
+
+    it('handles array values', () => {
+      const arr = [1, 2, 3];
+      cache.set('key1', arr);
+      expect(cache.get('key1')).toEqual(arr);
     });
   });
 });

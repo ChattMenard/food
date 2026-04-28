@@ -7,6 +7,12 @@
 // Placeholder for Sentry integration
 // In production, replace with actual Sentry SDK
 export class ErrorTracking {
+  enabled: boolean;
+  dsn: string;
+  environment: string;
+  release: string;
+  user: any;
+
   constructor() {
     this.enabled = false;
     this.dsn = '';
@@ -19,7 +25,7 @@ export class ErrorTracking {
    * Initialize error tracking
    * @param {Object} config - Configuration object
    */
-  init(config = {}) {
+  init(config: any = {}): void {
     this.dsn = config.dsn || '';
     this.environment = config.environment || 'development';
     this.release = config.release || '1.0.0';
@@ -43,7 +49,7 @@ export class ErrorTracking {
   /**
    * Setup global error handlers
    */
-  setupGlobalHandlers() {
+  setupGlobalHandlers(): void {
     // Capture unhandled errors
     window.addEventListener('error', (event) => {
       this.captureException(event.error);
@@ -60,7 +66,7 @@ export class ErrorTracking {
    * @param {Error} error - Error object
    * @param {Object} context - Additional context
    */
-  captureException(error, context = {}) {
+  captureException(error: Error, context: any = {}): void {
     if (!this.enabled) {
       console.error('[ErrorTracking]', error, context);
       return;
@@ -80,7 +86,7 @@ export class ErrorTracking {
    * @param {string} level - Log level
    * @param {Object} context - Additional context
    */
-  captureMessage(message, level = 'info', context = {}) {
+  captureMessage(message: string, level: string = 'info', context: any = {}): void {
     if (!this.enabled) {
       console.log(`[ErrorTracking] [${level}]`, message, context);
       return;
@@ -99,7 +105,7 @@ export class ErrorTracking {
    * Set user context
    * @param {Object} user - User object
    */
-  setUser(user) {
+  setUser(user: any): void {
     this.user = user;
 
     // Sentry.setUser(user);
@@ -108,7 +114,7 @@ export class ErrorTracking {
   /**
    * Clear user context
    */
-  clearUser() {
+  clearUser(): void {
     this.user = null;
 
     // Sentry.setUser(null);
@@ -118,7 +124,7 @@ export class ErrorTracking {
    * Add breadcrumb
    * @param {Object} breadcrumb - Breadcrumb object
    */
-  addBreadcrumb(_breadcrumb) {
+  addBreadcrumb(_breadcrumb: any): void {
     if (!this.enabled) return;
 
     // Sentry.addBreadcrumb({
@@ -132,7 +138,7 @@ export class ErrorTracking {
    * @param {string} key - Tag key
    * @param {string} value - Tag value
    */
-  setTag(_key, _value) {
+  setTag(_key: string, _value: string): void {
     if (!this.enabled) return;
 
     // Sentry.setTag(key, value);
@@ -143,7 +149,7 @@ export class ErrorTracking {
    * @param {string} key - Context key
    * @param {Object} value - Context value
    */
-  setContext(_key, _value) {
+  setContext(_key: string, _value: any): void {
     if (!this.enabled) return;
 
     // Sentry.setContext(key, value);
@@ -155,8 +161,8 @@ export class ErrorTracking {
    * @param {string} name - Function name for tracking
    * @returns {Function} Wrapped function
    */
-  wrap(fn, name = 'anonymous') {
-    return (...args) => {
+  wrap(fn: Function, name: string = 'anonymous'): Function {
+    return (...args: any[]) => {
       this.addBreadcrumb({
         category: 'function',
         message: `Called ${name}`,
@@ -166,7 +172,7 @@ export class ErrorTracking {
       try {
         return fn(...args);
       } catch (error) {
-        this.captureException(error, { function: name });
+        this.captureException(error as Error, { function: name });
         throw error;
       }
     };
@@ -178,8 +184,8 @@ export class ErrorTracking {
    * @param {string} name - Function name for tracking
    * @returns {Function} Wrapped async function
    */
-  wrapAsync(fn, name = 'anonymous') {
-    return async (...args) => {
+  wrapAsync(fn: Function, name: string = 'anonymous'): Function {
+    return async (...args: any[]) => {
       this.addBreadcrumb({
         category: 'function',
         message: `Called ${name}`,
@@ -189,7 +195,7 @@ export class ErrorTracking {
       try {
         return await fn(...args);
       } catch (error) {
-        this.captureException(error, { function: name });
+        this.captureException(error as Error, { function: name });
         throw error;
       }
     };
@@ -197,7 +203,7 @@ export class ErrorTracking {
 }
 
 // Global error tracking instance
-let globalErrorTracking = null;
+let globalErrorTracking: ErrorTracking | null = null;
 
 /**
  * Get or create the global error tracking instance
@@ -214,7 +220,7 @@ export function getErrorTracking() {
  * Initialize error tracking
  * @param {Object} config - Configuration
  */
-export function initErrorTracking(config) {
+export function initErrorTracking(config: any): void {
   const tracker = getErrorTracking();
   tracker.init(config);
 }

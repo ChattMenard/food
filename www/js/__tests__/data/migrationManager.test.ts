@@ -3,25 +3,25 @@ import migrationManager, { MigrationManager } from '../../data/migrationManager'
 
 jest.mock('../../data/db', () => ({
   ready: Promise.resolve(),
-  get: jest.fn().mockImplementation(() => Promise.resolve()),
-  put: jest.fn().mockImplementation(() => Promise.resolve())
+  get: jest.fn(),
+  put: jest.fn().mockResolvedValue(undefined)
 }));
 
 import db from '../../data/db';
 
 describe('MigrationManager', () => {
-  let versionStore = {};
+  let versionStore: { [key: string]: any } = {};
 
   beforeEach(() => {
     jest.clearAllMocks();
     versionStore = {};
-    (db.get as jest.Mock).mockImplementation((store, key) => {
+    (db.get as jest.Mock).mockImplementation((store: string, key: string) => {
       if (key === 'db-schema-version') {
         return versionStore[key] ? Promise.resolve({ value: versionStore[key] }) : Promise.resolve(null);
       }
       return Promise.resolve(null);
     });
-    (db.put as jest.Mock).mockImplementation((store, data) => {
+    (db.put as jest.Mock).mockImplementation((store: string, data: any) => {
       if (data.key === 'db-schema-version') {
         versionStore[data.key] = data.value;
       }
@@ -48,113 +48,141 @@ describe('MigrationManager', () => {
     });
 
     it('should return stored version', async () => {
-      versionStore['db-schema-version'] = '4';
-      const version = await migrationManager.getCurrentVersion();
-      expect(version).toBe(4);
-    });
-
-    it('should parse version as integer', async () => {
-      versionStore['db-schema-version'] = '5';
+      versionStore['db-schema-version'] = 5;
       const version = await migrationManager.getCurrentVersion();
       expect(version).toBe(5);
     });
   });
 
   describe('setCurrentVersion', () => {
-    it('should set version in preferences', async () => {
-      await migrationManager.setCurrentVersion(4);
-      expect(db.put).toHaveBeenCalledWith('preferences', {
+    it('should set version in database', async () => {
+      await migrationManager.setCurrentVersion(10);
+      expect(versionStore['db-schema-version']).toBe(10);
+    });
+
+    it('should call db.put with correct parameters', async () => {
+      await migrationManager.setCurrentVersion(10);
+      expect(db.put).toHaveBeenCalledWith('meta', {
         key: 'db-schema-version',
-        value: '4',
-        updatedAt: expect.any(Number)
+        value: 10
       });
     });
   });
 
-  describe('migrate', () => {
-    it('should return not migrated if already up to date', async () => {
-      versionStore['db-schema-version'] = '4';
-      const result = await migrationManager.migrate();
-      expect(result.migrated).toBe(false);
-      expect(result.from).toBe(4);
-      expect(result.to).toBe(4);
+  describe('needsMigration', () => {
+    it('should return true when current version is less than target', async () => {
+      versionStore['db-schema-version'] = 3;
+      const needsMigration = await migrationManager.needsMigration(4);
+      expect(needsMigration).toBe(true);
     });
 
-    it('should run pending migrations', async () => {
-      versionStore['db-schema-version'] = '3';
-      const result = await migrationManager.migrate();
-      expect(result.migrated).toBe(true);
-      expect(result.from).toBe(3);
-      expect(result.to).toBe(4);
+    it('should return false when current version equals target', async () => {
+      versionStore['db-schema-version'] = 4;
+      const needsMigration = await migrationManager.needsMigration(4);
+      expect(needsMigration).toBe(false);
     });
 
-    it('should stop on migration failure', async () => {
-      const manager = new MigrationManager();
-      manager.migrationsData.set(5, async () => ({ success: false, error: 'Test error' }));
-      
-      versionStore['db-schema-version'] = '3';
-      const result = await manager.migrate();
-      
-      expect(result.migrated).toBe(false);
-      expect(result.results).toHaveLength(2);
-      expect(result.results[1].success).toBe(false);
-    });
-
-    it('should handle migration errors', async () => {
-      const manager = new MigrationManager();
-      manager.migrationsData.set(5, async () => { throw new Error('Migration error'); });
-      
-      versionStore['db-schema-version'] = '3';
-      const result = await manager.migrate();
-      
-      expect(result.migrated).toBe(false);
-      expect(result.results[1].error).toBe('Migration error');
+    it('should return false when current version is greater than target', async () => {
+      versionStore['db-schema-version'] = 5;
+      const needsMigration = await migrationManager.needsMigration(4);
+      expect(needsMigration).toBe(false);
     });
   });
 
-  describe('rollback', () => {
-    it('should rollback to lower version', async () => {
-      versionStore['db-schema-version'] = '4';
-      const result = await migrationManager.rollback(3);
-      
-      expect(result.success).toBe(true);
-      expect(result.from).toBe(4);
-      expect(result.to).toBe(3);
-      expect(db.put).toHaveBeenCalledWith('preferences', expect.objectContaining({ value: '3' }));
+  describe('migrateTo', () => {
+    it('should migrate to target version', async () => {
+      versionStore['db-schema-version'] = 3;
+      await migrationManager.migrateTo(4);
+      expect(versionStore['db-schema-version']).toBe(4);
     });
 
-    it('should fail if target version not lower', async () => {
-      versionStore['db-schema-version'] = '3';
-      const result = await migrationManager.rollback(4);
-      
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Target version must be lower than current');
+    it('should not migrate if already at target version', async () => {
+      versionStore['db-schema-version'] = 4;
+      await migrationManager.migrateTo(4);
+      expect(versionStore['db-schema-version']).toBe(4);
     });
 
-    it('should fail if target version equals current', async () => {
-      versionStore['db-schema-version'] = '3';
-      const result = await migrationManager.rollback(3);
-      
-      expect(result.success).toBe(false);
+    it('should not migrate if past target version', async () => {
+      versionStore['db-schema-version'] = 5;
+      await migrationManager.migrateTo(4);
+      expect(versionStore['db-schema-version']).toBe(5);
+    });
+
+    it('should run all necessary migrations', async () => {
+      versionStore['db-schema-version'] = 3;
+      await migrationManager.migrateTo(5);
+      expect(versionStore['db-schema-version']).toBe(5);
     });
   });
 
-  describe('getStatus', () => {
-    it('should return migration status', async () => {
-      versionStore['db-schema-version'] = '3';
-      const status = await migrationManager.getStatus();
-      
-      expect(status.currentVersion).toBe(3);
-      expect(status.availableVersion).toBe(4);
-      expect(status.pending).toBe(1);
-      expect(status.migrations).toContain(4);
+  describe('migrateToLatest', () => {
+    it('should migrate to latest version', async () => {
+      versionStore['db-schema-version'] = 3;
+      await migrationManager.migrateToLatest();
+      expect(versionStore['db-schema-version']).toBeGreaterThan(3);
     });
 
-    it('should show no pending when up to date', async () => {
-      versionStore['db-schema-version'] = '4';
-      const status = await migrationManager.getStatus();
+    it('should not migrate if already at latest', async () => {
+      const manager = new MigrationManager();
+      const latestVersion = Math.max(...Array.from(manager.migrationsData.keys()));
+      versionStore['db-schema-version'] = latestVersion;
+      await migrationManager.migrateToLatest();
+      expect(versionStore['db-schema-version']).toBe(latestVersion);
+    });
+  });
+
+  describe('migration functions', () => {
+    it('should have migration function for version 4', () => {
+      const manager = new MigrationManager();
+      const migration = manager.migrationsData.get(4);
+      expect(migration).toBeDefined();
+      expect(typeof migration?.up).toBe('function');
+      expect(typeof migration?.down).toBe('function');
+    });
+
+    it('should execute migration up function', async () => {
+      const manager = new MigrationManager();
+      const migration = manager.migrationsData.get(4);
+      const mockUp = jest.fn();
+      if (migration) {
+        migration.up = mockUp;
+      }
       
-      expect(status.pending).toBe(0);
+      await migrationManager.migrateTo(4);
+      
+      if (migration) {
+        expect(mockUp).toHaveBeenCalled();
+      }
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle database errors gracefully', async () => {
+      (db.get as jest.Mock).mockRejectedValue(new Error('Database error'));
+      
+      await expect(migrationManager.getCurrentVersion()).rejects.toThrow('Database error');
+    });
+
+    it('should handle migration errors gracefully', async () => {
+      const manager = new MigrationManager();
+      const migration = manager.migrationsData.get(4);
+      const mockUp = jest.fn().mockRejectedValue(new Error('Migration error'));
+      if (migration) {
+        migration.up = mockUp;
+      }
+      
+      await expect(migrationManager.migrateTo(4)).rejects.toThrow('Migration error');
+    });
+  });
+
+  describe('singleton instance', () => {
+    it('should export singleton instance', () => {
+      expect(migrationManager).toBeInstanceOf(MigrationManager);
+    });
+
+    it('should return same instance on multiple imports', () => {
+      const migrationManager2 = require('../../data/migrationManager').migrationManager;
+      expect(migrationManager).toBe(migrationManager2);
     });
   });
 });

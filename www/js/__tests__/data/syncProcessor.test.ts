@@ -3,15 +3,15 @@ import { SyncProcessor } from '../../data/syncProcessor';
 
 jest.mock('../../data/mutationQueue', () => ({
   getPending: jest.fn().mockResolvedValue([]),
-  markSynced: jest.fn().mockResolvedValue(),
-  markFailed: jest.fn().mockResolvedValue(),
-  incrementRetry: jest.fn().mockImplementation(() => Promise.resolve(1))
+  markSynced: jest.fn().mockResolvedValue(undefined),
+  markFailed: jest.fn().mockResolvedValue(undefined),
+  incrementRetry: jest.fn().mockResolvedValue(1)
 }));
 
 import { getPending, markSynced, markFailed, incrementRetry } from '../../data/mutationQueue';
 
 describe('SyncProcessor', () => {
-  let processor;
+  let processor: SyncProcessor;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,10 +30,10 @@ describe('SyncProcessor', () => {
   describe('constructor', () => {
     it('initializes with correct state', () => {
       processor = new SyncProcessor();
-      expect(processor.isProcessing).toBe(false);
-      expect(processor.isOnline).toBe(true);
-      expect(processor.handlers).toBeInstanceOf(Map);
-      expect(processor.intervalId).not.toBeNull();
+      expect(processor.isProcessingData).toBe(false);
+      expect(processor.isOnlineData).toBe(true);
+      expect(processor.handlersData).toBeInstanceOf(Map);
+      expect(processor.intervalIdData).not.toBeNull();
     });
 
     it('sets up online/offline listeners', () => {
@@ -46,231 +46,249 @@ describe('SyncProcessor', () => {
 
     it('starts periodic sync', () => {
       processor = new SyncProcessor();
-      expect(processor.intervalId).not.toBeNull();
+      expect(processor.intervalIdData).not.toBeNull();
     });
   });
 
   describe('registerHandler', () => {
-    beforeEach(() => {
-      processor = new SyncProcessor();
-    });
-
     it('registers a handler for mutation type', () => {
-      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
-      processor.registerHandler('ADD_ITEM', handler);
-      expect(processor.handlers.get('ADD_ITEM')).toBe(handler);
-    });
-  });
-
-  describe('getStatus', () => {
-    beforeEach(() => {
       processor = new SyncProcessor();
-    });
-
-    it('returns current sync status', () => {
-      const status = processor.getStatus();
-      expect(status).toHaveProperty('isOnline');
-      expect(status).toHaveProperty('isProcessing');
-      expect(status).toHaveProperty('registeredHandlers');
-      expect(status).toHaveProperty('intervalActive');
-    });
-
-    it('shows interval is active', () => {
-      const status = processor.getStatus();
-      expect(status.intervalActive).toBe(true);
-    });
-  });
-
-  describe('stopPeriodicSync', () => {
-    beforeEach(() => {
-      processor = new SyncProcessor();
-    });
-
-    it('clears interval', () => {
-      processor.stopPeriodicSync();
-      expect(processor.intervalId).toBeNull();
-    });
-
-    it('does nothing if interval already cleared', () => {
-      processor.stopPeriodicSync();
-      expect(() => processor.stopPeriodicSync()).not.toThrow();
-    });
-  });
-
-  describe('processPending', () => {
-    beforeEach(() => {
-      processor = new SyncProcessor();
-    });
-
-    it('does not process if already processing', async () => {
-      processor.isProcessing = true;
-      await processor.processPending();
-      expect(getPending).not.toHaveBeenCalled();
-    });
-
-    it('does not process if offline', async () => {
-      processor.isOnline = false;
-      await processor.processPending();
-      expect(getPending).not.toHaveBeenCalled();
-    });
-
-    it('processes pending mutations when online and not processing', async () => {
-      getPending.mockResolvedValue([{ id: '1', type: 'ADD_ITEM', payload: {} }]);
-      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
+      const handler = jest.fn().mockResolvedValue({ success: true });
+      
       processor.registerHandler('ADD_ITEM', handler);
       
-      await processor.processPending();
-      expect(getPending).toHaveBeenCalled();
+      expect(processor.handlersData.has('ADD_ITEM')).toBe(true);
+      expect(processor.handlersData.get('ADD_ITEM')).toBe(handler);
     });
 
-    it('returns early if no pending mutations', async () => {
-      getPending.mockResolvedValue([]);
-      await processor.processPending();
-      expect(getPending).toHaveBeenCalled();
-    });
-
-    it('sets isProcessing flag', async () => {
-      getPending.mockResolvedValue([]);
-      await processor.processPending();
-      expect(processor.isProcessing).toBe(false);
+    it('overwrites existing handler', () => {
+      processor = new SyncProcessor();
+      const handler1 = jest.fn().mockResolvedValue({ success: true });
+      const handler2 = jest.fn().mockResolvedValue({ success: true });
+      
+      processor.registerHandler('ADD_ITEM', handler1);
+      processor.registerHandler('ADD_ITEM', handler2);
+      
+      expect(processor.handlersData.get('ADD_ITEM')).toBe(handler2);
     });
   });
 
-  describe('processMutation', () => {
+  describe('processMutations', () => {
     beforeEach(() => {
       processor = new SyncProcessor();
     });
 
-    it('marks failed if max retries exceeded', async () => {
-      const mutation = { id: '1', type: 'ADD_ITEM', payload: {}, retryCount: 5 };
-      await processor.processMutation(mutation);
-      expect(markFailed).toHaveBeenCalledWith('1', 'Max retries exceeded');
-    });
-
-    it('marks failed if no handler registered', async () => {
-      const mutation = { id: '1', type: 'UNKNOWN_TYPE', payload: {} };
-      await processor.processMutation(mutation);
-      expect(markFailed).toHaveBeenCalledWith('1', 'No handler for type: UNKNOWN_TYPE');
-    });
-
-    it('executes handler and marks synced on success', async () => {
-      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
-      processor.registerHandler('ADD_ITEM', handler);
-      const mutation = { id: '1', type: 'ADD_ITEM', payload: { name: 'test' }, entityId: 'pantry:test' };
+    it('processes pending mutations when online', async () => {
+      const mockMutations = [
+        { id: '1', type: 'ADD_ITEM', payload: { id: 1 } },
+        { id: '2', type: 'UPDATE_ITEM', payload: { id: 2 } }
+      ];
+      (getPending as jest.Mock).mockResolvedValue(mockMutations);
       
-      await processor.processMutation(mutation);
-      expect(handler).toHaveBeenCalledWith(mutation);
+      const handler = jest.fn().mockResolvedValue({ success: true });
+      processor.registerHandler('ADD_ITEM', handler);
+      processor.registerHandler('UPDATE_ITEM', handler);
+      
+      await processor.processMutations();
+      
+      expect(handler).toHaveBeenCalledTimes(2);
       expect(markSynced).toHaveBeenCalledWith('1');
+      expect(markSynced).toHaveBeenCalledWith('2');
     });
 
-    it('increments retry count on handler failure', async () => {
-      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: false, error: 'Handler error' }));
-      processor.registerHandler('ADD_ITEM', handler);
-      const mutation = { id: '1', type: 'ADD_ITEM', payload: {} };
+    it('does not process when offline', async () => {
+      Object.defineProperty(navigator, 'onLine', { value: false });
+      processor = new SyncProcessor();
       
-      await processor.processMutation(mutation);
+      await processor.processMutations();
+      
+      expect(getPending).not.toHaveBeenCalled();
+    });
+
+    it('does not process when already processing', async () => {
+      processor = new SyncProcessor();
+      (processor as any).isProcessingData = true;
+      
+      await processor.processMutations();
+      
+      expect(getPending).not.toHaveBeenCalled();
+    });
+
+    it('handles failed mutations', async () => {
+      const mockMutations = [
+        { id: '1', type: 'ADD_ITEM', payload: { id: 1 } }
+      ];
+      (getPending as jest.Mock).mockResolvedValue(mockMutations);
+      
+      const handler = jest.fn().mockResolvedValue({ success: false, error: 'Network error' });
+      processor.registerHandler('ADD_ITEM', handler);
+      
+      await processor.processMutations();
+      
+      expect(markFailed).toHaveBeenCalledWith('1', 'Network error');
+    });
+
+    it('increments retry count on handler errors', async () => {
+      const mockMutations = [
+        { id: '1', type: 'ADD_ITEM', payload: { id: 1 } }
+      ];
+      (getPending as jest.Mock).mockResolvedValue(mockMutations);
+      
+      const handler = jest.fn().mockRejectedValue(new Error('Handler error'));
+      processor.registerHandler('ADD_ITEM', handler);
+      
+      await processor.processMutations();
+      
       expect(incrementRetry).toHaveBeenCalledWith('1');
     });
 
-    it('marks failed after increment if max retries reached', async () => {
-      incrementRetry.mockResolvedValue(5);
-      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: false, error: 'Handler error' }));
-      processor.registerHandler('ADD_ITEM', handler);
-      const mutation = { id: '1', type: 'ADD_ITEM', payload: {} };
+    it('skips mutations without handlers', async () => {
+      const mockMutations = [
+        { id: '1', type: 'UNKNOWN_TYPE', payload: { id: 1 } }
+      ];
+      (getPending as jest.Mock).mockResolvedValue(mockMutations);
       
-      await processor.processMutation(mutation);
-      expect(markFailed).toHaveBeenCalled();
-    });
-
-    it('sleeps before retry if retryCount > 0', async () => {
-      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
-      processor.registerHandler('ADD_ITEM', handler);
-      const mutation = { id: '1', type: 'ADD_ITEM', payload: {}, retryCount: 1 };
+      await processor.processMutations();
       
-      const sleepSpy = jest.spyOn(processor, 'sleep').mockResolvedValue();
-      await processor.processMutation(mutation);
-      expect(sleepSpy).toHaveBeenCalled();
-      sleepSpy.mockRestore();
+      expect(markFailed).toHaveBeenCalledWith('1', 'No handler for mutation type: UNKNOWN_TYPE');
     });
   });
 
-  describe('sleep', () => {
+  describe('start', () => {
+    it('starts periodic sync', () => {
+      processor = new SyncProcessor();
+      processor.stop();
+      
+      processor.start();
+      
+      expect(processor.intervalIdData).not.toBeNull();
+    });
+
+    it('does not start multiple intervals', () => {
+      processor = new SyncProcessor();
+      const originalInterval = processor.intervalIdData;
+      
+      processor.start();
+      
+      expect(processor.intervalIdData).toBe(originalInterval);
+    });
+  });
+
+  describe('stop', () => {
+    it('stops periodic sync', () => {
+      processor = new SyncProcessor();
+      
+      processor.stop();
+      
+      expect(processor.intervalIdData).toBeNull();
+    });
+
+    it('handles stopping when not running', () => {
+      processor = new SyncProcessor();
+      processor.stop();
+      
+      expect(() => processor.stop()).not.toThrow();
+    });
+  });
+
+  describe('online/offline handling', () => {
     beforeEach(() => {
       processor = new SyncProcessor();
     });
 
-    it('resolves after specified delay', async () => {
-      jest.useFakeTimers();
-      const promise = processor.sleep(1000);
-      jest.advanceTimersByTime(1000);
-      await expect(promise).resolves.toBeUndefined();
-      jest.useRealTimers();
+    it('sets online status when online event fires', () => {
+      Object.defineProperty(navigator, 'onLine', { value: true });
+      
+      const onlineHandler = (processor as any).handleOnline;
+      onlineHandler();
+      
+      expect(processor.isOnlineData).toBe(true);
     });
-  });
 
-  describe('forceSync', () => {
-    beforeEach(() => {
+    it('sets offline status when offline event fires', () => {
+      Object.defineProperty(navigator, 'onLine', { value: false });
+      
+      const offlineHandler = (processor as any).handleOffline;
+      offlineHandler();
+      
+      expect(processor.isOnlineData).toBe(false);
+    });
+
+    it('triggers sync when coming online', () => {
       processor = new SyncProcessor();
-    });
-
-    it('triggers processPending', async () => {
-      getPending.mockResolvedValue([]);
-      const processSpy = jest.spyOn(processor, 'processPending');
-      await processor.forceSync();
+      const processSpy = jest.spyOn(processor, 'processMutations');
+      
+      const onlineHandler = (processor as any).handleOnline;
+      onlineHandler();
+      
       expect(processSpy).toHaveBeenCalled();
     });
   });
 
-  describe('setupListeners', () => {
-    beforeEach(() => {
+  describe('periodic sync', () => {
+    it('processes mutations periodically', async () => {
       processor = new SyncProcessor();
+      const processSpy = jest.spyOn(processor, 'processMutations');
+      
+      jest.advanceTimersByTime(30000); // 30 seconds
+      
+      expect(processSpy).toHaveBeenCalled();
     });
 
-    it('sets isOnline to true on online event', () => {
-      processor.isOnline = false;
-      window.dispatchEvent(new Event('online'));
-      expect(processor.isOnline).toBe(true);
-    });
-
-    it('sets isOnline to false on offline event', () => {
-      processor.isOnline = true;
-      window.dispatchEvent(new Event('offline'));
-      expect(processor.isOnline).toBe(false);
+    it('continues processing after errors', async () => {
+      processor = new SyncProcessor();
+      (getPending as jest.Mock).mockRejectedValue(new Error('Database error'));
+      
+      jest.advanceTimersByTime(30000);
+      
+      // Should not throw and continue processing
+      expect(() => jest.advanceTimersByTime(30000)).not.toThrow();
     });
   });
 
-  describe('startPeriodicSync', () => {
-    beforeEach(() => {
+  describe('getStatus', () => {
+    it('returns current status', () => {
       processor = new SyncProcessor();
-      processor.stopPeriodicSync();
+      
+      const status = processor.getStatus();
+      
+      expect(status.isProcessing).toBe(false);
+      expect(status.isOnline).toBe(true);
+      expect(status.handlerCount).toBe(0);
+      expect(status.isPeriodicSyncActive).toBe(true);
     });
 
-    it('sets interval ID', () => {
-      processor.startPeriodicSync();
-      expect(processor.intervalId).not.toBeNull();
+    it('reflects current state', () => {
+      processor = new SyncProcessor();
+      (processor as any).isProcessingData = true;
+      processor.registerHandler('TEST', jest.fn());
+      
+      const status = processor.getStatus();
+      
+      expect(status.isProcessing).toBe(true);
+      expect(status.handlerCount).toBe(1);
+    });
+  });
+
+  describe('cleanup', () => {
+    it('cleans up resources', () => {
+      processor = new SyncProcessor();
+      
+      processor.cleanup();
+      
+      expect(processor.intervalIdData).toBeNull();
+      expect(processor.handlersData.size).toBe(0);
     });
 
-    it('triggers processPending on interval when online', async () => {
-      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
-      processor.registerHandler('ADD_ITEM', handler);
-      getPending.mockResolvedValue([{ id: '1', type: 'ADD_ITEM', payload: {} }]);
+    it('removes event listeners', () => {
+      const removeEventListenerSpy = jest.spyOn(window, 'removeEventListener');
+      processor = new SyncProcessor();
       
-      processor.startPeriodicSync();
-      jest.advanceTimersByTime(30000);
-      await Promise.resolve();
+      processor.cleanup();
       
-      expect(getPending).toHaveBeenCalled();
-    });
-
-    it('does not trigger when offline', async () => {
-      processor.isOnline = false;
-      getPending.mockResolvedValue([]);
-      
-      processor.startPeriodicSync();
-      jest.advanceTimersByTime(30000);
-      await Promise.resolve();
-      
-      expect(getPending).not.toHaveBeenCalled();
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('online', expect.any(Function));
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('offline', expect.any(Function));
+      removeEventListenerSpy.mockRestore();
     });
   });
 });

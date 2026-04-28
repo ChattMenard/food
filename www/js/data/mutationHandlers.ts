@@ -7,12 +7,11 @@
 
 import db from './db';
 import { savePantryState } from '../core/appState';
-import { log } from '../utils/logger';
 
 /**
  * Handler for ADD_ITEM mutations
  */
-export async function handleAddItem(mutation) {
+export async function handleAddItem(mutation: any): Promise<any> {
   const { payload } = mutation;
 
   try {
@@ -26,7 +25,7 @@ export async function handleAddItem(mutation) {
       expiryDate: payload.expiryDate || null,
     };
 
-    await db.add('pantry', item);
+    await (db as any).add('pantry', item);
 
     // Refresh state
     const pantry = await db.getPantry();
@@ -34,14 +33,14 @@ export async function handleAddItem(mutation) {
 
     return { success: true };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
 /**
  * Handler for UPDATE_ITEM mutations
  */
-export async function handleUpdateItem(mutation) {
+export async function handleUpdateItem(mutation: any): Promise<any> {
   const { payload } = mutation;
 
   try {
@@ -64,14 +63,14 @@ export async function handleUpdateItem(mutation) {
 
     return { success: true };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
 /**
  * Handler for DELETE_ITEM mutations
  */
-export async function handleDeleteItem(mutation) {
+export async function handleDeleteItem(mutation: any): Promise<any> {
   const { payload } = mutation;
 
   try {
@@ -83,17 +82,17 @@ export async function handleDeleteItem(mutation) {
 
     return { success: true };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
 /**
  * Register all handlers with sync processor
  */
-export function registerAllHandlers(syncProcessor) {
+export function registerAllHandlers(syncProcessor: any): void {
   syncProcessor.registerHandler('ADD_ITEM', handleAddItem);
   syncProcessor.registerHandler('UPDATE_ITEM', handleUpdateItem);
   syncProcessor.registerHandler('DELETE_ITEM', handleDeleteItem);
 
-  log('[MutationHandlers] All handlers registered');
+  console.log('[MutationHandlers] All handlers registered');
 }

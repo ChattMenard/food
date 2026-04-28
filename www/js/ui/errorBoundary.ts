@@ -127,7 +127,7 @@ export class ErrorBoundary {
     });
   }
 
-  wrapCriticalFunctions() {
+  wrapCriticalFunctions(): void {
     // Wrap setTimeout and setInterval
     const originalSetTimeout = window.setTimeout;
     const originalSetInterval = window.setInterval;
@@ -174,14 +174,14 @@ export class ErrorBoundary {
     };
   }
 
-  setupPeriodicCheck() {
+  setupPeriodicCheck(): void {
     // Check for stuck operations every 30 seconds
     setInterval(() => {
       this.checkApplicationHealth();
     }, 30000);
   }
 
-  checkApplicationHealth() {
+  checkApplicationHealth(): void {
     // Check if critical elements exist
     const criticalElements = [
       'new-ingredient',
@@ -196,7 +196,7 @@ export class ErrorBoundary {
     }
   }
 
-  handleError(error, context = 'unknown', details = {}) {
+  handleError(error: Error, context: string = 'unknown', details: any = {}): void {
     this.errorCount++;
     
     const errorInfo = {
@@ -236,7 +236,7 @@ export class ErrorBoundary {
     }
   }
 
-  showFallbackUI(errorInfo) {
+  showFallbackUI(errorInfo: any): void {
     if (!this.fallbackUI) return;
     
     // Update error details
@@ -252,7 +252,7 @@ export class ErrorBoundary {
     this.disableAppInteractions();
   }
 
-  disableAppInteractions() {
+  disableAppInteractions(): void {
     // Disable all buttons and inputs
     const interactiveElements = document.querySelectorAll('button, input, select, textarea');
     interactiveElements.forEach(element => {
@@ -261,7 +261,7 @@ export class ErrorBoundary {
     });
   }
 
-  enableAppInteractions() {
+  enableAppInteractions(): void {
     // Re-enable all buttons and inputs
     const interactiveElements = document.querySelectorAll('button, input, select, textarea');
     interactiveElements.forEach(element => {
@@ -270,7 +270,7 @@ export class ErrorBoundary {
     });
   }
 
-  handleRetry() {
+  handleRetry(): void {
     if (this.recoveryAttempts >= this.maxRecoveryAttempts) {
       // Force reload after max attempts
       window.location.reload();
@@ -299,7 +299,7 @@ export class ErrorBoundary {
     }
   }
 
-  recoverApplication() {
+  recoverApplication(): void {
     // Try to re-initialize critical components
     const criticalElements = [
       'new-ingredient',
@@ -318,7 +318,7 @@ export class ErrorBoundary {
     this.rebindEventHandlers();
   }
 
-  rebindEventHandlers() {
+  rebindEventHandlers(): void {
     // Re-bind common event handlers
     const addBtn = document.getElementById('add-ingredient-btn');
     if (addBtn && !addBtn.hasAttribute('data-rebound')) {
@@ -332,7 +332,7 @@ export class ErrorBoundary {
   }
 
   // Public API
-  getErrorStats() {
+  getErrorStats(): any {
     return {
       errorCount: this.errorCount,
       recoveryAttempts: this.recoveryAttempts,
@@ -341,7 +341,7 @@ export class ErrorBoundary {
     };
   }
 
-  reset() {
+  reset(): void {
     this.errorCount = 0;
     this.recoveryAttempts = 0;
     this.errorHistory = [];
@@ -354,7 +354,7 @@ export class ErrorBoundary {
   }
 
   // Initialize error boundary
-  init() {
+  init(): void {
     // Make it globally available
     window.errorBoundary = this;
     
@@ -366,7 +366,7 @@ export class ErrorBoundary {
 const errorBoundary = new ErrorBoundary();
 
 // Export convenience functions
-export const handleGlobalError = (error, context, details) => 
+export const handleGlobalError = (error: Error, context: string, details: any) => 
   errorBoundary.handleError(error, context, details);
 
 export const getErrorBoundaryStats = () => errorBoundary.getErrorStats();

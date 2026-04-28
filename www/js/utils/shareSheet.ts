@@ -12,7 +12,7 @@ export class ShareSheetManager {
    * @param {Array} shoppingList - Shopping list items
    * @returns {Promise<void>}
    */
-  async shareShoppingList(shoppingList) {
+  async shareShoppingList(shoppingList: any[]): Promise<void> {
     const text = this.formatShoppingList(shoppingList);
 
     try {
@@ -33,7 +33,7 @@ export class ShareSheetManager {
    * @param {Object} mealPlan - Meal plan object
    * @returns {Promise<void>}
    */
-  async shareMealPlan(mealPlan) {
+  async shareMealPlan(mealPlan: any): Promise<void> {
     const text = this.formatMealPlan(mealPlan);
 
     try {
@@ -53,7 +53,7 @@ export class ShareSheetManager {
    * @param {Object} recipe - Recipe object
    * @returns {Promise<void>}
    */
-  async shareRecipe(recipe) {
+  async shareRecipe(recipe: any): Promise<void> {
     const text = this.formatRecipe(recipe);
 
     try {
@@ -74,7 +74,7 @@ export class ShareSheetManager {
    * @param {Array} shoppingList - Shopping list items
    * @returns {string} Formatted text
    */
-  formatShoppingList(shoppingList) {
+  formatShoppingList(shoppingList: any[]): string {
     const lines = ['🛒 Main Shopping List\n'];
 
     shoppingList.forEach((item) => {
@@ -91,14 +91,14 @@ export class ShareSheetManager {
    * @param {Object} mealPlan - Meal plan object
    * @returns {string} Formatted text
    */
-  formatMealPlan(mealPlan) {
+  formatMealPlan(mealPlan: any): string {
     const lines = ['📅 Main Meal Plan\n'];
 
     Object.keys(mealPlan)
       .sort()
       .forEach((date) => {
         lines.push(`\n${date}:`);
-        mealPlan[date].forEach((meal) => {
+        mealPlan[date].forEach((meal: any) => {
           lines.push(`  ${meal.mealType}: ${meal.recipeName}`);
         });
       });
@@ -112,7 +112,7 @@ export class ShareSheetManager {
    * @param {Object} recipe - Recipe object
    * @returns {string} Formatted text
    */
-  formatRecipe(recipe) {
+  formatRecipe(recipe: any): string {
     const lines = [
       `🍽️ ${recipe.name}`,
       '',
@@ -121,7 +121,7 @@ export class ShareSheetManager {
       `⭐ Rating: ${recipe.rating}/5`,
       '',
       'Ingredients:',
-      ...(recipe.ingredients || []).map((i) => `  • ${i}`),
+      ...(recipe.ingredients || []).map((i: any) => `  • ${i}`),
       '',
     ];
 
@@ -137,7 +137,7 @@ export class ShareSheetManager {
    * Copy text to clipboard (fallback)
    * @param {string} text - Text to copy
    */
-  async copyToClipboard(text) {
+  async copyToClipboard(text: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(text);
       alert('Copied to clipboard!');
@@ -164,7 +164,7 @@ export class ShareSheetManager {
 }
 
 // Global share sheet instance
-let globalShareSheet = null;
+let globalShareSheet: ShareSheetManager | null = null;
 
 /**
  * Get or create the global share sheet manager

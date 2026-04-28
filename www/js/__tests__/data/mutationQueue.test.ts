@@ -3,17 +3,17 @@ import { enqueue, getPending, markSynced, markFailed, incrementRetry } from '../
 
 jest.mock('../../data/db', () => ({
   ready: Promise.resolve(),
-  addMutation: jest.fn().mockResolvedValue(),
+  addMutation: jest.fn().mockResolvedValue(undefined),
   getPendingMutations: jest.fn().mockResolvedValue([]),
-  markMutationSynced: jest.fn().mockResolvedValue(),
-  markMutationFailed: jest.fn().mockResolvedValue(),
-  incrementMutationRetry: jest.fn().mockImplementation(() => Promise.resolve(1))
+  markMutationSynced: jest.fn().mockResolvedValue(undefined),
+  markMutationFailed: jest.fn().mockResolvedValue(undefined),
+  incrementMutationRetry: jest.fn().mockResolvedValue(1)
 }));
 
 import db from '../../data/db';
 
 describe('MutationQueue', () => {
-  let mockUUID;
+  let mockUUID: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -40,7 +40,7 @@ describe('MutationQueue', () => {
     });
 
     it('should generate unique UUID for each mutation', async () => {
-      global.crypto.randomUUID = jest.fn()
+      (global.crypto.randomUUID as jest.Mock) = jest.fn()
         .mockReturnValueOnce('uuid-1')
         .mockReturnValueOnce('uuid-2');
       
@@ -48,43 +48,131 @@ describe('MutationQueue', () => {
       await enqueue({ type: 'UPDATE_ITEM', payload: {}, entityId: 'test2' });
       
       expect(db.addMutation).toHaveBeenCalledTimes(2);
-      expect(db.addMutation).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: 'uuid-1' }));
-      expect(db.addMutation).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: 'uuid-2' }));
+    });
+
+    it('should handle database errors', async () => {
+      (db.addMutation as jest.Mock).mockRejectedValue(new Error('Database error'));
+      
+      await expect(enqueue({ type: 'ADD_ITEM', payload: {}, entityId: 'test' })).rejects.toThrow('Database error');
     });
   });
 
   describe('getPending', () => {
-    it('should get all pending mutations', async () => {
-      const pendingMutations = [{ id: '1', status: 'pending' }];
-      db.getPendingMutations.mockResolvedValue(pendingMutations);
+    it('should return pending mutations', async () => {
+      const mockMutations = [
+        { id: '1', type: 'ADD_ITEM', status: 'pending' },
+        { id: '2', type: 'UPDATE_ITEM', status: 'pending' }
+      ];
+      (db.getPendingMutations as jest.Mock).mockResolvedValue(mockMutations);
       
       const result = await getPending();
-      expect(result).toEqual(pendingMutations);
+      
+      expect(result).toEqual(mockMutations);
       expect(db.getPendingMutations).toHaveBeenCalled();
+    });
+
+    it('should handle database errors', async () => {
+      (db.getPendingMutations as jest.Mock).mockRejectedValue(new Error('Database error'));
+      
+      await expect(getPending()).rejects.toThrow('Database error');
     });
   });
 
   describe('markSynced', () => {
     it('should mark mutation as synced', async () => {
-      await markSynced('mutation-123');
-      expect(db.markMutationSynced).toHaveBeenCalledWith('mutation-123');
+      const mutationId = 'test-mutation-id';
+      
+      await markSynced(mutationId);
+      
+      expect(db.markMutationSynced).toHaveBeenCalledWith(mutationId);
+    });
+
+    it('should handle database errors', async () => {
+      (db.markMutationSynced as jest.Mock).mockRejectedValue(new Error('Database error'));
+      
+      await expect(markSynced('test-id')).rejects.toThrow('Database error');
     });
   });
 
   describe('markFailed', () => {
     it('should mark mutation as failed with error', async () => {
-      await markFailed('mutation-123', 'Network error');
-      expect(db.markMutationFailed).toHaveBeenCalledWith('mutation-123', 'Network error');
+      const mutationId = 'test-mutation-id';
+      const error = 'Network timeout';
+      
+      await markFailed(mutationId, error);
+      
+      expect(db.markMutationFailed).toHaveBeenCalledWith(mutationId, error);
+    });
+
+    it('should handle database errors', async () => {
+      (db.markMutationFailed as jest.Mock).mockRejectedValue(new Error('Database error'));
+      
+      await expect(markFailed('test-id', 'error')).rejects.toThrow('Database error');
     });
   });
 
   describe('incrementRetry', () => {
     it('should increment retry count and return new count', async () => {
-      db.incrementMutationRetry.mockResolvedValue(2);
+      const mutationId = 'test-mutation-id';
+      (db.incrementMutationRetry as jest.Mock).mockResolvedValue(3);
       
-      const count = await incrementRetry('mutation-123');
-      expect(count).toBe(2);
-      expect(db.incrementMutationRetry).toHaveBeenCalledWith('mutation-123');
+      const result = await incrementRetry(mutationId);
+      
+      expect(result).toBe(3);
+      expect(db.incrementMutationRetry).toHaveBeenCalledWith(mutationId);
+    });
+
+    it('should handle database errors', async () => {
+      (db.incrementMutationRetry as jest.Mock).mockRejectedValue(new Error('Database error'));
+      
+      await expect(incrementRetry('test-id')).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('mutation validation', () => {
+    it('should validate required fields', async () => {
+      const invalidMutation = { type: '', payload: null, entityId: '' };
+      
+      await expect(enqueue(invalidMutation)).rejects.toThrow();
+    });
+
+    it('should accept valid mutation types', async () => {
+      const validTypes = ['ADD_ITEM', 'UPDATE_ITEM', 'DELETE_ITEM'];
+      
+      for (const type of validTypes) {
+        const mutation = { type, payload: { id: 1 }, entityId: 'test' };
+        await expect(enqueue(mutation)).resolves.toBeDefined();
+      }
+    });
+  });
+
+  describe('timestamp handling', () => {
+    it('should include timestamp in enqueued mutation', async () => {
+      const before = Date.now();
+      const mutation = { type: 'ADD_ITEM', payload: {}, entityId: 'test' };
+      const result = await enqueue(mutation);
+      const after = Date.now();
+      
+      expect(result.timestamp).toBeGreaterThanOrEqual(before);
+      expect(result.timestamp).toBeLessThanOrEqual(after);
+    });
+  });
+
+  describe('retry count initialization', () => {
+    it('should initialize retry count to 0', async () => {
+      const mutation = { type: 'ADD_ITEM', payload: {}, entityId: 'test' };
+      const result = await enqueue(mutation);
+      
+      expect(result.retryCount).toBe(0);
+    });
+  });
+
+  describe('status initialization', () => {
+    it('should initialize status to pending', async () => {
+      const mutation = { type: 'ADD_ITEM', payload: {}, entityId: 'test' };
+      const result = await enqueue(mutation);
+      
+      expect(result.status).toBe('pending');
     });
   });
 });

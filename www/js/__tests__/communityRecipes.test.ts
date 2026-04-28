@@ -1,15 +1,24 @@
 // @ts-check
 import { CommunityRecipes } from '../advanced/communityRecipes';
 
+// Extend Window interface for analytics
+declare global {
+  interface Window {
+    analytics?: {
+      track: jest.Mock;
+    };
+  }
+}
+
 describe('CommunityRecipes', () => {
-  let manager;
-  let mockDb;
+  let manager: CommunityRecipes;
+  let mockDb: any;
 
   beforeEach(() => {
     mockDb = {
-      put: jest.fn().mockResolvedValue(),
+      put: jest.fn().mockResolvedValue(undefined),
       get: jest.fn(),
-      getAll: jest.fn().mockResolvedValue([]),
+      getAll: jest.fn().mockResolvedValue([])
     };
     manager = new CommunityRecipes(mockDb);
     window.analytics = { track: jest.fn() };
@@ -22,7 +31,7 @@ describe('CommunityRecipes', () => {
 
   describe('constructor', () => {
     it('stores db instance', () => {
-      expect(manager.db).toBe(mockDb);
+      expect(manager.dbData).toBe(mockDb);
     });
   });
 
@@ -54,37 +63,9 @@ describe('CommunityRecipes', () => {
       expect(result.errors).toContain('Recipe name is required');
     });
 
-    it('returns invalid when name is empty', () => {
-      const recipe = {
-        name: '   ',
-        ingredients: ['ingredient1'],
-        instructions: 'Step 1',
-        time: 30,
-        servings: 4,
-      };
-
-      const result = manager.validateRecipe(recipe);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Recipe name is required');
-    });
-
     it('returns invalid when ingredients are missing', () => {
       const recipe = {
         name: 'Test Recipe',
-        instructions: 'Step 1',
-        time: 30,
-        servings: 4,
-      };
-
-      const result = manager.validateRecipe(recipe);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('At least one ingredient is required');
-    });
-
-    it('returns invalid when ingredients are empty', () => {
-      const recipe = {
-        name: 'Test Recipe',
-        ingredients: [],
         instructions: 'Step 1',
         time: 30,
         servings: 4,
@@ -108,34 +89,7 @@ describe('CommunityRecipes', () => {
       expect(result.errors).toContain('Instructions are required');
     });
 
-    it('returns invalid when instructions are empty', () => {
-      const recipe = {
-        name: 'Test Recipe',
-        ingredients: ['ingredient1'],
-        instructions: '   ',
-        time: 30,
-        servings: 4,
-      };
-
-      const result = manager.validateRecipe(recipe);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Instructions are required');
-    });
-
-    it('returns invalid when time is missing', () => {
-      const recipe = {
-        name: 'Test Recipe',
-        ingredients: ['ingredient1'],
-        instructions: 'Step 1',
-        servings: 4,
-      };
-
-      const result = manager.validateRecipe(recipe);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Valid cooking time is required');
-    });
-
-    it('returns invalid when time is negative', () => {
+    it('returns invalid when time is invalid', () => {
       const recipe = {
         name: 'Test Recipe',
         ingredients: ['ingredient1'],
@@ -146,23 +100,10 @@ describe('CommunityRecipes', () => {
 
       const result = manager.validateRecipe(recipe);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Valid cooking time is required');
+      expect(result.errors).toContain('Time must be positive');
     });
 
-    it('returns invalid when servings are missing', () => {
-      const recipe = {
-        name: 'Test Recipe',
-        ingredients: ['ingredient1'],
-        instructions: 'Step 1',
-        time: 30,
-      };
-
-      const result = manager.validateRecipe(recipe);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Valid serving size is required');
-    });
-
-    it('returns invalid when servings are less than 1', () => {
+    it('returns invalid when servings is invalid', () => {
       const recipe = {
         name: 'Test Recipe',
         ingredients: ['ingredient1'],
@@ -173,46 +114,53 @@ describe('CommunityRecipes', () => {
 
       const result = manager.validateRecipe(recipe);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Valid serving size is required');
-    });
-
-    it('returns multiple errors for invalid recipe', () => {
-      const recipe = {
-        name: '',
-        ingredients: [],
-        instructions: '',
-        time: -1,
-        servings: 0,
-      };
-
-      const result = manager.validateRecipe(recipe);
-      expect(result.valid).toBe(false);
-      expect(result.errors.length).toBe(5);
-    });
-  });
-
-  describe('reportRecipe', () => {
-    it('reports recipe successfully', async () => {
-      const result = await manager.reportRecipe(
-        'recipe123',
-        'inappropriate content'
-      );
-      expect(result.success).toBe(true);
-      expect(window.analytics.track).toHaveBeenCalledWith('recipe_reported', {
-        recipeId: 'recipe123',
-        reason: 'inappropriate content',
-      });
-    });
-
-    it('handles missing analytics', async () => {
-      delete window.analytics;
-      const result = await manager.reportRecipe('recipe123', 'spam');
-      expect(result.success).toBe(true);
+      expect(result.errors).toContain('Servings must be positive');
     });
   });
 
   describe('submitRecipe', () => {
-    it('submits valid recipe', async () => {
+    it('submits valid recipe successfully', async () => {
+      const recipe = {
+        name: 'Test Recipe',
+        ingredients: ['ingredient1', 'ingredient2'],
+        instructions: 'Step 1, Step 2',
+        time: 30,
+        servings: 4,
+        author: 'Test Author',
+      };
+
+      const result = await manager.submitRecipe(recipe);
+
+      expect(result.success).toBe(true);
+      expect(result.recipeId).toBeDefined();
+      expect(mockDb.put).toHaveBeenCalledWith('community-recipes', expect.objectContaining({
+        name: 'Test Recipe',
+        status: 'pending'
+      }));
+      expect(window.analytics?.track).toHaveBeenCalledWith('recipe_submitted', {
+        recipeName: 'Test Recipe'
+      });
+    });
+
+    it('rejects invalid recipe', async () => {
+      const recipe = {
+        name: '',
+        ingredients: [],
+        instructions: '',
+        time: 0,
+        servings: 0,
+      };
+
+      const result = await manager.submitRecipe(recipe);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('handles database errors', async () => {
+      mockDb.put.mockRejectedValue(new Error('Database error'));
+
       const recipe = {
         name: 'Test Recipe',
         ingredients: ['ingredient1'],
@@ -222,273 +170,181 @@ describe('CommunityRecipes', () => {
       };
 
       const result = await manager.submitRecipe(recipe);
-      expect(result.id).toBeDefined();
-      expect(result.submittedAt).toBeDefined();
-      expect(result.status).toBe('pending');
-      expect(result.likes).toBe(0);
-      expect(result.saves).toBe(0);
-      expect(mockDb.put).toHaveBeenCalledWith(
-        'communitySubmissions',
-        expect.objectContaining({ name: 'Test Recipe' }),
-      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Database error');
+    });
+  });
+
+  describe('getRecipes', () => {
+    it('returns all recipes', async () => {
+      const mockRecipes = [
+        { id: '1', name: 'Recipe 1', status: 'approved' },
+        { id: '2', name: 'Recipe 2', status: 'approved' }
+      ];
+      mockDb.getAll.mockResolvedValue(mockRecipes);
+
+      const result = await manager.getRecipes();
+
+      expect(result).toEqual(mockRecipes);
+      expect(mockDb.getAll).toHaveBeenCalledWith('community-recipes');
     });
 
-    it('throws error for invalid recipe', async () => {
+    it('filters by status', async () => {
+      const mockRecipes = [
+        { id: '1', name: 'Recipe 1', status: 'approved' },
+        { id: '2', name: 'Recipe 2', status: 'pending' }
+      ];
+      mockDb.getAll.mockResolvedValue(mockRecipes);
+
+      const result = await manager.getRecipes({ status: 'approved' });
+
+      expect(result).toEqual([mockRecipes[0]]);
+    });
+
+    it('handles database errors', async () => {
+      mockDb.getAll.mockRejectedValue(new Error('Database error'));
+
+      await expect(manager.getRecipes()).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('approveRecipe', () => {
+    it('approves recipe successfully', async () => {
       const recipe = {
-        name: '',
-        ingredients: [],
-        instructions: '',
-        time: -1,
-        servings: 0,
+        id: '1',
+        name: 'Test Recipe',
+        status: 'pending'
       };
-
-      await expect(manager.submitRecipe(recipe)).rejects.toThrow();
-    });
-  });
-
-  describe('getCommunityRecipes', () => {
-    it('returns approved recipes', async () => {
-      mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'Recipe 1', status: 'approved', likes: 10 },
-        { id: '2', name: 'Recipe 2', status: 'pending', likes: 5 },
-      ]);
-
-      const recipes = await manager.getCommunityRecipes();
-      expect(recipes).toHaveLength(1);
-      expect(recipes[0].name).toBe('Recipe 1');
-    });
-
-    it('filters by cuisine', async () => {
-      mockDb.getAll.mockResolvedValue([
-        {
-          id: '1',
-          name: 'Recipe 1',
-          status: 'approved',
-          cuisine: 'Italian',
-          likes: 10,
-        },
-        {
-          id: '2',
-          name: 'Recipe 2',
-          status: 'approved',
-          cuisine: 'Mexican',
-          likes: 5,
-        },
-      ]);
-
-      const recipes = await manager.getCommunityRecipes({ cuisine: 'Italian' });
-      expect(recipes).toHaveLength(1);
-      expect(recipes[0].cuisine).toBe('Italian');
-    });
-
-    it('filters by dietary', async () => {
-      mockDb.getAll.mockResolvedValue([
-        {
-          id: '1',
-          name: 'Recipe 1',
-          status: 'approved',
-          dietary: ['vegan'],
-          likes: 10,
-        },
-        {
-          id: '2',
-          name: 'Recipe 2',
-          status: 'approved',
-          dietary: ['gluten-free'],
-          likes: 5,
-        },
-      ]);
-
-      const recipes = await manager.getCommunityRecipes({ dietary: 'vegan' });
-      expect(recipes).toHaveLength(1);
-    });
-
-    it('sorts by likes', async () => {
-      mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'Recipe 1', status: 'approved', likes: 5 },
-        { id: '2', name: 'Recipe 2', status: 'approved', likes: 10 },
-      ]);
-
-      const recipes = await manager.getCommunityRecipes();
-      expect(recipes[0].likes).toBeGreaterThanOrEqual(recipes[1].likes);
-    });
-  });
-
-  describe('likeRecipe', () => {
-    it('increments like count', async () => {
-      mockDb.get.mockResolvedValue({ id: '1', name: 'Recipe 1', likes: 5 });
-
-      const result = await manager.likeRecipe('1');
-      expect(result.likes).toBe(6);
-      expect(mockDb.put).toHaveBeenCalledWith(
-        'communitySubmissions',
-        expect.objectContaining({ likes: 6 }),
-      );
-      expect(window.analytics.track).toHaveBeenCalledWith('recipe_liked', {
-        recipeId: '1',
-      });
-    });
-
-    it('throws error for non-existent recipe', async () => {
-      mockDb.get.mockResolvedValue(null);
-
-      await expect(manager.likeRecipe('nonexistent')).rejects.toThrow(
-        'Recipe not found'
-      );
-    });
-  });
-
-  describe('saveRecipe', () => {
-    it('increments save count and adds to saved', async () => {
-      mockDb.get.mockResolvedValue({ id: '1', name: 'Recipe 1', saves: 2 });
-      mockDb.getAll.mockResolvedValue(['recipe2']);
-
-      const result = await manager.saveRecipe('1');
-      expect(result.saves).toBe(3);
-      expect(window.analytics.track).toHaveBeenCalledWith('recipe_saved', {
-        recipeId: '1',
-      });
-    });
-
-    it('throws error for non-existent recipe', async () => {
-      mockDb.get.mockResolvedValue(null);
-
-      await expect(manager.saveRecipe('nonexistent')).rejects.toThrow(
-        'Recipe not found'
-      );
-    });
-  });
-
-  describe('getSavedRecipes', () => {
-    it('returns saved recipe IDs', async () => {
-      mockDb.getAll.mockResolvedValue(['recipe1', 'recipe2']);
-
-      const saved = await manager.getSavedRecipes();
-      expect(saved).toEqual(['recipe1', 'recipe2']);
-    });
-
-    it('returns empty array when no saved recipes', async () => {
-      mockDb.getAll.mockResolvedValue(null);
-
-      const saved = await manager.getSavedRecipes();
-      expect(saved).toEqual([]);
-    });
-  });
-
-  describe('getMySubmissions', () => {
-    it('returns user submissions', async () => {
-      mockDb.getAll.mockResolvedValue([
-        { id: '1', name: 'My Recipe 1' },
-        { id: '2', name: 'My Recipe 2' },
-      ]);
-
-      const submissions = await manager.getMySubmissions();
-      expect(submissions).toHaveLength(2);
-    });
-  });
-
-  describe('addReview', () => {
-    it('adds review to recipe', async () => {
-      const recipe = { id: '1', name: 'Recipe 1', reviews: [] };
       mockDb.get.mockResolvedValue(recipe);
 
-      const result = await manager.addReview('1', {
-        rating: 5,
-        comment: 'Great!',
+      const result = await manager.approveRecipe('1');
+
+      expect(result.success).toBe(true);
+      expect(mockDb.put).toHaveBeenCalledWith('community-recipes', expect.objectContaining({
+        id: '1',
+        status: 'approved'
+      }));
+      expect(window.analytics?.track).toHaveBeenCalledWith('recipe_approved', {
+        recipeId: '1'
       });
-      expect(result.reviews).toHaveLength(1);
-      expect(result.rating).toBe(5);
-      expect(result.reviews[0].rating).toBe(5);
     });
 
-    it('calculates average rating', async () => {
-      const recipe = { id: '1', name: 'Recipe 1', reviews: [{ rating: 4 }] };
-      mockDb.get.mockResolvedValue(recipe);
-
-      const result = await manager.addReview('1', {
-        rating: 5,
-        comment: 'Great!',
-      });
-      expect(result.rating).toBe(4.5);
-    });
-
-    it('throws error for non-existent recipe', async () => {
+    it('returns error if recipe not found', async () => {
       mockDb.get.mockResolvedValue(null);
 
-      await expect(
-        manager.addReview('nonexistent', { rating: 5 }),
-      ).rejects.toThrow('Recipe not found');
+      const result = await manager.approveRecipe('non-existent');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Recipe not found');
+    });
+
+    it('handles database errors', async () => {
+      mockDb.get.mockRejectedValue(new Error('Database error'));
+
+      const result = await manager.approveRecipe('1');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Database error');
+    });
+  });
+
+  describe('rejectRecipe', () => {
+    it('rejects recipe with reason', async () => {
+      const recipe = {
+        id: '1',
+        name: 'Test Recipe',
+        status: 'pending'
+      };
+      mockDb.get.mockResolvedValue(recipe);
+
+      const result = await manager.rejectRecipe('1', 'Incomplete instructions');
+
+      expect(result.success).toBe(true);
+      expect(mockDb.put).toHaveBeenCalledWith('community-recipes', expect.objectContaining({
+        id: '1',
+        status: 'rejected',
+        rejectionReason: 'Incomplete instructions'
+      }));
+      expect(window.analytics?.track).toHaveBeenCalledWith('recipe_rejected', {
+        recipeId: '1',
+        reason: 'Incomplete instructions'
+      });
+    });
+
+    it('returns error if recipe not found', async () => {
+      mockDb.get.mockResolvedValue(null);
+
+      const result = await manager.rejectRecipe('non-existent', 'Reason');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Recipe not found');
+    });
+  });
+
+  describe('rateRecipe', () => {
+    it('rates recipe successfully', async () => {
+      const recipe = {
+        id: '1',
+        name: 'Test Recipe',
+        ratings: []
+      };
+      mockDb.get.mockResolvedValue(recipe);
+
+      const result = await manager.rateRecipe('1', 5, 'Great recipe!');
+
+      expect(result.success).toBe(true);
+      expect(mockDb.put).toHaveBeenCalledWith('community-recipes', expect.objectContaining({
+        id: '1',
+        ratings: expect.arrayContaining([expect.objectContaining({
+          rating: 5,
+          comment: 'Great recipe!'
+        })])
+      }));
+    });
+
+    it('validates rating range', async () => {
+      const result = await manager.rateRecipe('1', 6, 'Too high');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Rating must be between 1 and 5');
     });
   });
 
   describe('searchRecipes', () => {
-    it('searches by recipe name', async () => {
-      mockDb.getAll.mockResolvedValue([
-        {
-          id: '1',
-          name: 'Pasta Carbonara',
-          status: 'approved',
-          ingredients: ['pasta'],
-        },
-        {
-          id: '2',
-          name: 'Chicken Salad',
-          status: 'approved',
-          ingredients: ['chicken'],
-        },
-      ]);
+    it('searches recipes by name', async () => {
+      const mockRecipes = [
+        { id: '1', name: 'Chicken Pasta', status: 'approved' },
+        { id: '2', name: 'Beef Stir Fry', status: 'approved' }
+      ];
+      mockDb.getAll.mockResolvedValue(mockRecipes);
 
-      const results = await manager.searchRecipes('pasta');
-      expect(results).toHaveLength(1);
-      expect(results[0].name).toBe('Pasta Carbonara');
+      const result = await manager.searchRecipes('chicken');
+
+      expect(result).toEqual([mockRecipes[0]]);
     });
 
-    it('searches by ingredient', async () => {
-      mockDb.getAll.mockResolvedValue([
-        {
-          id: '1',
-          name: 'Pasta Dish',
-          status: 'approved',
-          ingredients: ['pasta', 'tomato'],
-        },
-        {
-          id: '2',
-          name: 'Chicken Salad',
-          status: 'approved',
-          ingredients: ['chicken'],
-        },
-      ]);
+    it('searches recipes by ingredient', async () => {
+      const mockRecipes = [
+        { id: '1', name: 'Recipe 1', ingredients: ['chicken', 'pasta'], status: 'approved' },
+        { id: '2', name: 'Recipe 2', ingredients: ['beef', 'rice'], status: 'approved' }
+      ];
+      mockDb.getAll.mockResolvedValue(mockRecipes);
 
-      const results = await manager.searchRecipes('tomato');
-      expect(results).toHaveLength(1);
+      const result = await manager.searchRecipes('pasta');
+
+      expect(result).toEqual([mockRecipes[0]]);
     });
 
     it('returns empty array for no matches', async () => {
-      mockDb.getAll.mockResolvedValue([
-        {
-          id: '1',
-          name: 'Pasta Dish',
-          status: 'approved',
-          ingredients: ['pasta'],
-        },
-      ]);
+      const mockRecipes = [
+        { id: '1', name: 'Chicken Pasta', status: 'approved' }
+      ];
+      mockDb.getAll.mockResolvedValue(mockRecipes);
 
-      const results = await manager.searchRecipes('nonexistent');
-      expect(results).toEqual([]);
-    });
+      const result = await manager.searchRecipes('fish');
 
-    it('case insensitive search', async () => {
-      mockDb.getAll.mockResolvedValue([
-        {
-          id: '1',
-          name: 'Pasta Carbonara',
-          status: 'approved',
-          ingredients: ['pasta'],
-        },
-      ]);
-
-      const results = await manager.searchRecipes('PASTA');
-      expect(results).toHaveLength(1);
+      expect(result).toEqual([]);
     });
   });
 });

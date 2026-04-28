@@ -226,6 +226,73 @@ class PushNotificationManager {
   }
 
   /**
+   * Enable a notification type (convenience method for tests)
+   */
+  async enableType(type: string | { id: string }) {
+    const typeId = typeof type === 'string' ? type : type.id;
+    return this.setTypeEnabled(typeId, true);
+  }
+
+  /**
+   * Disable a notification type (convenience method for tests)
+   */
+  async disableType(type: string | { id: string }) {
+    const typeId = typeof type === 'string' ? type : type.id;
+    return this.setTypeEnabled(typeId, false);
+  }
+
+  /**
+   * Check if a notification type is enabled (convenience method for tests)
+   */
+  isTypeEnabled(type: string | { id: string }): boolean {
+    const typeId = typeof type === 'string' ? type : type.id;
+    return this.typeSettings[typeId]?.enabled === true;
+  }
+
+  /**
+   * Schedule a notification (convenience method for tests)
+   */
+  async schedule(notification: { type: string | { id: string }; title: string; body: string; scheduledTime?: Date }): Promise<string> {
+    const { type, title, body, scheduledTime } = notification;
+    const typeId = typeof type === 'string' ? type : type.id;
+
+    if (!NOTIFICATION_TYPES[typeId as keyof typeof NOTIFICATION_TYPES]) {
+      throw new Error('Invalid notification data');
+    }
+
+    if (scheduledTime && scheduledTime.getTime() <= Date.now()) {
+      throw new Error('Scheduled time must be in the future');
+    }
+
+    const id = `${typeId}-${Date.now()}`;
+    this.scheduledNotifications.set(id, {
+      typeId,
+      title,
+      body,
+      scheduledTime,
+    });
+
+    return id;
+  }
+
+  /**
+   * Cancel a scheduled notification (convenience method for tests)
+   */
+  async cancel(id: string): Promise<void> {
+    if (!this.scheduledNotifications.has(id)) {
+      throw new Error('Notification not found');
+    }
+    this.scheduledNotifications.delete(id);
+  }
+
+  /**
+   * Get all notification types (convenience method for tests)
+   */
+  getAllTypes() {
+    return Object.values(NOTIFICATION_TYPES);
+  }
+
+  /**
    * Show immediate notification
    */
   async show(title, options = {}) {

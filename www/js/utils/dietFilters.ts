@@ -1,5 +1,5 @@
 // @ts-check
-const DIET_KEYWORDS = {
+const DIET_KEYWORDS: Record<string, string[]> = {
   meat: [
     'chicken',
     'beef',
@@ -74,19 +74,19 @@ const DIET_KEYWORDS = {
   ],
 };
 
-const DIET_RESTRICTIONS = {
+const DIET_RESTRICTIONS: Record<string, string[][]> = {
   vegetarian: [DIET_KEYWORDS.meat],
   vegan: [DIET_KEYWORDS.meat, DIET_KEYWORDS.dairy, DIET_KEYWORDS.eggs],
   'gluten-free': [DIET_KEYWORDS.gluten],
 };
 
-export function recipeHasAny(recipe, keywords) {
-  return recipe.ingredients.some((ing) =>
+export function recipeHasAny(recipe: any, keywords: string[]): boolean {
+  return recipe.ingredients.some((ing: string) =>
     keywords.some((k) => ing.includes(k))
   );
 }
 
-export function passesDiet(recipe, diet) {
+export function passesDiet(recipe: any, diet: string | string[]): boolean {
   const diets = Array.isArray(diet)
     ? diet
     : diet && diet !== 'none'
@@ -96,19 +96,19 @@ export function passesDiet(recipe, diet) {
   return diets.every((d) => {
     const groups = DIET_RESTRICTIONS[d];
     if (!groups) return true;
-    return groups.every((group) => !recipeHasAny(recipe, group));
+    return groups.every((group: string[]) => !recipeHasAny(recipe, group));
   });
 }
 
-export function passesAllergy(recipe, allergy) {
+export function passesAllergy(recipe: any, allergy: string): boolean {
   if (!allergy || allergy === 'none') return true;
   const kws = DIET_KEYWORDS[allergy];
   if (!kws) return true;
   return !recipeHasAny(recipe, kws);
 }
 
-export function getAllergensInRecipe(recipe, selectedAllergies) {
-  const found = [];
+export function getAllergensInRecipe(recipe: any, selectedAllergies: string[]): string[] {
+  const found: string[] = [];
   if (!selectedAllergies || selectedAllergies.length === 0) return found;
   for (const allergy of selectedAllergies) {
     const kws = DIET_KEYWORDS[allergy];
@@ -119,16 +119,16 @@ export function getAllergensInRecipe(recipe, selectedAllergies) {
   return found;
 }
 
-export function passesCuisine(recipe, cuisine) {
+export function passesCuisine(recipe: any, cuisine: string): boolean {
   if (!cuisine || cuisine === 'all') return true;
   const text = ((recipe.category || '') + ' ' + recipe.name).toLowerCase();
   return text.includes(cuisine.toLowerCase().replace('-', ' '));
 }
 
-export function normalizeCuisine(cuisine) {
+export function normalizeCuisine(cuisine: string): string {
   if (!cuisine) return 'other';
   const normalized = cuisine.toLowerCase().trim();
-  const cuisineMap = {
+  const cuisineMap: Record<string, string> = {
     italian: 'italian',
     pizza: 'italian',
     pasta: 'italian',

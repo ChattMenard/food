@@ -7,6 +7,8 @@ import DOMPurify from 'dompurify';
  */
 
 class Sanitizer {
+  defaultConfig: any;
+
   constructor() {
     // Default configuration for safe HTML
     this.defaultConfig = {
@@ -30,9 +32,9 @@ class Sanitizer {
    * @param {Object} config - Optional sanitization config
    * @returns {string} - Safe HTML string
    */
-  sanitize(dirty, config = {}) {
+  sanitize(dirty: string, config: any = {}): string {
     const finalConfig = { ...this.defaultConfig, ...config };
-    return DOMPurify.sanitize(dirty, finalConfig);
+    return DOMPurify.sanitize(dirty, finalConfig) as unknown as string;
   }
 
   /**
@@ -40,7 +42,7 @@ class Sanitizer {
    * @param {string} dirty - Unsafe string
    * @returns {string} - Safe text content
    */
-  sanitizeText(dirty) {
+  sanitizeText(dirty: string): string {
     return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [] });
   }
 
@@ -50,7 +52,7 @@ class Sanitizer {
    * @param {string} tagName - Target element tag
    * @returns {HTMLElement} - Safe DOM element
    */
-  createElement(html, tagName = 'div') {
+  createElement(html: string, tagName: string = 'div'): HTMLElement {
     const sanitized = this.sanitize(html);
     const element = document.createElement(tagName);
     element.innerHTML = sanitized;
@@ -62,7 +64,7 @@ class Sanitizer {
    * @param {string} input - Input string to check
    * @returns {boolean} - True if dangerous content detected
    */
-  isDangerous(input) {
+  isDangerous(input: string): boolean {
     const dangerousPatterns = [
       /<script/i,
       /javascript:/i,
@@ -84,7 +86,7 @@ class Sanitizer {
    * @param {boolean} allowHtml - Whether to allow HTML tags
    * @returns {string} - Safe output
    */
-  sanitizeUserInput(input, allowHtml = false) {
+  sanitizeUserInput(input: string, allowHtml: boolean = false): string {
     if (!input || typeof input !== 'string') {
       return '';
     }
@@ -101,7 +103,7 @@ class Sanitizer {
    * @param {string} url - URL to sanitize
    * @returns {string} - Safe URL
    */
-  sanitizeUrl(url) {
+  sanitizeUrl(url: string): string {
     if (!url || typeof url !== 'string') {
       return '#';
     }
@@ -127,11 +129,11 @@ class Sanitizer {
 const sanitizer = new Sanitizer();
 
 // Export convenience functions
-export const sanitize = (dirty, config) => sanitizer.sanitize(dirty, config);
-export const sanitizeText = (dirty) => sanitizer.sanitizeText(dirty);
-export const createElement = (html, tagName) => sanitizer.createElement(html, tagName);
-export const isDangerous = (input) => sanitizer.isDangerous(input);
-export const sanitizeUserInput = (input, allowHtml) => sanitizer.sanitizeUserInput(input, allowHtml);
-export const sanitizeUrl = (url) => sanitizer.sanitizeUrl(url);
+export const sanitize = (dirty: string, config: any = {}) => sanitizer.sanitize(dirty, config);
+export const sanitizeText = (dirty: string) => sanitizer.sanitizeText(dirty);
+export const createElement = (html: string, tagName: string = 'div') => sanitizer.createElement(html, tagName);
+export const isDangerous = (input: string) => sanitizer.isDangerous(input);
+export const sanitizeUserInput = (input: string, allowHtml: boolean = false) => sanitizer.sanitizeUserInput(input, allowHtml);
+export const sanitizeUrl = (url: string) => sanitizer.sanitizeUrl(url);
 
 export default sanitizer;

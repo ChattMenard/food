@@ -3,7 +3,7 @@
  * Global setup for test environment
  */
 
-require('fake-indexeddb/auto');
+import 'fake-indexeddb/auto';
 
 // Polyfill structuredClone for Node.js environment
 if (!global.structuredClone) {
@@ -59,7 +59,6 @@ global.fetch = jest.fn(() =>
         text: () => Promise.resolve('{}')
     })
 );
-
 
 // Reset mocks before each test
 beforeEach(() => {

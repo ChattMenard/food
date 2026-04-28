@@ -41,7 +41,7 @@ export class CacheManager {
    * @param {string} key - Cache key
    * @returns {any|null} Cached value or null if expired/missing
    */
-  get(key) {
+  get(key: string): any {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
@@ -64,7 +64,7 @@ export class CacheManager {
    * @param {string} key - Cache key
    * @param {any} value - Value to cache
    */
-  set(key, value) {
+  set(key: string, value: any): void {
     // Evict if at capacity (LRU - remove least recently used)
     if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
       this.evictLRU();
@@ -173,7 +173,7 @@ export class CacheManager {
     } catch (error) {
       console.warn('[CacheManager] Failed to save cache:', error);
       // If storage fails (quota exceeded), clear and continue
-      if (error.name === 'QuotaExceededError') {
+      if ((error as Error).name === 'QuotaExceededError') {
         this.evictLRU();
       }
     }

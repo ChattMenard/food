@@ -7,6 +7,8 @@
 import { App } from '@capacitor/app';
 
 export class DeepLinkingManager {
+  urlHandlers: Map<string, Function>;
+
   constructor() {
     this.urlHandlers = new Map();
   }
@@ -14,10 +16,10 @@ export class DeepLinkingManager {
   /**
    * Initialize deep linking
    */
-  async init() {
+  async init(): Promise<void> {
     try {
       // Handle incoming app URLs
-      App.addListener('appUrlOpen', (event) => {
+      App.addListener('appUrlOpen', (event: any) => {
         this.handleUrl(event.url);
       });
 
@@ -38,7 +40,7 @@ export class DeepLinkingManager {
    * @param {string} path - URL path pattern
    * @param {Function} handler - Handler function
    */
-  registerHandler(path, handler) {
+  registerHandler(path: string, handler: Function): void {
     this.urlHandlers.set(path, handler);
   }
 
@@ -46,7 +48,7 @@ export class DeepLinkingManager {
    * Handle incoming URL
    * @param {string} url - Incoming URL
    */
-  handleUrl(url) {
+  handleUrl(url: string): void {
     console.log('[DeepLinking] Handling URL:', url);
 
     try {
@@ -74,7 +76,7 @@ export class DeepLinkingManager {
    * @param {Object} params - URL parameters
    * @param {string} url - Full URL
    */
-  defaultHandler(params, url) {
+  defaultHandler(params: any, url: string): void {
     console.log('[DeepLinking] No handler for:', url);
     // Navigate to home by default
     window.location.hash = '';
@@ -85,7 +87,7 @@ export class DeepLinkingManager {
    * @param {string} mealPlanId - Meal plan ID
    * @returns {string} Deep link URL
    */
-  generateMealPlanLink(mealPlanId) {
+  generateMealPlanLink(mealPlanId: string): string {
     return `main://meal-plan/${mealPlanId}`;
   }
 
@@ -94,7 +96,7 @@ export class DeepLinkingManager {
    * @param {number} recipeId - Recipe ID
    * @returns {string} Deep link URL
    */
-  generateRecipeLink(recipeId) {
+  generateRecipeLink(recipeId: number): string {
     return `main://recipe/${recipeId}`;
   }
 
@@ -103,16 +105,16 @@ export class DeepLinkingManager {
    * @param {string} listId - Shopping list ID
    * @returns {string} Deep link URL
    */
-  generateShoppingListLink(listId) {
+  generateShoppingListLink(listId: string): string {
     return `main://shopping-list/${listId}`;
   }
 
   /**
    * Register built-in handlers
    */
-  registerBuiltInHandlers() {
+  registerBuiltInHandlers(): void {
     // Meal plan handler
-    this.registerHandler('/meal-plan/', (params) => {
+    this.registerHandler('/meal-plan/', (params: any) => {
       const planId = params.id || params.planId;
       if (planId) {
         // Import meal plan logic here
@@ -122,7 +124,7 @@ export class DeepLinkingManager {
     });
 
     // Recipe handler
-    this.registerHandler('/recipe/', (params) => {
+    this.registerHandler('/recipe/', (params: any) => {
       const recipeId = params.id;
       if (recipeId) {
         // Open recipe detail logic here
@@ -133,7 +135,7 @@ export class DeepLinkingManager {
     });
 
     // Shopping list handler
-    this.registerHandler('/shopping-list/', (params) => {
+    this.registerHandler('/shopping-list/', (params: any) => {
       const listId = params.id;
       if (listId) {
         console.log('[DeepLinking] Opening shopping list:', listId);
@@ -144,7 +146,7 @@ export class DeepLinkingManager {
 }
 
 // Global deep linking instance
-let globalDeepLinking = null;
+let globalDeepLinking: DeepLinkingManager | null = null;
 
 /**
  * Get or create the global deep linking manager

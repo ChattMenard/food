@@ -10,7 +10,7 @@
  * @param {Object} options - Retry options
  * @returns {Promise<any>}
  */
-export async function retryWithBackoff(requestFn, options = {}) {
+export async function retryWithBackoff(requestFn: () => Promise<any>, options: any = {}): Promise<any> {
   const {
     maxRetries = 3,
     initialDelay = 1000,
@@ -32,11 +32,11 @@ export async function retryWithBackoff(requestFn, options = {}) {
 
       // Check if we should retry
       const isRetryable = retryableErrors.some(
-        (errType) =>
-          error.name === errType ||
-          error.message?.includes(errType.toLowerCase()) ||
-          error.message?.includes('network') ||
-          error.message?.includes('fetch')
+        (errType: string) =>
+          (error as Error).name === errType ||
+          (error as Error).message?.includes(errType.toLowerCase()) ||
+          (error as Error).message?.includes('network') ||
+          (error as Error).message?.includes('fetch')
       );
 
       const customShouldRetry = shouldRetry
@@ -70,7 +70,7 @@ export async function retryWithBackoff(requestFn, options = {}) {
  * @param {Object} retryOptions - Retry options
  * @returns {Promise<Response>}
  */
-export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
+export async function fetchWithRetry(url: string, options: any = {}, retryOptions: any = {}): Promise<Response> {
   const { timeout = 30000, ...fetchOptions } = options;
 
   const requestFn = async () => {
@@ -106,7 +106,7 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
  * @param {Object} retryOptions - Retry options
  * @returns {Promise<any>}
  */
-export async function fetchJSONWithRetry(url, options = {}, retryOptions = {}) {
+export async function fetchJSONWithRetry(url: string, options: any = {}, retryOptions: any = {}): Promise<any> {
   const response = await fetchWithRetry(url, options, retryOptions);
   return response.json();
 }
@@ -119,12 +119,12 @@ export async function fetchJSONWithRetry(url, options = {}, retryOptions = {}) {
  * @returns {Promise<Array>} Array of responses
  */
 export async function batchFetchWithRetry(
-  urls,
-  options = {},
-  retryOptions = {}
-) {
+  urls: string[],
+  options: any = {},
+  retryOptions: any = {}
+): Promise<any[]> {
   const results = await Promise.allSettled(
-    urls.map((url) => fetchWithRetry(url, options, retryOptions))
+    urls.map((url: string) => fetchWithRetry(url, options, retryOptions))
   );
 
   return results.map((result, index) => {
@@ -177,6 +177,10 @@ export async function checkOnlineStatus(maxAttempts = 3) {
  * Queue requests for when offline, then sync when online
  */
 export class OfflineRequestQueue {
+  queue: any[];
+  isProcessing: boolean;
+  storageKey: string;
+
   constructor() {
     this.queue = [];
     this.isProcessing = false;
@@ -216,7 +220,7 @@ export class OfflineRequestQueue {
    * Add a request to the queue
    * @param {Object} request - Request object with url, options, and metadata
    */
-  add(request) {
+  add(request: any): void {
     this.queue.push({
       ...request,
       timestamp: Date.now(),
@@ -300,7 +304,7 @@ export class OfflineRequestQueue {
 }
 
 // Global queue instance
-let globalQueue = null;
+let globalQueue: OfflineRequestQueue | null = null;
 
 /**
  * Get or create the global offline request queue

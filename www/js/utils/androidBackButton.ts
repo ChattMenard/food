@@ -7,6 +7,10 @@
 import { App } from '@capacitor/app';
 
 export class AndroidBackButtonHandler {
+  history: any[];
+  maxHistory: number;
+  currentTab: string;
+
   constructor() {
     this.history = [];
     this.maxHistory = 20;
@@ -16,9 +20,9 @@ export class AndroidBackButtonHandler {
   /**
    * Initialize back button handler
    */
-  async init() {
+  async init(): Promise<void> {
     try {
-      App.addListener('backButton', ({ canGoBack }) => {
+      App.addListener('backButton', ({ canGoBack }: any) => {
         this.handleBackButton(canGoBack);
       });
 
@@ -32,9 +36,9 @@ export class AndroidBackButtonHandler {
    * Handle back button press
    * @param {boolean} canGoBack - Whether the web view can go back
    */
-  handleBackButton(canGoBack) {
+  handleBackButton(canGoBack: boolean): void {
     // Check if there's an open modal
-    const modal = document.querySelector('[role="dialog"]');
+    const modal: HTMLElement | null = document.querySelector('[role="dialog"]');
     if (modal && !modal.classList.contains('hidden')) {
       this.closeModal(modal);
       return;
@@ -63,7 +67,7 @@ export class AndroidBackButtonHandler {
    * Close a modal
    * @param {HTMLElement} modal - Modal element
    */
-  closeModal(modal) {
+  closeModal(modal: HTMLElement): void {
     modal.classList.add('hidden');
     // Dispatch close event if needed
     modal.dispatchEvent(new CustomEvent('modal-closed'));
@@ -72,7 +76,7 @@ export class AndroidBackButtonHandler {
   /**
    * Navigate back in tabs
    */
-  navigateBackInTabs() {
+  navigateBackInTabs(): void {
     const tabs = ['pantry', 'meals', 'plan', 'shop'];
     const currentIndex = tabs.indexOf(this.currentTab);
 
@@ -90,7 +94,7 @@ export class AndroidBackButtonHandler {
    * Switch to a specific tab
    * @param {string} tabName - Tab name
    */
-  switchTab(tabName) {
+  switchTab(tabName: string): void {
     this.currentTab = tabName;
     this.pushHistory({ type: 'tab', tab: tabName });
 
@@ -107,7 +111,7 @@ export class AndroidBackButtonHandler {
    * Push state to history
    * @param {Object} state - State object
    */
-  pushHistory(state) {
+  pushHistory(state: any): void {
     this.history.push({ ...state, timestamp: Date.now() });
 
     // Limit history size
@@ -120,7 +124,7 @@ export class AndroidBackButtonHandler {
    * Restore state from history
    * @param {Object} state - State to restore
    */
-  restoreState(state) {
+  restoreState(state: any): void {
     switch (state.type) {
       case 'tab':
         this.switchTab(state.tab);
@@ -139,7 +143,7 @@ export class AndroidBackButtonHandler {
    * @param {string} modalType - Modal type
    * @param {Object} data - Modal data
    */
-  openModal(modalType, data = {}) {
+  openModal(modalType: string, data: any = {}): void {
     this.pushHistory({ type: 'modal', modalType, data });
     // Modal opening logic would be here
   }
@@ -147,7 +151,7 @@ export class AndroidBackButtonHandler {
   /**
    * Show exit confirmation dialog
    */
-  showExitConfirmation() {
+  showExitConfirmation(): void {
     const confirmed = confirm('Exit Main?');
     if (confirmed) {
       App.exitApp();
@@ -158,20 +162,20 @@ export class AndroidBackButtonHandler {
    * Set current tab
    * @param {string} tabName - Tab name
    */
-  setCurrentTab(tabName) {
+  setCurrentTab(tabName: string): void {
     this.currentTab = tabName;
   }
 
   /**
    * Clear history
    */
-  clearHistory() {
+  clearHistory(): void {
     this.history = [];
   }
 }
 
 // Global back button handler instance
-let globalBackButtonHandler = null;
+let globalBackButtonHandler: AndroidBackButtonHandler | null = null;
 
 /**
  * Get or create the global back button handler

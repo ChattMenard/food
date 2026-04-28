@@ -48,7 +48,8 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   
   transform: {
-    '^.+\\.(js|jsx)$': 'babel-jest'
+    '^.+\\.(js|jsx)$': 'babel-jest',
+    '^.+\\.(ts|tsx)$': 'ts-jest'
   },
   
   collectCoverageFrom: [

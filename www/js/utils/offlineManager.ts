@@ -5,6 +5,13 @@
  */
 
 class OfflineManager {
+  isOnline: boolean;
+  loadingStates: Map<string, any>;
+  offlineQueue: any[];
+  maxQueueSize: number;
+  retryAttempts: Map<string, number>;
+  maxRetries: number;
+
   constructor() {
     this.isOnline = navigator.onLine;
     this.loadingStates = new Map();
@@ -17,7 +24,7 @@ class OfflineManager {
     this.setupPeriodicCheck();
   }
 
-  setupEventListeners() {
+  setupEventListeners(): void {
     // Listen for online/offline events
     window.addEventListener('online', () => {
       this.handleOnline();
@@ -35,14 +42,14 @@ class OfflineManager {
     });
   }
 
-  setupPeriodicCheck() {
+  setupPeriodicCheck(): void {
     // Check connection every 30 seconds
     setInterval(() => {
       this.checkConnection();
     }, 30000);
   }
 
-  async checkConnection() {
+  async checkConnection(): Promise<boolean> {
     try {
       // Try to fetch a small resource to verify connectivity
       const response = await fetch('/favicon.ico', {
@@ -71,7 +78,7 @@ class OfflineManager {
     }
   }
 
-  handleOnline() {
+  handleOnline(): void {
     this.isOnline = true;
     this.showNotification('Back online!', 'success');
     this.processOfflineQueue();
@@ -79,14 +86,14 @@ class OfflineManager {
     this.enableInteractiveElements();
   }
 
-  handleOffline() {
+  handleOffline(): void {
     this.isOnline = false;
     this.showNotification('You\'re offline. Some features may be limited.', 'warning');
     this.showOfflineIndicator();
     this.disableNonEssentialElements();
   }
 
-  showNotification(message, type = 'info') {
+  showNotification(message: string, type: string = 'info'): void {
     // Create or update notification element
     let notification = document.getElementById('offline-notification');
     

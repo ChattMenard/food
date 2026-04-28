@@ -17,6 +17,11 @@ declare global {
     isAIQuery?: boolean;
     IS_DEVELOPMENT?: boolean;
     analytics?: any;
+    ANALYTICS_ID?: string;
+    gtag?: (...args: any[]) => void;
+    dataLayer?: any[];
+    errorBoundary?: any;
+    Capacitor?: any;
   }
 }
 

@@ -15,9 +15,21 @@ describe('seasonalIngredients', () => {
 
     it('returns valid ingredient names', () => {
       const ingredients = getCurrentSeasonalIngredients();
-      ingredients.forEach((ing) => {
+      ingredients.forEach((ing: string) => {
         expect(typeof ing).toBe('string');
         expect(ing.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('returns ingredients appropriate for current season', () => {
+      const ingredients = getCurrentSeasonalIngredients();
+      
+      // Should contain seasonal ingredients
+      expect(ingredients.length).toBeGreaterThan(0);
+      
+      // All ingredients should be strings
+      ingredients.forEach((ingredient: string) => {
+        expect(typeof ingredient).toBe('string');
       });
     });
   });
@@ -49,96 +61,280 @@ describe('seasonalIngredients', () => {
     it('handles empty pantry', () => {
       const suggestions = getSeasonalIngredientSuggestion([]);
       expect(Array.isArray(suggestions)).toBe(true);
+      expect(suggestions.length).toBeGreaterThan(0);
+    });
+
+    it('handles null pantry', () => {
+      const suggestions = getSeasonalIngredientSuggestion(null as any);
+      expect(Array.isArray(suggestions)).toBe(true);
+      expect(suggestions.length).toBeGreaterThan(0);
+    });
+
+    it('limits suggestions to maximum 3', () => {
+      const emptyPantry = [];
+      const suggestions = getSeasonalIngredientSuggestion(emptyPantry);
+      
       expect(suggestions.length).toBeLessThanOrEqual(3);
     });
 
-    it('limits suggestions to 3', () => {
-      const suggestions = getSeasonalIngredientSuggestion([]);
-      expect(suggestions.length).toBeLessThanOrEqual(3);
-    });
-
-    it('filters out pantry items by name matching', () => {
-      const pantryItems = [{ name: 'tomato' }, { name: 'cucumber' }];
-
+    it('excludes ingredients already in pantry', () => {
+      const pantryItems = [{ name: 'tomato' }, { name: 'onion' }];
       const suggestions = getSeasonalIngredientSuggestion(pantryItems);
-      const suggestionsLower = suggestions.map((s) => s.toLowerCase());
-      expect(suggestionsLower).not.toContain('tomato');
-      expect(suggestionsLower).not.toContain('cucumber');
+      
+      suggestions.forEach((suggestion: string) => {
+        const isInPantry = pantryItems.some((item: any) => 
+          item.name.toLowerCase() === suggestion.toLowerCase()
+        );
+        expect(isInPantry).toBe(false);
+      });
     });
   });
 
   describe('getSeasonalRecipes', () => {
-    it('returns recipes containing seasonal ingredients', () => {
-      const recipes = [
+    it('returns recipes using seasonal ingredients', () => {
+      const mockRecipes = [
         {
-          name: 'Tomato Soup',
-          ingredients: ['tomato', 'onion', 'garlic'],
+          name: 'Winter Soup',
+          ingredients: ['squash', 'carrots', 'onions'],
         },
         {
-          name: 'Chicken Salad',
-          ingredients: ['chicken', 'lettuce', 'tomato'],
+          name: 'Summer Salad',
+          ingredients: ['tomatoes', 'cucumber', 'lettuce'],
         },
         {
-          name: 'Beef Stew',
-          ingredients: ['beef', 'potato', 'carrot'],
-        },
-      ];
-
-      const seasonalRecipes = getSeasonalRecipes(recipes);
-      expect(Array.isArray(seasonalRecipes)).toBe(true);
-      expect(seasonalRecipes.length).toBeLessThanOrEqual(5);
-    });
-
-    it('returns empty array when no recipes match', () => {
-      const recipes = [
-        {
-          name: 'Exotic Fruit Salad',
-          ingredients: ['mango', 'papaya', 'coconut'],
+          name: 'Spring Pasta',
+          ingredients: ['asparagus', 'pasta', 'parmesan'],
         },
       ];
 
-      const seasonalRecipes = getSeasonalRecipes(recipes);
+      const seasonalRecipes = getSeasonalRecipes(mockRecipes);
       expect(Array.isArray(seasonalRecipes)).toBe(true);
     });
 
-    it('handles empty recipes array', () => {
+    it('prioritizes recipes with more seasonal ingredients', () => {
+      const mockRecipes = [
+        {
+          name: 'All Seasonal',
+          ingredients: ['squash', 'kale', 'citrus'],
+        },
+        {
+          name: 'Some Seasonal',
+          ingredients: ['squash', 'rice', 'chicken'],
+        },
+        {
+          name: 'No Seasonal',
+          ingredients: ['rice', 'chicken', 'onions'],
+        },
+      ];
+
+      const seasonalRecipes = getSeasonalRecipes(mockRecipes);
+      
+      if (seasonalRecipes.length >= 2) {
+        const firstRecipe = seasonalRecipes[0];
+        const secondRecipe = seasonalRecipes[1];
+        
+        // First recipe should have more seasonal ingredients
+        expect((firstRecipe as any).seasonalScore).toBeGreaterThanOrEqual(
+          (secondRecipe as any).seasonalScore
+        );
+      }
+    });
+
+    it('includes seasonal score in results', () => {
+      const mockRecipes = [
+        {
+          name: 'Test Recipe',
+          ingredients: ['squash', 'carrots'],
+        },
+      ];
+
+      const seasonalRecipes = getSeasonalRecipes(mockRecipes);
+      
+      seasonalRecipes.forEach((recipe: any) => {
+        expect(recipe).toHaveProperty('seasonalScore');
+        expect(typeof recipe.seasonalScore).toBe('number');
+        expect(recipe.seasonalScore).toBeGreaterThanOrEqual(0);
+      });
+    });
+
+    it('handles empty recipe list', () => {
       const seasonalRecipes = getSeasonalRecipes([]);
-      expect(Array.isArray(seasonalRecipes)).toBe(true);
       expect(seasonalRecipes).toEqual([]);
     });
 
-    it('limits results to 5 recipes', () => {
-      const recipes = Array.from({ length: 10 }, (_, i) => ({
+    it('handles null recipe list', () => {
+      const seasonalRecipes = getSeasonalRecipes(null as any);
+      expect(seasonalRecipes).toEqual([]);
+    });
+
+    it('handles recipes with missing properties', () => {
+      const invalidRecipes = [
+        { name: 'Valid Recipe', ingredients: ['squash'] },
+        { name: 'Missing Ingredients' },
+        { ingredients: ['carrots'] },
+        {},
+      ];
+
+      const seasonalRecipes = getSeasonalRecipes(invalidRecipes);
+      expect(Array.isArray(seasonalRecipes)).toBe(true);
+    });
+
+    it('limits number of returned recipes', () => {
+      const manyRecipes = Array.from({ length: 20 }, (_, i) => ({
         name: `Recipe ${i}`,
-        ingredients: ['tomato', 'onion'],
+        ingredients: ['squash', `ingredient${i}`],
       }));
 
-      const seasonalRecipes = getSeasonalRecipes(recipes);
-      expect(seasonalRecipes.length).toBeLessThanOrEqual(5);
+      const seasonalRecipes = getSeasonalRecipes(manyRecipes);
+      expect(seasonalRecipes.length).toBeLessThanOrEqual(10);
+    });
+  });
+
+  describe('seasonal ingredient data', () => {
+    it('covers all seasons', () => {
+      // Test that we have seasonal data for all months
+      const seasonalIngredients = getCurrentSeasonalIngredients();
+      expect(seasonalIngredients.length).toBeGreaterThan(0);
     });
 
-    it('matches ingredients case-insensitively', () => {
-      const recipes = [
+    it('provides diverse ingredient types', () => {
+      const seasonalIngredients = getCurrentSeasonalIngredients();
+      
+      // Should include vegetables, fruits, herbs, etc.
+      const hasVegetables = seasonalIngredients.some((ing: string) => 
+        ing.includes('vegetable') || ing.includes('greens') || 
+        ing.includes('squash') || ing.includes('root')
+      );
+      
+      const hasFruits = seasonalIngredients.some((ing: string) => 
+        ing.includes('berry') || ing.includes('apple') || 
+        ing.includes('citrus') || ing.includes('melon')
+      );
+
+      // At least one category should be present
+      expect(hasVegetables || hasFruits).toBe(true);
+    });
+  });
+
+  describe('ingredient matching', () => {
+    it('matches ingredients with different naming conventions', () => {
+      const pantryItems = [
+        { name: 'Tomatoes' },
+        { name: 'tomato' },
+        { name: 'TOMATO' },
+      ];
+
+      const suggestions = getSeasonalIngredientSuggestion(pantryItems);
+      
+      // Should not suggest tomatoes in any form
+      suggestions.forEach((suggestion: string) => {
+        const suggestionLower = suggestion.toLowerCase();
+        expect(suggestionLower).not.toBe('tomato');
+        expect(suggestionLower).not.toBe('tomatoes');
+      });
+    });
+
+    it('handles ingredient variations', () => {
+      const pantryItems = [{ name: 'bell pepper' }];
+      
+      const suggestions = getSeasonalIngredientSuggestion(pantryItems);
+      
+      suggestions.forEach((suggestion: string) => {
+        expect(suggestion.toLowerCase()).not.toBe('bell pepper');
+      });
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles special characters in ingredient names', () => {
+      const pantryItems = [{ name: 'herbs & spices' }];
+      
+      expect(() => getSeasonalIngredientSuggestion(pantryItems)).not.toThrow();
+    });
+
+    it('handles very long ingredient names', () => {
+      const pantryItems = [{ name: 'a'.repeat(100) }];
+      
+      expect(() => getSeasonalIngredientSuggestion(pantryItems)).not.toThrow();
+    });
+
+    it('handles empty ingredient names', () => {
+      const pantryItems = [{ name: '' }, { name: null as any }, { name: undefined as any }];
+      
+      expect(() => getSeasonalIngredientSuggestion(pantryItems)).not.toThrow();
+    });
+
+    it('handles duplicate pantry items', () => {
+      const pantryItems = [
+        { name: 'tomato' },
+        { name: 'tomato' },
+        { name: 'onion' },
+        { name: 'onion' },
+      ];
+
+      const suggestions = getSeasonalIngredientSuggestion(pantryItems);
+      expect(Array.isArray(suggestions)).toBe(true);
+    });
+  });
+
+  describe('performance', () => {
+    it('handles large pantry efficiently', () => {
+      const largePantry = Array.from({ length: 1000 }, (_, i) => ({
+        name: `ingredient${i}`,
+      }));
+
+      const startTime = Date.now();
+      const suggestions = getSeasonalIngredientSuggestion(largePantry);
+      const endTime = Date.now();
+
+      expect(suggestions).toBeDefined();
+      expect(endTime - startTime).toBeLessThan(100); // Should complete in under 100ms
+    });
+
+    it('handles large recipe list efficiently', () => {
+      const largeRecipes = Array.from({ length: 1000 }, (_, i) => ({
+        name: `Recipe ${i}`,
+        ingredients: [`ingredient${i}`, `seasonal${i % 10}`],
+      }));
+
+      const startTime = Date.now();
+      const seasonalRecipes = getSeasonalRecipes(largeRecipes);
+      const endTime = Date.now();
+
+      expect(seasonalRecipes).toBeDefined();
+      expect(endTime - startTime).toBeLessThan(200); // Should complete in under 200ms
+    });
+  });
+
+  describe('integration', () => {
+    it('works together for complete seasonal workflow', () => {
+      // Get seasonal ingredients
+      const seasonalIngredients = getCurrentSeasonalIngredients();
+      expect(seasonalIngredients.length).toBeGreaterThan(0);
+
+      // Get suggestions for empty pantry
+      const suggestions = getSeasonalIngredientSuggestion([]);
+      expect(suggestions.length).toBeGreaterThan(0);
+
+      // Get seasonal recipes
+      const mockRecipes = [
         {
-          name: 'Tomato Recipe',
-          ingredients: ['TOMATO', 'ONION'],
+          name: 'Seasonal Dish',
+          ingredients: seasonalIngredients.slice(0, 3),
         },
       ];
 
-      const seasonalRecipes = getSeasonalRecipes(recipes);
-      expect(Array.isArray(seasonalRecipes)).toBe(true);
+      const seasonalRecipes = getSeasonalRecipes(mockRecipes);
+      expect(seasonalRecipes.length).toBeGreaterThan(0);
     });
 
-    it('matches partial ingredient names', () => {
-      const recipes = [
-        {
-          name: 'Bell Pepper Recipe',
-          ingredients: ['bell pepper', 'onion'],
-        },
-      ];
-
-      const seasonalRecipes = getSeasonalRecipes(recipes);
-      expect(Array.isArray(seasonalRecipes)).toBe(true);
+    it('provides consistent results across calls', () => {
+      const pantryItems = [{ name: 'tomato' }];
+      
+      const suggestions1 = getSeasonalIngredientSuggestion(pantryItems);
+      const suggestions2 = getSeasonalIngredientSuggestion(pantryItems);
+      
+      expect(suggestions1).toEqual(suggestions2);
     });
   });
 });

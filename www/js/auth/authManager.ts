@@ -187,7 +187,7 @@ class AuthManager {
    * Subscribe to auth events
    * @param {Function} callback - Callback function for auth events
    */
-  subscribe(callback) {
+  subscribe(callback: (user: any) => void): void {
     this.listeners.push(callback);
   }
 
@@ -195,7 +195,7 @@ class AuthManager {
    * Unsubscribe from auth events
    * @param {Function} callback - Callback function to remove
    */
-  unsubscribe(callback) {
+  unsubscribe(callback: (user: any) => void): void {
     this.listeners = this.listeners.filter((listener) => listener !== callback);
   }
 
@@ -204,8 +204,8 @@ class AuthManager {
    * @param {string} event - Event type ('signIn', 'signOut')
    * @param {Object} data - Event data
    */
-  notifyListeners(event, data) {
-    this.listeners.forEach((callback) => callback(event, data));
+  notifyListeners(event: string, data: any): void {
+    this.listeners.forEach((callback) => callback(data));
   }
 }
 

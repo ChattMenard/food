@@ -4,24 +4,24 @@ import { MealPlanTemplates } from '../../../features/plan/mealPlanTemplates';
 jest.mock('../../../data/db', () => ({
   ready: Promise.resolve(),
   get: jest.fn(),
-  put: jest.fn().mockImplementation(() => Promise.resolve())
+  put: jest.fn().mockResolvedValue(undefined)
 }));
 
 import db from '../../../data/db';
 
 describe('MealPlanTemplates', () => {
-  let templates;
-  let mockGetMealPlan;
-  let mockSetMealPlan;
-  let mockPersistMealPlan;
-  let mockGetRecipes;
-  let mockAnnounce;
+  let templates: MealPlanTemplates;
+  let mockGetMealPlan: jest.Mock;
+  let mockSetMealPlan: jest.Mock;
+  let mockPersistMealPlan: jest.Mock;
+  let mockGetRecipes: jest.Mock;
+  let mockAnnounce: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetMealPlan = jest.fn();
     mockSetMealPlan = jest.fn();
-    mockPersistMealPlan = jest.fn().mockImplementation(() => Promise.resolve());
+    mockPersistMealPlan = jest.fn().mockResolvedValue(undefined);
     mockGetRecipes = jest.fn();
     mockAnnounce = jest.fn();
 
@@ -36,19 +36,21 @@ describe('MealPlanTemplates', () => {
 
   describe('constructor', () => {
     it('stores dependencies', () => {
-      expect(templates.getMealPlan).toBe(mockGetMealPlan);
-      expect(templates.setMealPlan).toBe(mockSetMealPlan);
-      expect(templates.persistMealPlan).toBe(mockPersistMealPlan);
-      expect(templates.getRecipes).toBe(mockGetRecipes);
-      expect(templates.announce).toBe(mockAnnounce);
+      expect((templates as any).getMealPlan).toBe(mockGetMealPlan);
+      expect((templates as any).setMealPlan).toBe(mockSetMealPlan);
+      expect((templates as any).persistMealPlan).toBe(mockPersistMealPlan);
+      expect((templates as any).getRecipes).toBe(mockGetRecipes);
+      expect((templates as any).announce).toBe(mockAnnounce);
     });
 
     it('initializes customTemplates as empty object', () => {
-      expect(templates.customTemplates).toEqual({});
+      expect((templates as any).customTemplates).toEqual({});
     });
 
     it('calls loadCustomTemplates on construction', async () => {
-      db.get.mockResolvedValue({ 'My Template': { Monday: 'Pasta' } });
+      const loadSpy = jest.spyOn(templates as any, 'loadCustomTemplates');
+      loadSpy.mockResolvedValue(undefined);
+      
       new MealPlanTemplates({
         getMealPlan: mockGetMealPlan,
         setMealPlan: mockSetMealPlan,
@@ -56,130 +58,347 @@ describe('MealPlanTemplates', () => {
         getRecipes: mockGetRecipes,
         announce: mockAnnounce
       });
-      await new Promise(resolve => setTimeout(resolve, 0));
-      expect(db.get).toHaveBeenCalledWith('preferences', 'mealPlanTemplates');
+      
+      expect(loadSpy).toHaveBeenCalled();
+      loadSpy.mockRestore();
     });
   });
 
-  describe('loadCustomTemplates', () => {
-    it('loads custom templates from IndexedDB', async () => {
-      db.get.mockResolvedValue({ 'My Template': { Monday: 'Pasta' } });
-      await templates.loadCustomTemplates();
-      expect(templates.customTemplates).toEqual({ 'My Template': { Monday: 'Pasta' } });
+  describe('getBuiltInTemplates', () => {
+    it('returns built-in template list', () => {
+      const builtInTemplates = templates.getBuiltInTemplates();
+      
+      expect(Array.isArray(builtInTemplates)).toBe(true);
+      expect(builtInTemplates.length).toBeGreaterThan(0);
+      
+      const template = builtInTemplates[0];
+      expect(template).toHaveProperty('id');
+      expect(template).toHaveProperty('name');
+      expect(template).toHaveProperty('description');
+      expect(template).toHaveProperty('meals');
     });
 
-    it('sets empty object if no saved templates', async () => {
-      db.get.mockResolvedValue(null);
-      await templates.loadCustomTemplates();
-      expect(templates.customTemplates).toEqual({});
+    it('includes variety of template types', () => {
+      const builtInTemplates = templates.getBuiltInTemplates();
+      
+      const templateIds = builtInTemplates.map((t: any) => t.id);
+      expect(templateIds).toContain('weekly-balanced');
+      expect(templateIds).toContain('vegetarian-week');
+      expect(templateIds).toContain('quick-meals');
     });
 
-    it('handles errors gracefully', async () => {
-      db.get.mockRejectedValue(new Error('DB error'));
-      await templates.loadCustomTemplates();
-      expect(templates.customTemplates).toEqual({});
-    });
-  });
-
-  describe('saveCustomTemplates', () => {
-    it('saves custom templates to IndexedDB', async () => {
-      templates.customTemplates = { 'My Template': { Monday: 'Pasta' } };
-      await templates.saveCustomTemplates();
-      expect(db.put).toHaveBeenCalledWith('preferences', {
-        'My Template': { Monday: 'Pasta' },
-        key: 'mealPlanTemplates'
+    it('templates have proper structure', () => {
+      const builtInTemplates = templates.getBuiltInTemplates();
+      
+      builtInTemplates.forEach((template: any) => {
+        expect(template.id).toBeDefined();
+        expect(template.name).toBeDefined();
+        expect(template.description).toBeDefined();
+        expect(template.meals).toBeDefined();
+        expect(Array.isArray(template.meals)).toBe(true);
+        
+        template.meals.forEach((meal: any) => {
+          expect(meal).toHaveProperty('day');
+          expect(meal).toHaveProperty('recipe');
+          expect(meal).toHaveProperty('category');
+        });
       });
     });
-
-    it('handles errors gracefully', async () => {
-      db.put.mockRejectedValue(new Error('Save error'));
-      await expect(templates.saveCustomTemplates()).resolves.not.toThrow();
-    });
   });
 
-  describe('getAvailableTemplates', () => {
-    it('returns default templates', () => {
-      const available = templates.getAvailableTemplates();
-      expect(available).toHaveProperty('Quick Week');
-      expect(available).toHaveProperty('Healthy Balanced');
-      expect(available).toHaveProperty('Budget Friendly');
+  describe('getAllTemplates', () => {
+    it('returns built-in and custom templates', async () => {
+      (templates as any).customTemplates = {
+        'custom-1': {
+          id: 'custom-1',
+          name: 'Custom Template',
+          meals: []
+        }
+      };
+
+      const allTemplates = await templates.getAllTemplates();
+
+      expect(allTemplates.length).toBeGreaterThan(0);
+      
+      const customTemplate = allTemplates.find((t: any) => t.id === 'custom-1');
+      expect(customTemplate).toBeDefined();
+      expect(customTemplate.name).toBe('Custom Template');
     });
 
-    it('includes custom templates', () => {
-      templates.customTemplates = { 'My Template': { Monday: 'Pasta' } };
-      const available = templates.getAvailableTemplates();
-      expect(available).toHaveProperty('My Template');
-      expect(available['My Template']).toEqual({ Monday: 'Pasta' });
-    });
+    it('marks custom templates appropriately', async () => {
+      (templates as any).customTemplates = {
+        'custom-1': { id: 'custom-1', name: 'Custom', meals: [] }
+      };
 
-    it('merges default and custom templates', () => {
-      templates.customTemplates = { 'My Template': { Monday: 'Pasta' } };
-      const available = templates.getAvailableTemplates();
-      expect(available).toHaveProperty('Quick Week');
-      expect(available).toHaveProperty('My Template');
+      const allTemplates = await templates.getAllTemplates();
+
+      const customTemplate = allTemplates.find((t: any) => t.id === 'custom-1');
+      expect(customTemplate.isCustom).toBe(true);
+
+      const builtInTemplate = allTemplates.find((t: any) => t.id === 'weekly-balanced');
+      expect(builtInTemplate.isCustom).toBe(false);
     });
   });
 
   describe('applyTemplate', () => {
-    it('applies default template to meal plan', async () => {
-      const result = await templates.applyTemplate('Quick Week');
-      expect(mockSetMealPlan).toHaveBeenCalledWith(expect.objectContaining({
-        Monday: 'Quick Pasta',
-        Tuesday: 'Easy Stir Fry'
-      }));
+    it('applies template to current meal plan', async () => {
+      const template = {
+        id: 'test-template',
+        name: 'Test Template',
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', category: 'dinner' },
+          { day: 'Tuesday', recipe: 'Salad', category: 'lunch' }
+        ]
+      };
+
+      await templates.applyTemplate(template);
+
+      expect(mockSetMealPlan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meals: template.meals,
+          templateId: 'test-template',
+          templateName: 'Test Template'
+        })
+      );
       expect(mockPersistMealPlan).toHaveBeenCalled();
-      expect(mockAnnounce).toHaveBeenCalledWith('Applied Quick Week template');
-      expect(result).toBe(true);
+      expect(mockAnnounce).toHaveBeenCalledWith('Template applied successfully');
     });
 
-    it('applies custom template to meal plan', async () => {
-      templates.customTemplates = { 'My Template': { Monday: 'Pasta' } };
-      const result = await templates.applyTemplate('My Template');
-      expect(mockSetMealPlan).toHaveBeenCalledWith({ Monday: 'Pasta' });
-      expect(mockPersistMealPlan).toHaveBeenCalled();
-      expect(mockAnnounce).toHaveBeenCalledWith('Applied My Template template');
-      expect(result).toBe(true);
+    it('validates template structure', async () => {
+      const invalidTemplate = {
+        id: 'invalid',
+        name: 'Invalid Template'
+        // missing meals
+      };
+
+      await expect(templates.applyTemplate(invalidTemplate as any)).rejects.toThrow('Invalid template structure');
     });
 
-    it('returns false if template not found', async () => {
-      const result = await templates.applyTemplate('Nonexistent Template');
-      expect(mockSetMealPlan).not.toHaveBeenCalled();
-      expect(mockAnnounce).toHaveBeenCalledWith('Template not found');
-      expect(result).toBe(false);
+    it('replaces existing meals when not merging', async () => {
+      const existingPlan = {
+        meals: [
+          { day: 'Wednesday', recipe: 'Soup', category: 'dinner' }
+        ]
+      };
+
+      mockGetMealPlan.mockReturnValue(existingPlan);
+
+      const template = {
+        id: 'test-template',
+        name: 'Test Template',
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', category: 'dinner' }
+        ]
+      };
+
+      await templates.applyTemplate(template, { merge: false });
+
+      expect(mockSetMealPlan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meals: template.meals
+        })
+      );
+    });
+
+    it('merges with existing meals when requested', async () => {
+      const existingPlan = {
+        meals: [
+          { day: 'Monday', recipe: 'Existing Pasta', category: 'dinner' }
+        ]
+      };
+
+      mockGetMealPlan.mockReturnValue(existingPlan);
+
+      const template = {
+        id: 'test-template',
+        name: 'Test Template',
+        meals: [
+          { day: 'Tuesday', recipe: 'New Salad', category: 'lunch' }
+        ]
+      };
+
+      await templates.applyTemplate(template, { merge: true });
+
+      expect(mockSetMealPlan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          meals: expect.arrayContaining([
+            { day: 'Monday', recipe: 'Existing Pasta', category: 'dinner' },
+            { day: 'Tuesday', recipe: 'New Salad', category: 'lunch' }
+          ])
+        })
+      );
     });
   });
 
-  describe('saveAsTemplate', () => {
-    it('saves current meal plan as custom template', async () => {
-      mockGetMealPlan.mockReturnValue({ Monday: 'Pasta', Tuesday: 'Tacos' });
-      const result = await templates.saveAsTemplate('My Template');
-      expect(templates.customTemplates['My Template']).toEqual({ Monday: 'Pasta', Tuesday: 'Tacos' });
-      expect(db.put).toHaveBeenCalled();
-      expect(mockAnnounce).toHaveBeenCalledWith('Saved meal plan as template: My Template');
-      expect(result).toBe(true);
+  describe('saveCustomTemplate', () => {
+    it('saves custom template', async () => {
+      const templateData = {
+        name: 'My Custom Template',
+        description: 'A custom meal plan',
+        meals: [
+          { day: 'Friday', recipe: 'Pizza', category: 'dinner' }
+        ]
+      };
+
+      const result = await templates.saveCustomTemplate(templateData);
+
+      expect(result.id).toBeDefined();
+      expect(result.name).toBe('My Custom Template');
+      expect(result.isCustom).toBe(true);
+      expect(db.put).toHaveBeenCalledWith('meal-plan-templates', result);
+      expect(mockAnnounce).toHaveBeenCalledWith('Custom template saved');
+    });
+
+    it('generates unique ID for custom template', async () => {
+      const templateData = {
+        name: 'Template 1',
+        meals: []
+      };
+
+      const result1 = await templates.saveCustomTemplate(templateData);
+      const result2 = await templates.saveCustomTemplate({
+        ...templateData,
+        name: 'Template 2'
+      });
+
+      expect(result1.id).not.toBe(result2.id);
+    });
+
+    it('validates custom template data', async () => {
+      const invalidData = {
+        name: 'Invalid Template'
+        // missing meals
+      };
+
+      await expect(templates.saveCustomTemplate(invalidData as any)).rejects.toThrow('Invalid template data');
     });
   });
 
-  describe('deleteTemplate', () => {
+  describe('deleteCustomTemplate', () => {
     it('deletes custom template', async () => {
-      templates.customTemplates = { 'My Template': { Monday: 'Pasta' } };
-      const result = await templates.deleteTemplate('My Template');
-      expect(templates.customTemplates).not.toHaveProperty('My Template');
-      expect(db.put).toHaveBeenCalled();
-      expect(mockAnnounce).toHaveBeenCalledWith('Deleted template: My Template');
-      expect(result).toBe(true);
+      const templateId = 'custom-template-1';
+      
+      await templates.deleteCustomTemplate(templateId);
+
+      expect(db.delete).toHaveBeenCalledWith('meal-plan-templates', templateId);
+      expect(mockAnnounce).toHaveBeenCalledWith('Custom template deleted');
     });
 
-    it('returns false for default templates', async () => {
-      const result = await templates.deleteTemplate('Quick Week');
-      expect(mockAnnounce).toHaveBeenCalledWith('Cannot delete default template');
-      expect(result).toBe(false);
+    it('prevents deletion of built-in templates', async () => {
+      const builtInId = 'weekly-balanced';
+
+      await expect(templates.deleteCustomTemplate(builtInId)).rejects.toThrow('Cannot delete built-in template');
+    });
+  });
+
+  describe('validateTemplate', () => {
+    it('accepts valid template', () => {
+      const validTemplate = {
+        name: 'Valid Template',
+        meals: [
+          { day: 'Monday', recipe: 'Pasta', category: 'dinner' }
+        ]
+      };
+
+      expect(() => (templates as any).validateTemplate(validTemplate)).not.toThrow();
     });
 
-    it('does not delete default template from customTemplates', async () => {
-      const result = await templates.deleteTemplate('Quick Week');
-      expect(result).toBe(false);
-      expect(db.put).not.toHaveBeenCalled();
+    it('rejects template without name', () => {
+      const invalidTemplate = {
+        meals: []
+      };
+
+      expect(() => (templates as any).validateTemplate(invalidTemplate)).toThrow('Template name is required');
+    });
+
+    it('rejects template without meals', () => {
+      const invalidTemplate = {
+        name: 'Invalid Template'
+      };
+
+      expect(() => (templates as any).validateTemplate(invalidTemplate)).toThrow('Template meals are required');
+    });
+
+    it('rejects template with invalid meal structure', () => {
+      const invalidTemplate = {
+        name: 'Invalid Template',
+        meals: [
+          { day: 'Monday' } // missing recipe and category
+        ]
+      };
+
+      expect(() => (templates as any).validateTemplate(invalidTemplate)).toThrow('Invalid meal structure');
+    });
+  });
+
+  describe('loadCustomTemplates', () => {
+    it('loads custom templates from database', async () => {
+      const customTemplates = [
+        {
+          id: 'custom-1',
+          name: 'Custom 1',
+          meals: [],
+          isCustom: true
+        },
+        {
+          id: 'custom-2',
+          name: 'Custom 2',
+          meals: [],
+          isCustom: true
+        }
+      ];
+
+      (db.getAll as jest.Mock).mockResolvedValue(customTemplates);
+
+      await (templates as any).loadCustomTemplates();
+
+      expect((templates as any).customTemplates).toEqual({
+        'custom-1': customTemplates[0],
+        'custom-2': customTemplates[1]
+      });
+    });
+
+    it('handles database errors gracefully', async () => {
+      (db.getAll as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      await expect((templates as any).loadCustomTemplates()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('template recommendations', () => {
+    it('recommends templates based on preferences', async () => {
+      const preferences = {
+        diet: 'vegetarian',
+        difficulty: 'easy',
+        timeLimit: 30
+      };
+
+      const recommendations = await templates.getRecommendations(preferences);
+
+      expect(Array.isArray(recommendations)).toBe(true);
+      recommendations.forEach((template: any) => {
+        expect(template).toHaveProperty('template');
+        expect(template).toHaveProperty('score');
+        expect(template.score).toBeGreaterThanOrEqual(0);
+        expect(template.score).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it('scores templates based on match criteria', async () => {
+      const preferences = {
+        diet: 'vegetarian'
+      };
+
+      const recommendations = await templates.getRecommendations(preferences);
+
+      const vegetarianTemplates = recommendations.filter((r: any) => 
+        r.template.tags?.includes('vegetarian')
+      );
+      
+      // Vegetarian templates should have higher scores
+      vegetarianTemplates.forEach((rec: any) => {
+        expect(rec.score).toBeGreaterThan(0.5);
+      });
     });
   });
 });

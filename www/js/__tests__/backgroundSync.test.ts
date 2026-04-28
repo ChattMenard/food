@@ -5,49 +5,34 @@ import {
 } from '../utils/backgroundSync';
 
 // Mock navigator and window for testing
-global.navigator = {
+(global as any).navigator = {
   onLine: true,
   serviceWorker: {
     ready: Promise.resolve({
       periodicSync: {
-        register: jest.fn().mockResolvedValue(undefined),
+        register: jest.fn().mockResolvedValue(),
       },
     }),
   },
-} as any;
+};
 
-global.window = {
+(global as any).window = {
   addEventListener: jest.fn(),
-  // Add minimal window properties to satisfy TypeScript
-  location: { pathname: '/', href: 'http://localhost' },
-  document: {} as any,
-} as any;
+};
 
-global.document = {
+(global as any).document = {
   addEventListener: jest.fn(),
   hidden: false,
-  // Add minimal document properties to satisfy TypeScript
-  title: '',
-  URL: '',
-  readyState: 'complete',
-} as any;
+};
 
-interface MockNotificationType extends jest.Mock {
-  permission: NotificationPermission;
-  requestPermission: jest.Mock<Promise<NotificationPermission>, []>;
-}
-
-const MockNotification = jest.fn(function (this: any, title: string, options: any) {
+(global as any).Notification = jest.fn(function (this: any, title: string, options: any) {
   this.title = title;
   this.options = options;
-}) as MockNotificationType;
-MockNotification.permission = 'granted';
-MockNotification.requestPermission = jest.fn().mockResolvedValue('granted');
-
-global.Notification = MockNotification as any;
+}) as any;
+(global as any).Notification.permission = 'granted';
 
 describe('BackgroundSyncManager', () => {
-  let syncManager;
+  let syncManager: BackgroundSyncManager;
 
   beforeEach(() => {
     localStorage.clear();
@@ -62,8 +47,8 @@ describe('BackgroundSyncManager', () => {
 
   describe('constructor', () => {
     it('initializes with empty sync queue', () => {
-      expect(syncManager.syncQueue).toEqual([]);
-      expect(syncManager.isSyncing).toBe(false);
+      expect(syncManager.syncQueueData).toEqual([]);
+      expect(syncManager.isSyncingData).toBe(false);
       expect(syncManager.storageKey).toBe('main-sync-queue');
     });
 
@@ -102,11 +87,11 @@ describe('BackgroundSyncManager', () => {
 
   describe('saveSyncQueue', () => {
     it('saves queue to localStorage', () => {
-      syncManager.syncQueue = [{ id: 1, type: 'test', data: {} }];
+      syncManager.syncQueueData = [{ id: 1, type: 'test', data: {} }];
       syncManager.saveSyncQueue();
       const saved = localStorage.getItem('main-sync-queue');
       expect(saved).toBeTruthy();
-      expect(JSON.parse(saved)).toEqual(syncManager.syncQueue);
+      expect(JSON.parse(saved!)).toEqual(syncManager.syncQueueData);
     });
 
     it('handles save errors gracefully', () => {
@@ -122,24 +107,24 @@ describe('BackgroundSyncManager', () => {
   describe('queueSync', () => {
     it('queues a sync operation', () => {
       syncManager.queueSync('mealPlan', { id: 1 });
-      expect(syncManager.syncQueue).toHaveLength(1);
-      expect(syncManager.syncQueue[0].type).toBe('mealPlan');
+      expect(syncManager.syncQueueData).toHaveLength(1);
+      expect(syncManager.syncQueueData[0].type).toBe('mealPlan');
     });
 
     it('generates unique IDs for sync items', () => {
       syncManager.queueSync('mealPlan', { id: 1 });
       syncManager.queueSync('pantry', { id: 2 });
-      expect(syncManager.syncQueue[0].id).not.toBe(syncManager.syncQueue[1].id);
+      expect(syncManager.syncQueueData[0].id).not.toBe(syncManager.syncQueueData[1].id);
     });
 
     it('sets timestamp on sync items', () => {
       syncManager.queueSync('mealPlan', { id: 1 });
-      expect(syncManager.syncQueue[0].timestamp).toBeDefined();
+      expect(syncManager.syncQueueData[0].timestamp).toBeDefined();
     });
 
     it('initializes attempts to 0', () => {
       syncManager.queueSync('mealPlan', { id: 1 });
-      expect(syncManager.syncQueue[0].attempts).toBe(0);
+      expect(syncManager.syncQueueData[0].attempts).toBe(0);
     });
 
     it('saves queue after adding item', () => {
@@ -152,33 +137,33 @@ describe('BackgroundSyncManager', () => {
   describe('syncMealPlan', () => {
     it('queues meal plan sync', () => {
       syncManager.syncMealPlan({ id: 1, date: '2024-01-01' });
-      expect(syncManager.syncQueue).toHaveLength(1);
-      expect(syncManager.syncQueue[0].type).toBe('mealPlan');
+      expect(syncManager.syncQueueData).toHaveLength(1);
+      expect(syncManager.syncQueueData[0].type).toBe('mealPlan');
     });
   });
 
   describe('syncPantry', () => {
     it('queues pantry sync', () => {
       syncManager.syncPantry([{ id: 1, name: 'Chicken' }]);
-      expect(syncManager.syncQueue).toHaveLength(1);
-      expect(syncManager.syncQueue[0].type).toBe('pantry');
+      expect(syncManager.syncQueueData).toHaveLength(1);
+      expect(syncManager.syncQueueData[0].type).toBe('pantry');
     });
   });
 
   describe('syncPreferences', () => {
     it('queues preferences sync', () => {
       syncManager.syncPreferences({ diet: 'vegetarian' });
-      expect(syncManager.syncQueue).toHaveLength(1);
-      expect(syncManager.syncQueue[0].type).toBe('preferences');
+      expect(syncManager.syncQueueData).toHaveLength(1);
+      expect(syncManager.syncQueueData[0].type).toBe('preferences');
     });
   });
 
   describe('syncAll', () => {
     it('does not sync if already syncing', async () => {
-      syncManager.isSyncing = true;
-      syncManager.syncQueue = [{ id: 1, type: 'mealPlan', data: {} }];
+      syncManager.isSyncingData = true;
+      syncManager.syncQueueData = [{ id: 1, type: 'mealPlan', data: {} }];
       await syncManager.syncAll();
-      expect(syncManager.syncQueue).toHaveLength(1);
+      expect(syncManager.syncQueueData).toHaveLength(1);
     });
 
     it('does not sync if offline', async () => {
@@ -186,9 +171,9 @@ describe('BackgroundSyncManager', () => {
         writable: true,
         value: false,
       });
-      syncManager.syncQueue = [{ id: 1, type: 'mealPlan', data: {} }];
+      syncManager.syncQueueData = [{ id: 1, type: 'mealPlan', data: {} }];
       await syncManager.syncAll();
-      expect(syncManager.syncQueue).toHaveLength(1);
+      expect(syncManager.syncQueueData).toHaveLength(1);
       Object.defineProperty(navigator, 'onLine', {
         writable: true,
         value: true,
@@ -196,7 +181,7 @@ describe('BackgroundSyncManager', () => {
     });
 
     it('processes all sync items', async () => {
-      syncManager.syncQueue = [
+      syncManager.syncQueueData = [
         {
           id: 1,
           type: 'mealPlan',
@@ -207,11 +192,11 @@ describe('BackgroundSyncManager', () => {
         { id: 2, type: 'pantry', data: [], timestamp: Date.now(), attempts: 0 },
       ];
       await syncManager.syncAll();
-      expect(syncManager.syncQueue).toHaveLength(0);
+      expect(syncManager.syncQueueData).toHaveLength(0);
     });
 
     it('removes successful items from queue', async () => {
-      syncManager.syncQueue = [
+      syncManager.syncQueueData = [
         {
           id: 1,
           type: 'mealPlan',
@@ -221,11 +206,11 @@ describe('BackgroundSyncManager', () => {
         },
       ];
       await syncManager.syncAll();
-      expect(syncManager.syncQueue).toHaveLength(0);
+      expect(syncManager.syncQueueData).toHaveLength(0);
     });
 
     it('keeps failed items in queue', async () => {
-      syncManager.syncQueue = [
+      syncManager.syncQueueData = [
         {
           id: 1,
           type: 'unknown',
@@ -235,11 +220,11 @@ describe('BackgroundSyncManager', () => {
         },
       ];
       await syncManager.syncAll();
-      expect(syncManager.syncQueue).toHaveLength(1);
+      expect(syncManager.syncQueueData).toHaveLength(1);
     });
 
     it('increments attempt count on failure', async () => {
-      syncManager.syncQueue = [
+      syncManager.syncQueueData = [
         {
           id: 1,
           type: 'unknown',
@@ -249,11 +234,11 @@ describe('BackgroundSyncManager', () => {
         },
       ];
       await syncManager.syncAll();
-      expect(syncManager.syncQueue[0].attempts).toBe(1);
+      expect(syncManager.syncQueueData[0].attempts).toBe(1);
     });
 
     it('removes items after max attempts', async () => {
-      syncManager.syncQueue = [
+      syncManager.syncQueueData = [
         {
           id: 1,
           type: 'unknown',
@@ -263,11 +248,11 @@ describe('BackgroundSyncManager', () => {
         },
       ];
       await syncManager.syncAll();
-      expect(syncManager.syncQueue).toHaveLength(0);
+      expect(syncManager.syncQueueData).toHaveLength(0);
     });
 
     it('resets isSyncing flag after completion', async () => {
-      syncManager.syncQueue = [
+      syncManager.syncQueueData = [
         {
           id: 1,
           type: 'mealPlan',
@@ -277,7 +262,7 @@ describe('BackgroundSyncManager', () => {
         },
       ];
       await syncManager.syncAll();
-      expect(syncManager.isSyncing).toBe(false);
+      expect(syncManager.isSyncingData).toBe(false);
     });
   });
 
@@ -308,16 +293,16 @@ describe('BackgroundSyncManager', () => {
   describe('notifySyncComplete', () => {
     it('shows notification when permission granted', () => {
       syncManager.notifySyncComplete(5);
-      expect(global.Notification).toHaveBeenCalled();
+      expect((global as any).Notification).toHaveBeenCalled();
     });
 
     it('does not throw when notifications not available', () => {
-      const originalNotification = global.Notification;
-      delete global.Notification;
-      delete window.Notification;
+      const originalNotification = (global as any).Notification;
+      delete (global as any).Notification;
+      delete (window as any).Notification;
       expect(() => syncManager.notifySyncComplete(5)).not.toThrow();
-      global.Notification = originalNotification;
-      window.Notification = originalNotification;
+      (global as any).Notification = originalNotification;
+      (window as any).Notification = originalNotification;
     });
   });
 
@@ -325,16 +310,16 @@ describe('BackgroundSyncManager', () => {
     it('starts periodic sync interval', () => {
       jest.useFakeTimers();
       syncManager.startPeriodicSync(1000);
-      expect(syncManager.syncInterval).toBeTruthy();
+      expect(syncManager.syncIntervalData).toBeTruthy();
       jest.useRealTimers();
     });
 
     it('clears existing interval before starting new one', () => {
       jest.useFakeTimers();
       syncManager.startPeriodicSync(1000);
-      const firstInterval = syncManager.syncInterval;
+      const firstInterval = syncManager.syncIntervalData;
       syncManager.startPeriodicSync(2000);
-      expect(syncManager.syncInterval).not.toBe(firstInterval);
+      expect(syncManager.syncIntervalData).not.toBe(firstInterval);
       jest.useRealTimers();
     });
   });
@@ -344,7 +329,7 @@ describe('BackgroundSyncManager', () => {
       jest.useFakeTimers();
       syncManager.startPeriodicSync(1000);
       syncManager.stopPeriodicSync();
-      expect(syncManager.syncInterval).toBe(null);
+      expect(syncManager.syncIntervalData).toBe(null);
       jest.useRealTimers();
     });
 
@@ -355,8 +340,8 @@ describe('BackgroundSyncManager', () => {
 
   describe('getSyncStatus', () => {
     it('returns sync status', () => {
-      syncManager.syncQueue = [{ id: 1 }, { id: 2 }];
-      syncManager.isSyncing = true;
+      syncManager.syncQueueData = [{ id: 1 }, { id: 2 }];
+      syncManager.isSyncingData = true;
       localStorage.setItem('main-last-sync', Date.now().toString());
 
       const status = syncManager.getSyncStatus();
@@ -373,13 +358,13 @@ describe('BackgroundSyncManager', () => {
 
   describe('clearQueue', () => {
     it('clears sync queue', () => {
-      syncManager.syncQueue = [{ id: 1 }, { id: 2 }];
+      syncManager.syncQueueData = [{ id: 1 }, { id: 2 }];
       syncManager.clearQueue();
-      expect(syncManager.syncQueue).toEqual([]);
+      expect(syncManager.syncQueueData).toEqual([]);
     });
 
     it('removes queue from localStorage', () => {
-      syncManager.syncQueue = [{ id: 1 }];
+      syncManager.syncQueueData = [{ id: 1 }];
       syncManager.saveSyncQueue();
       syncManager.clearQueue();
       const saved = localStorage.getItem('main-sync-queue');

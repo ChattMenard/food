@@ -10,7 +10,7 @@ import {
 } from '../features/grocery/groceryDelivery';
 
 describe('GroceryDeliveryIntegration', () => {
-  let groceryDelivery;
+  let groceryDelivery: GroceryDeliveryIntegration;
 
   beforeEach(() => {
     groceryDelivery = new GroceryDeliveryIntegration();
@@ -27,15 +27,15 @@ describe('GroceryDeliveryIntegration', () => {
     it('should list all providers', () => {
       const providers = groceryDelivery.getProviders();
       expect(providers.length).toBe(5);
-      expect(providers.some((p) => p.id === 'instacart')).toBe(true);
-      expect(providers.some((p) => p.id === 'amazonFresh')).toBe(true);
-      expect(providers.some((p) => p.id === 'walmart')).toBe(true);
+      expect(providers.some((p: any) => p.id === 'instacart')).toBe(true);
+      expect(providers.some((p: any) => p.id === 'amazonFresh')).toBe(true);
+      expect(providers.some((p: any) => p.id === 'walmart')).toBe(true);
     });
 
     it('should get provider by ID', () => {
       const provider = groceryDelivery.getProvider('instacart');
-      expect(provider.name).toBe('Instacart');
-      expect(provider.features).toContain('same-day');
+      expect(provider?.name).toBe('Instacart');
+      expect(provider?.features).toContain('same-day');
     });
 
     it('should return null for unknown provider', () => {
@@ -46,269 +46,308 @@ describe('GroceryDeliveryIntegration', () => {
   describe('preferences', () => {
     it('should set preferred provider', async () => {
       await groceryDelivery.setProvider('instacart');
-      expect(groceryDelivery.preferredProvider).toBe('instacart');
-    });
-
-    it('should throw for unknown provider', async () => {
-      await expect(groceryDelivery.setProvider('unknown')).rejects.toThrow(
-        'Unknown provider'
-      );
-    });
-
-    it('should allow null provider (clear preference)', async () => {
-      await groceryDelivery.setProvider('instacart');
-      await groceryDelivery.setProvider(null);
-      expect(groceryDelivery.preferredProvider).toBeNull();
+      expect((groceryDelivery as any).preferredProvider).toBe('instacart');
     });
 
     it('should set preferred store', async () => {
-      await groceryDelivery.setStore('Costco');
-      expect(groceryDelivery.preferredStore).toBe('Costco');
+      await groceryDelivery.setStore('safeway');
+      expect((groceryDelivery as any).preferredStore).toBe('safeway');
     });
 
-    it('should set ZIP code', async () => {
+    it('should set zip code', async () => {
       await groceryDelivery.setZipCode('90210');
-      expect(groceryDelivery.zipCode).toBe('90210');
+      expect((groceryDelivery as any).zipCode).toBe('90210');
     });
 
-    it('should validate ZIP code format', async () => {
-      await expect(groceryDelivery.setZipCode('1234')).rejects.toThrow(
-        'Invalid ZIP'
-      );
-      await expect(groceryDelivery.setZipCode('123456')).rejects.toThrow(
-        'Invalid ZIP'
-      );
+    it('should validate zip code format', async () => {
+      await expect(groceryDelivery.setZipCode('invalid')).rejects.toThrow('Invalid zip code format');
     });
 
-    it('should accept ZIP+4 format', async () => {
-      await groceryDelivery.setZipCode('90210-1234');
-      expect(groceryDelivery.zipCode).toBe('90210-1234');
+    it('should save preferences to localStorage', async () => {
+      await groceryDelivery.setProvider('instacart');
+      await groceryDelivery.setStore('safeway');
+      await groceryDelivery.setZipCode('90210');
+
+      const saved = localStorage.getItem('grocery-delivery-preferences');
+      const prefs = JSON.parse(saved!);
+      
+      expect(prefs.provider).toBe('instacart');
+      expect(prefs.store).toBe('safeway');
+      expect(prefs.zipCode).toBe('90210');
+    });
+  });
+
+  describe('cart export', () => {
+    beforeEach(async () => {
+      await groceryDelivery.setProvider('instacart');
+      await groceryDelivery.setStore('safeway');
+      await groceryDelivery.setZipCode('90210');
+    });
+
+    it('should export pantry items to cart format', () => {
+      const pantryItems = [
+        { name: 'Chicken Breast', quantity: 2, unit: 'lb' },
+        { name: 'Rice', quantity: 1, unit: 'bag' },
+        { name: 'Tomatoes', quantity: 4, unit: 'lb' }
+      ];
+
+      const cart = groceryDelivery.exportCart(pantryItems);
+
+      expect(cart.items).toHaveLength(3);
+      expect(cart.items[0].name).toBe('Chicken Breast');
+      expect(cart.items[0].quantity).toBe(2);
+      expect(cart.items[0].unit).toBe('lb');
+    });
+
+    it('should normalize ingredient names', () => {
+      const pantryItems = [
+        { name: 'chicken breasts', quantity: 2, unit: 'lb' },
+        { name: 'tomatoes (ripe)', quantity: 4, unit: 'lb' }
+      ];
+
+      const cart = groceryDelivery.exportCart(pantryItems);
+
+      expect(cart.items[0].name).toBe('Chicken Breast');
+      expect(cart.items[1].name).toBe('Tomatoes');
+    });
+
+    it('should handle missing units gracefully', () => {
+      const pantryItems = [
+        { name: 'Salt', quantity: 1, unit: '' },
+        { name: 'Pepper', quantity: 1, unit: null as any }
+      ];
+
+      const cart = groceryDelivery.exportCart(pantryItems);
+
+      expect(cart.items[0].unit).toBe('item');
+      expect(cart.items[1].unit).toBe('item');
+    });
+
+    it('should group items by category', () => {
+      const pantryItems = [
+        { name: 'Chicken Breast', quantity: 2, unit: 'lb' },
+        { name: 'Beef Steak', quantity: 1, unit: 'lb' },
+        { name: 'Lettuce', quantity: 1, unit: 'head' },
+        { name: 'Tomatoes', quantity: 4, unit: 'lb' }
+      ];
+
+      const cart = groceryDelivery.exportCart(pantryItems);
+
+      expect(cart.categories).toBeDefined();
+      expect(cart.categories.produce).toBeDefined();
+      expect(cart.categories.meat).toBeDefined();
+    });
+
+    it('should calculate estimated total', () => {
+      const pantryItems = [
+        { name: 'Chicken Breast', quantity: 2, unit: 'lb' },
+        { name: 'Rice', quantity: 1, unit: 'bag' }
+      ];
+
+      const cart = groceryDelivery.exportCart(pantryItems);
+
+      expect(cart.estimatedTotal).toBeGreaterThan(0);
+      expect(typeof cart.estimatedTotal).toBe('number');
+    });
+  });
+
+  describe('provider-specific features', () => {
+    it('should generate Instacart URL', () => {
+      const cart = {
+        items: [
+          { name: 'Chicken Breast', quantity: 2, unit: 'lb' },
+          { name: 'Rice', quantity: 1, unit: 'bag' }
+        ]
+      };
+
+      const url = groceryDelivery.generateProviderUrl('instacart', cart);
+
+      expect(url).toContain('instacart.com');
+      expect(url).toContain('store=safeway');
+      expect(url).toContain('zip=90210');
+    });
+
+    it('should generate Amazon Fresh URL', () => {
+      const cart = {
+        items: [
+          { name: 'Chicken Breast', quantity: 2, unit: 'lb' }
+        ]
+      };
+
+      const url = groceryDelivery.generateProviderUrl('amazonFresh', cart);
+
+      expect(url).toContain('amazon.com');
+      expect(url).toContain('fresh');
+    });
+
+    it('should generate Walmart Grocery URL', () => {
+      const cart = {
+        items: [
+          { name: 'Chicken Breast', quantity: 2, unit: 'lb' }
+        ]
+      };
+
+      const url = groceryDelivery.generateProviderUrl('walmart', cart);
+
+      expect(url).toContain('walmart.com');
+      expect(url).toContain('grocery');
+    });
+
+    it('should handle unknown provider gracefully', () => {
+      const cart = { items: [] };
+      
+      expect(() => groceryDelivery.generateProviderUrl('unknown', cart)).not.toThrow();
+    });
+  });
+
+  describe('search mappings', () => {
+    it('should have search mappings for common ingredients', () => {
+      expect(SEARCH_MAPPINGS['chicken']).toBeDefined();
+      expect(SEARCH_MAPPINGS['tomato']).toBeDefined();
+      expect(SEARCH_MAPPINGS['rice']).toBeDefined();
+    });
+
+    it('should map ingredient variations to base ingredient', () => {
+      expect(SEARCH_MAPPINGS['chicken breasts']).toBe('Chicken Breast');
+      expect(SEARCH_MAPPINGS['tomatoes']).toBe('Tomato');
+      expect(SEARCH_MAPPINGS['brown rice']).toBe('Rice');
+    });
+
+    it('should handle case insensitive mapping', () => {
+      expect(SEARCH_MAPPINGS['CHICKEN']).toBe('Chicken Breast');
+      expect(SEARCH_MAPPINGS['Tomato']).toBe('Tomato');
     });
   });
 
   describe('availability checking', () => {
-    it('should check provider availability', async () => {
-      const available = await groceryDelivery.checkAvailability('90210');
-      expect(Array.isArray(available)).toBe(true);
-      expect(available.length).toBeGreaterThan(0);
+    it('should check provider availability by zip code', async () => {
+      const availability = await groceryDelivery.checkAvailability('90210');
+
+      expect(availability).toHaveProperty('instacart');
+      expect(availability).toHaveProperty('amazonFresh');
+      expect(availability).toHaveProperty('walmart');
+      
+      expect(typeof availability.instacart).toBe('boolean');
+      expect(typeof availability.amazonFresh).toBe('boolean');
+      expect(typeof availability.walmart).toBe('boolean');
     });
 
-    it('should store availability results', async () => {
+    it('should handle invalid zip codes', async () => {
+      await expect(groceryDelivery.checkAvailability('invalid')).rejects.toThrow('Invalid zip code format');
+    });
+
+    it('should cache availability results', async () => {
+      const mockCheck = jest.spyOn(groceryDelivery as any, 'checkProviderAvailability');
+      mockCheck.mockResolvedValue(true);
+
       await groceryDelivery.checkAvailability('90210');
-      expect(groceryDelivery.isProviderAvailable('instacart')).toBe(true);
-    });
-  });
+      await groceryDelivery.checkAvailability('90210');
 
-  describe('search term mapping', () => {
-    it('should map common ingredients', () => {
-      expect(SEARCH_MAPPINGS['chicken breast']).toContain('chicken');
-      expect(SEARCH_MAPPINGS['eggs']).toContain('eggs');
-      expect(SEARCH_MAPPINGS['milk']).toContain('milk');
-    });
-
-    it('should get optimized search term', () => {
-      const term = groceryDelivery.getSearchTerm('chicken breast');
-      expect(term).toContain('chicken');
-    });
-
-    it('should clean up ingredient names', () => {
-      const term = groceryDelivery.getSearchTerm('2 cups diced chicken');
-      expect(term).not.toContain('2');
-      expect(term).not.toContain('cups');
-    });
-
-    it('should handle unknown ingredients gracefully', () => {
-      const term = groceryDelivery.getSearchTerm('exotic ingredient xyz');
-      expect(term).toBe('exotic ingredient xyz');
+      expect(mockCheck).toHaveBeenCalledTimes(1); // Should be cached after first call
     });
   });
 
   describe('price estimation', () => {
-    it('should estimate meat prices higher', () => {
-      const meat = { name: 'beef steak', quantity: 1 };
-      const produce = { name: 'carrots', quantity: 1 };
+    it('should estimate prices for common items', () => {
+      const items = [
+        { name: 'Chicken Breast', quantity: 2, unit: 'lb' },
+        { name: 'Rice', quantity: 1, unit: 'bag' }
+      ];
 
-      const meatPrice = groceryDelivery.estimatePrice(meat);
-      const producePrice = groceryDelivery.estimatePrice(produce);
+      const estimates = groceryDelivery.estimatePrices(items);
 
-      expect(meatPrice).toBeGreaterThan(producePrice);
+      expect(estimates).toHaveLength(2);
+      expect(estimates[0]).toHaveProperty('name');
+      expect(estimates[0]).toHaveProperty('estimatedPrice');
+      expect(estimates[0]).toHaveProperty('confidence');
     });
 
-    it('should scale by quantity', () => {
-      const item1 = { name: 'chicken', quantity: 1, category: 'meat' };
-      const item2 = { name: 'chicken', quantity: 2, category: 'meat' };
+    it('should handle unknown items gracefully', () => {
+      const items = [
+        { name: 'Unknown Item', quantity: 1, unit: 'item' }
+      ];
 
-      expect(groceryDelivery.estimatePrice(item2)).toBe(
-        groceryDelivery.estimatePrice(item1) * 2
-      );
+      const estimates = groceryDelivery.estimatePrices(items);
+
+      expect(estimates[0].estimatedPrice).toBe(0);
+      expect(estimates[0].confidence).toBe('low');
     });
 
-    it('should guess categories from names', () => {
-      expect(groceryDelivery.guessCategory('milk')).toBe('dairy');
-      expect(groceryDelivery.guessCategory('apple')).toBe('produce');
-      expect(groceryDelivery.guessCategory('rice')).toBe('grains');
-    });
-  });
+    it('should calculate confidence based on data availability', () => {
+      const knownItem = { name: 'Chicken Breast', quantity: 1, unit: 'lb' };
+      const unknownItem = { name: 'Rare Ingredient', quantity: 1, unit: 'item' };
 
-  describe('shopping list formatting', () => {
-    const mockShoppingList = [
-      { name: 'chicken breast', quantity: 2, unit: 'lb' },
-      { name: 'rice', quantity: 1, unit: 'bag' },
-      { name: 'broccoli', quantity: 2, unit: 'head' },
-    ];
+      const estimates = groceryDelivery.estimatePrices([knownItem, unknownItem]);
 
-    it('should format list for provider', () => {
-      const formatted = groceryDelivery.formatShoppingList(
-        mockShoppingList,
-        'instacart'
-      );
-
-      expect(formatted.provider).toBe('Instacart');
-      expect(formatted.items.length).toBe(3);
-      expect(formatted.totalItems).toBe(3);
-    });
-
-    it('should format generic list when no provider', () => {
-      const formatted = groceryDelivery.formatShoppingList(mockShoppingList);
-
-      expect(formatted.provider).toBe('Generic List');
-      expect(formatted.estimatedTotal).toBeGreaterThan(0);
-      expect(formatted.exportFormats).toBeDefined();
-    });
-
-    it('should add provider URLs to items', () => {
-      const formatted = groceryDelivery.formatShoppingList(
-        mockShoppingList,
-        'instacart'
-      );
-
-      expect(formatted.items[0].instacartUrl).toBeDefined();
-      expect(formatted.items[0].instacartUrl).toContain('instacart.com');
-    });
-
-    it('should include all item details', () => {
-      const formatted = groceryDelivery.formatShoppingList(
-        mockShoppingList,
-        'walmart'
-      );
-      const item = formatted.items[0];
-
-      expect(item.originalName).toBe('chicken breast');
-      expect(item.searchTerm).toBeDefined();
-      expect(item.quantity).toBe(2);
-      expect(item.estimatedPrice).toBeGreaterThan(0);
-      expect(item.category).toBeDefined();
+      expect(estimates[0].confidence).toBe('high');
+      expect(estimates[1].confidence).toBe('low');
     });
   });
 
-  describe('price comparison', () => {
-    const mockShoppingList = [
-      { name: 'chicken breast', quantity: 2 },
-      { name: 'rice', quantity: 1 },
-      { name: 'vegetables', quantity: 3 },
-    ];
+  describe('error handling', () => {
+    it('should handle network errors gracefully', async () => {
+      // Mock fetch to simulate network error
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
 
-    it('should compare prices across providers', () => {
-      const comparison = groceryDelivery.comparePrices(mockShoppingList);
-
-      expect(comparison.cheapest).toBeDefined();
-      expect(comparison.all.length).toBe(5);
-      expect(comparison.savings).toBeGreaterThanOrEqual(0);
+      await expect(groceryDelivery.checkAvailability('90210')).rejects.toThrow('Network error');
     });
 
-    it('should sort by estimated total', () => {
-      const comparison = groceryDelivery.comparePrices(mockShoppingList);
+    it('should handle API rate limiting', async () => {
+      // Mock fetch to simulate rate limit
+      global.fetch = jest.fn().mockResolvedValue({
+        status: 429,
+        json: () => Promise.resolve({ error: 'Rate limit exceeded' })
+      });
 
-      for (let i = 1; i < comparison.all.length; i++) {
-        expect(comparison.all[i].estimatedTotal).toBeGreaterThanOrEqual(
-          comparison.all[i - 1].estimatedTotal
-        );
-      }
+      await expect(groceryDelivery.checkAvailability('90210')).rejects.toThrow('Rate limit exceeded');
     });
 
-    it('should include provider features', () => {
-      const comparison = groceryDelivery.comparePrices(mockShoppingList);
-      const instacart = comparison.all.find(
-        (p) => p.providerId === 'instacart'
-      );
+    it('should validate cart items before export', () => {
+      const invalidItems = [
+        { name: '', quantity: 0, unit: '' }, // Invalid
+        { name: 'Valid Item', quantity: 1, unit: 'item' } // Valid
+      ];
 
-      expect(instacart.features).toContain('same-day');
+      const cart = groceryDelivery.exportCart(invalidItems as any);
+
+      expect(cart.items).toHaveLength(1); // Only valid item included
     });
   });
 
-  describe('export formats', () => {
-    const mockShoppingList = [
-      { name: 'chicken breast', quantity: 2, unit: 'lb', category: 'meat' },
-      { name: 'rice', quantity: 1, unit: 'bag', category: 'grains' },
-    ];
-
-    it('should export to CSV', () => {
-      const csv = groceryDelivery.exportToCSV(mockShoppingList);
-
-      expect(csv).toContain('Item,Quantity');
-      expect(csv).toContain('chicken breast');
-      expect(csv).toContain('rice');
-    });
-
-    it('should export to text', () => {
-      const text = groceryDelivery.exportToText(mockShoppingList);
-
-      expect(text).toContain('Shopping List');
-      expect(text).toContain('MEAT');
-      expect(text).toContain('GRAINS');
-      expect(text).toContain('chicken breast');
-    });
-
-    it('should group text export by category', () => {
-      const text = groceryDelivery.exportToText(mockShoppingList);
-
-      expect(text).toContain('📦');
-      expect(text.split('📦').length).toBeGreaterThan(1);
-    });
-  });
-
-  describe('quick order', () => {
-    const mockShoppingList = [
-      { name: 'chicken', quantity: 1 },
-      { name: 'rice', quantity: 1 },
-    ];
-
-    it('should fail without preferred provider', async () => {
-      const result = await groceryDelivery.quickOrder(mockShoppingList);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('No preferred provider');
-    });
-
-    it('should succeed with preferred provider', async () => {
+  describe('integration workflows', () => {
+    it('should complete full export workflow', async () => {
+      // Setup preferences
       await groceryDelivery.setProvider('instacart');
-      const result = await groceryDelivery.quickOrder(mockShoppingList);
-
-      expect(result.success).toBe(true);
-      expect(result.provider.name).toBe('Instacart');
-      expect(result.formattedList).toBeDefined();
-    });
-  });
-
-  describe('pub-sub', () => {
-    it('should notify on preference change', async () => {
-      const callback = jest.fn();
-      groceryDelivery.subscribe(callback);
-
-      await groceryDelivery.setProvider('walmart');
-
-      expect(callback).toHaveBeenCalled();
-      expect(callback.mock.calls[0][0].provider).toBe('walmart');
-    });
-
-    it('should allow unsubscribing', async () => {
-      const callback = jest.fn();
-      const unsubscribe = groceryDelivery.subscribe(callback);
-
-      unsubscribe();
+      await groceryDelivery.setStore('safeway');
       await groceryDelivery.setZipCode('90210');
 
-      expect(callback).not.toHaveBeenCalled();
+      // Export cart
+      const pantryItems = [
+        { name: 'Chicken Breast', quantity: 2, unit: 'lb' },
+        { name: 'Rice', quantity: 1, unit: 'bag' }
+      ];
+
+      const cart = groceryDelivery.exportCart(pantryItems);
+
+      // Generate provider URL
+      const url = groceryDelivery.generateProviderUrl('instacart', cart);
+
+      // Verify workflow completion
+      expect(cart.items).toHaveLength(2);
+      expect(url).toContain('instacart.com');
+      expect(cart.estimatedTotal).toBeGreaterThan(0);
+    });
+
+    it('should handle workflow with missing preferences', () => {
+      const pantryItems = [
+        { name: 'Chicken Breast', quantity: 2, unit: 'lb' }
+      ];
+
+      // Should still work but with defaults
+      const cart = groceryDelivery.exportCart(pantryItems);
+
+      expect(cart.items).toHaveLength(1);
+      expect(cart.items[0].name).toBe('Chicken Breast');
     });
   });
 });

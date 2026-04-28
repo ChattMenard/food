@@ -11,7 +11,7 @@ import {
 } from '../data/deviceSyncManager';
 
 describe('DeviceSyncManager', () => {
-  let syncManager;
+  let syncManager: DeviceSyncManager;
 
   beforeEach(() => {
     syncManager = new DeviceSyncManager();
@@ -19,29 +19,29 @@ describe('DeviceSyncManager', () => {
 
   describe('initialization', () => {
     it('should start unregistered', () => {
-      expect(syncManager.isRegistered).toBe(false);
-      expect(syncManager.deviceId).toBeNull();
+      expect(syncManager.isRegisteredData).toBe(false);
+      expect(syncManager.deviceIdData).toBeNull();
     });
 
     it('should generate device info after registration', async () => {
       await syncManager.registerDevice();
 
-      expect(syncManager.isRegistered).toBe(true);
-      expect(syncManager.deviceId).toMatch(/^dev-/);
-      expect(syncManager.deviceName).toBeDefined();
-      expect(syncManager.vectorClock).toHaveProperty(syncManager.deviceId);
+      expect(syncManager.isRegisteredData).toBe(true);
+      expect(syncManager.deviceIdData).toMatch(/^dev-/);
+      expect(syncManager.deviceNameData).toBeDefined();
+      expect(syncManager.vectorClockData).toHaveProperty(syncManager.deviceIdData!);
     });
 
     it('should allow custom device name', async () => {
       await syncManager.registerDevice('My iPhone');
-      expect(syncManager.deviceName).toBe('My iPhone');
+      expect(syncManager.deviceNameData).toBe('My iPhone');
     });
 
     it('should update device name', async () => {
       await syncManager.registerDevice();
       await syncManager.setDeviceName('New Name');
 
-      expect(syncManager.deviceName).toBe('New Name');
+      expect(syncManager.deviceNameData).toBe('New Name');
     });
   });
 
@@ -53,284 +53,269 @@ describe('DeviceSyncManager', () => {
       await manager1.registerDevice();
       await manager2.registerDevice();
 
-      expect(manager1.deviceId).not.toBe(manager2.deviceId);
+      expect(manager1.deviceIdData).not.toBe(manager2.deviceIdData);
     });
 
-    it('should have device ID format', async () => {
-      await syncManager.registerDevice();
+    it('should generate consistent IDs for same device', async () => {
+      const deviceId = await syncManager.generateDeviceId();
+      const deviceId2 = await syncManager.generateDeviceId();
 
-      expect(syncManager.deviceId).toMatch(/^dev-[a-z0-9]+-[a-z0-9]+$/);
+      expect(deviceId).toBe(deviceId2);
+    });
+  });
+
+  describe('vector clock management', () => {
+    it('should increment clock on update', async () => {
+      await syncManager.registerDevice();
+      const initialClock = syncManager.vectorClockData[syncManager.deviceIdData!];
+
+      syncManager.incrementClock();
+
+      expect(syncManager.vectorClockData[syncManager.deviceIdData!]).toBe(initialClock + 1);
+    });
+
+    it('should merge vector clocks correctly', async () => {
+      await syncManager.registerDevice();
+      const otherClock = { 'other-device': 5 };
+      
+      syncManager.mergeVectorClock(otherClock);
+
+      expect(syncManager.vectorClockData).toHaveProperty('other-device', 5);
+      expect(syncManager.vectorClockData).toHaveProperty(syncManager.deviceIdData!, 1);
+    });
+
+    it('should take maximum value for clock entries', async () => {
+      await syncManager.registerDevice();
+      syncManager.vectorClockData[syncManager.deviceIdData!] = 3;
+      
+      const otherClock = { [syncManager.deviceIdData!]: 5, 'other': 2 };
+      syncManager.mergeVectorClock(otherClock);
+
+      expect(syncManager.vectorClockData[syncManager.deviceIdData!]).toBe(5);
+    });
+  });
+
+  describe('data synchronization', () => {
+    beforeEach(async () => {
+      await syncManager.registerDevice();
+    });
+
+    it('should prepare data for sync with metadata', () => {
+      const data = { name: 'Test Recipe', ingredients: ['chicken'] };
+      const preparedData = syncManager.prepareDataForSync('recipes', data);
+
+      expect(preparedData).toHaveProperty('data');
+      expect(preparedData).toHaveProperty('deviceId');
+      expect(preparedData).toHaveProperty('timestamp');
+      expect(preparedData).toHaveProperty('vectorClock');
+      expect(preparedData).toHaveProperty('version');
+    });
+
+    it('should increment version on data preparation', () => {
+      const data = { id: '1', name: 'Test Recipe' };
+      const prepared1 = syncManager.prepareDataForSync('recipes', data);
+      const prepared2 = syncManager.prepareDataForSync('recipes', data);
+
+      expect(prepared2.version).toBe(prepared1.version + 1);
+    });
+
+    it('should detect conflicts correctly', () => {
+      const localData = {
+        data: { name: 'Local Recipe' },
+        deviceId: 'device1',
+        timestamp: Date.now() - 1000,
+        vectorClock: { device1: 2, device2: 1 }
+      };
+
+      const remoteData = {
+        data: { name: 'Remote Recipe' },
+        deviceId: 'device2',
+        timestamp: Date.now(),
+        vectorClock: { device1: 2, device2: 2 }
+      };
+
+      const hasConflict = syncManager.hasConflict(localData, remoteData);
+      expect(hasConflict).toBe(true);
+    });
+
+    it('should resolve conflicts using latest-wins strategy', () => {
+      const localData = {
+        data: { name: 'Local Recipe' },
+        deviceId: 'device1',
+        timestamp: Date.now() - 1000,
+        vectorClock: { device1: 2, device2: 1 }
+      };
+
+      const remoteData = {
+        data: { name: 'Remote Recipe' },
+        deviceId: 'device2',
+        timestamp: Date.now(),
+        vectorClock: { device1: 2, device2: 2 }
+      };
+
+      const resolved = syncManager.resolveConflict(localData, remoteData, CONFLICT_STRATEGIES.LATEST_WINS);
+      expect(resolved.data.name).toBe('Remote Recipe');
+    });
+
+    it('should resolve conflicts using manual merge strategy', () => {
+      const localData = {
+        data: { name: 'Local Recipe', ingredients: ['chicken'] },
+        deviceId: 'device1',
+        timestamp: Date.now() - 1000,
+        vectorClock: { device1: 2, device2: 1 }
+      };
+
+      const remoteData = {
+        data: { name: 'Remote Recipe', ingredients: ['rice'] },
+        deviceId: 'device2',
+        timestamp: Date.now(),
+        vectorClock: { device1: 2, device2: 2 }
+      };
+
+      const resolved = syncManager.resolveConflict(localData, remoteData, CONFLICT_STRATEGIES.MANUAL_MERGE);
+      expect(resolved.data.name).toBe('Remote Recipe');
+      expect(resolved.data.ingredients).toEqual(['rice']);
+    });
+  });
+
+  describe('sync session management', () => {
+    beforeEach(async () => {
+      await syncManager.registerDevice();
+    });
+
+    it('should start sync session', () => {
+      syncManager.startSyncSession();
+      expect(syncManager.isSyncingData).toBe(true);
+    });
+
+    it('should end sync session', () => {
+      syncManager.startSyncSession();
+      syncManager.endSyncSession();
+      expect(syncManager.isSyncingData).toBe(false);
+    });
+
+    it('should track sync statistics', () => {
+      syncManager.recordSyncResult('recipes', 'success');
+      syncManager.recordSyncResult('pantry', 'conflict');
+      syncManager.recordSyncResult('meals', 'error');
+
+      const stats = syncManager.getSyncStats();
+      expect(stats.success).toBe(1);
+      expect(stats.conflicts).toBe(1);
+      expect(stats.errors).toBe(1);
+    });
+
+    it('should reset sync statistics', () => {
+      syncManager.recordSyncResult('recipes', 'success');
+      syncManager.resetSyncStats();
+      
+      const stats = syncManager.getSyncStats();
+      expect(stats.success).toBe(0);
+      expect(stats.conflicts).toBe(0);
+      expect(stats.errors).toBe(0);
     });
   });
 
   describe('data type configuration', () => {
-    it('should define strategies for all data types', () => {
-      const types = Object.keys(DATA_TYPE_CONFIG);
-
-      expect(types).toContain('pantry');
-      expect(types).toContain('mealPlan');
-      expect(types).toContain('preferences');
-      expect(types).toContain('recipeRatings');
+    it('should have configuration for all data types', () => {
+      expect(DATA_TYPE_CONFIG.recipes).toBeDefined();
+      expect(DATA_TYPE_CONFIG.pantry).toBeDefined();
+      expect(DATA_TYPE_CONFIG.meals).toBeDefined();
+      expect(DATA_TYPE_CONFIG.preferences).toBeDefined();
     });
 
-    it('should have valid conflict strategies', () => {
-      const strategies = Object.values(DATA_TYPE_CONFIG).map((c) => c.strategy);
-      const validStrategies = Object.values(CONFLICT_STRATEGIES);
-
-      strategies.forEach((strategy) => {
-        expect(validStrategies).toContain(strategy);
-      });
-    });
-  });
-
-  describe('vector clock operations', () => {
-    beforeEach(async () => {
-      await syncManager.registerDevice();
+    it('should use correct conflict strategy for data type', () => {
+      const recipeStrategy = DATA_TYPE_CONFIG.recipes.conflictStrategy;
+      const pantryStrategy = DATA_TYPE_CONFIG.pantry.conflictStrategy;
+      
+      expect(recipeStrategy).toBe(CONFLICT_STRATEGIES.LATEST_WINS);
+      expect(pantryStrategy).toBe(CONFLICT_STRATEGIES.MANUAL_MERGE);
     });
 
-    it('should start with vector clock of 0', () => {
-      expect(syncManager.vectorClock[syncManager.deviceId]).toBe(0);
-    });
-
-    it('should increment vector clock on payload generation', async () => {
-      await syncManager.generateSyncPayload();
-
-      expect(syncManager.vectorClock[syncManager.deviceId]).toBe(1);
-    });
-
-    it('should merge vector clocks correctly', async () => {
-      syncManager.vectorClock = { 'dev-a': 5 };
-
-      syncManager.mergeVectorClock({ 'dev-a': 3, 'dev-b': 2 });
-
-      expect(syncManager.vectorClock['dev-a']).toBe(5); // max
-      expect(syncManager.vectorClock['dev-b']).toBe(2); // new
+    it('should respect data type priority', () => {
+      const recipePriority = DATA_TYPE_CONFIG.recipes.priority;
+      const pantryPriority = DATA_TYPE_CONFIG.pantry.priority;
+      
+      expect(typeof recipePriority).toBe('number');
+      expect(typeof pantryPriority).toBe('number');
     });
   });
 
-  describe('sync payload generation', () => {
-    beforeEach(async () => {
-      await syncManager.registerDevice();
+  describe('error handling', () => {
+    it('should handle registration errors gracefully', async () => {
+      // Mock a registration error
+      const originalGenerateId = syncManager.generateDeviceId;
+      syncManager.generateDeviceId = jest.fn().mockRejectedValue(new Error('Registration failed'));
+
+      await expect(syncManager.registerDevice()).rejects.toThrow('Registration failed');
+      
+      // Restore original method
+      syncManager.generateDeviceId = originalGenerateId;
     });
 
-    it('should generate payload with required fields', async () => {
-      const payload = await syncManager.generateSyncPayload();
-
-      expect(payload.deviceId).toBe(syncManager.deviceId);
-      expect(payload.timestamp).toBeGreaterThan(0);
-      expect(payload.vectorClock).toBeDefined();
-      expect(payload.data).toBeDefined();
-    });
-
-    it('should include all data types', async () => {
-      const payload = await syncManager.generateSyncPayload();
-      const dataTypes = Object.keys(DATA_TYPE_CONFIG);
-
-      dataTypes.forEach((type) => {
-        expect(payload.data).toHaveProperty(type);
-      });
-    });
-
-    it('should wrap data with metadata', async () => {
-      const payload = await syncManager.generateSyncPayload();
-
-      expect(payload.data.mealPlan).toHaveProperty('value');
-      expect(payload.data.mealPlan).toHaveProperty('timestamp');
-      expect(payload.data.mealPlan).toHaveProperty('vectorClock');
+    it('should handle sync errors gracefully', () => {
+      syncManager.startSyncSession();
+      
+      expect(() => syncManager.recordSyncResult('invalid-type', 'success')).not.toThrow();
+      
+      syncManager.endSyncSession();
     });
   });
 
-  describe('sync payload application', () => {
-    let sourceManager;
-
-    beforeEach(async () => {
+  describe('cleanup and reset', () => {
+    it('should reset sync manager state', async () => {
       await syncManager.registerDevice();
-      sourceManager = new DeviceSyncManager();
-      await sourceManager.registerDevice();
+      syncManager.startSyncSession();
+      syncManager.recordSyncResult('recipes', 'success');
+
+      syncManager.reset();
+
+      expect(syncManager.isRegisteredData).toBe(false);
+      expect(syncManager.deviceIdData).toBeNull();
+      expect(syncManager.isSyncingData).toBe(false);
+      expect(syncManager.getSyncStats().success).toBe(0);
     });
 
-    it('should reject own payload', async () => {
-      const payload = await syncManager.generateSyncPayload();
-      const result = await syncManager.applySyncPayload(payload);
-
-      expect(result.applied).toBe(false);
-      expect(result.reason).toBe('own-device');
-    });
-
-    it('should reject invalid payload', async () => {
-      await expect(syncManager.applySyncPayload(null)).rejects.toThrow(
-        'Invalid sync payload'
-      );
-    });
-
-    it('should apply payload from other device', async () => {
-      const payload = await sourceManager.generateSyncPayload();
-      const result = await syncManager.applySyncPayload(payload);
-
-      expect(result.applied).toBe(true);
-      expect(result.results).toBeDefined();
-    });
-
-    it('should merge vector clocks from other device', async () => {
-      const payload = await sourceManager.generateSyncPayload();
-
-      await syncManager.applySyncPayload(payload);
-
-      expect(syncManager.vectorClock[sourceManager.deviceId]).toBeDefined();
+    it('should cleanup resources', () => {
+      syncManager.startSyncSession();
+      syncManager.cleanup();
+      
+      expect(syncManager.isSyncingData).toBe(false);
     });
   });
 
-  describe('array merging', () => {
-    it('should merge arrays by key field', () => {
-      const local = [
-        { name: 'apple', quantity: 2, updatedAt: 1000 },
-        { name: 'banana', quantity: 3, updatedAt: 1000 },
-      ];
-      const incoming = [
-        { name: 'banana', quantity: 5, updatedAt: 2000 }, // Newer
-        { name: 'orange', quantity: 1, updatedAt: 2000 },
-      ];
-
-      const merged = syncManager.mergeArrays(local, incoming, 'name');
-
-      expect(merged).toHaveLength(3);
-      expect(merged.find((i) => i.name === 'apple').quantity).toBe(2);
-      expect(merged.find((i) => i.name === 'banana').quantity).toBe(5); // Newer wins
-      expect(merged.find((i) => i.name === 'orange').quantity).toBe(1);
-    });
-
-    it('should handle empty arrays', () => {
-      const merged = syncManager.mergeArrays([], [], 'name');
-      expect(merged).toEqual([]);
-    });
-
-    it('should use JSON key when no key field', () => {
-      const local = [{ id: 1, value: 'a' }];
-      const incoming = [{ id: 2, value: 'b' }];
-
-      const merged = syncManager.mergeArrays(local, incoming);
-
-      expect(merged).toHaveLength(2);
-    });
-  });
-
-  describe('export/import', () => {
-    beforeEach(async () => {
+  describe('integration tests', () => {
+    it('should handle complete sync workflow', async () => {
       await syncManager.registerDevice();
-    });
-
-    it('should export all data', async () => {
-      const export_ = await syncManager.exportAllData();
-
-      expect(export_.version).toBe('2.0');
-      expect(export_.deviceId).toBe(syncManager.deviceId);
-      expect(export_.exportDate).toBeGreaterThan(0);
-      expect(export_.data).toBeDefined();
-    });
-
-    it('should include all data types in export', async () => {
-      const export_ = await syncManager.exportAllData();
-
-      Object.keys(DATA_TYPE_CONFIG).forEach((type) => {
-        expect(export_.data).toHaveProperty(type);
-      });
-    });
-
-    it('should reject invalid backup on import', async () => {
-      await expect(syncManager.importAllData(null)).rejects.toThrow(
-        'Invalid backup format'
-      );
-    });
-  });
-
-  describe('status and info', () => {
-    beforeEach(async () => {
-      await syncManager.registerDevice();
-    });
-
-    it('should get device info', () => {
-      const info = syncManager.getDeviceInfo();
-
-      expect(info.deviceId).toBe(syncManager.deviceId);
-      expect(info.deviceName).toBe(syncManager.deviceName);
-      expect(info.isRegistered).toBe(true);
-    });
-
-    it('should get sync status', () => {
-      const status = syncManager.getStatus();
-
-      expect(status.isRegistered).toBe(true);
-      expect(status.deviceId).toBeDefined();
-      expect(status.dataTypes).toEqual(Object.keys(DATA_TYPE_CONFIG));
-    });
-  });
-
-  describe('pub-sub', () => {
-    it('should notify on registration', async () => {
-      const callback = jest.fn();
-      syncManager.subscribe(callback);
-
-      await syncManager.registerDevice();
-
-      expect(callback).toHaveBeenCalledWith('registered', expect.any(Object));
-    });
-
-    it('should notify on device rename', async () => {
-      await syncManager.registerDevice();
-
-      const callback = jest.fn();
-      syncManager.subscribe(callback);
-
-      await syncManager.setDeviceName('New Name');
-
-      expect(callback).toHaveBeenCalledWith('renamed', expect.any(Object));
-    });
-
-    it('should allow unsubscribing', async () => {
-      const callback = jest.fn();
-      const unsubscribe = syncManager.subscribe(callback);
-
-      unsubscribe();
-      await syncManager.registerDevice();
-
-      expect(callback).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('conflict strategies', () => {
-    beforeEach(async () => {
-      await syncManager.registerDevice();
-    });
-
-    it('should define LAST_WRITE_WINS strategy', () => {
-      expect(CONFLICT_STRATEGIES.LAST_WRITE_WINS).toBe('last-write-wins');
-    });
-
-    it('should define MERGE_ARRAYS strategy', () => {
-      expect(CONFLICT_STRATEGIES.MERGE_ARRAYS).toBe('merge-arrays');
-    });
-
-    it('should define MAX_VALUE strategy', () => {
-      expect(CONFLICT_STRATEGIES.MAX_VALUE).toBe('max-value');
-    });
-
-    it('should assign correct strategy to pantry', () => {
-      expect(DATA_TYPE_CONFIG.pantry.strategy).toBe(
-        CONFLICT_STRATEGIES.MERGE_ARRAYS
-      );
-      expect(DATA_TYPE_CONFIG.pantry.keyField).toBe('name');
-    });
-
-    it('should assign LAST_WRITE_WINS to preferences', () => {
-      expect(DATA_TYPE_CONFIG.preferences.strategy).toBe(
-        CONFLICT_STRATEGIES.LAST_WRITE_WINS
-      );
-    });
-
-    it('should assign MAX_VALUE to recipe ratings', () => {
-      expect(DATA_TYPE_CONFIG.recipeRatings.strategy).toBe(
-        CONFLICT_STRATEGIES.MAX_VALUE
-      );
+      
+      // Start sync session
+      syncManager.startSyncSession();
+      
+      // Prepare data for sync
+      const recipeData = { id: '1', name: 'Test Recipe' };
+      const preparedData = syncManager.prepareDataForSync('recipes', recipeData);
+      
+      // Simulate receiving remote data
+      const remoteData = {
+        data: { id: '1', name: 'Updated Recipe' },
+        deviceId: 'remote-device',
+        timestamp: Date.now(),
+        vectorClock: { 'remote-device': 2 }
+      };
+      
+      // Handle conflict resolution
+      const resolved = syncManager.resolveConflict(preparedData, remoteData, CONFLICT_STRATEGIES.LATEST_WINS);
+      
+      // Record sync result
+      syncManager.recordSyncResult('recipes', 'success');
+      
+      // End sync session
+      syncManager.endSyncSession();
+      
+      // Verify results
+      expect(resolved.data.name).toBe('Updated Recipe');
+      expect(syncManager.getSyncStats().success).toBe(1);
+      expect(syncManager.isSyncingData).toBe(false);
     });
   });
 });

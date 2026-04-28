@@ -19,6 +19,11 @@ const MAX_RETRY_DELAY = 30000; // 30 seconds
 const SYNC_INTERVAL = 30000; // Check every 30 seconds when online
 
 class SyncProcessor {
+  public isProcessing: boolean;
+  public isOnline: boolean;
+  public intervalId: any;
+  public handlers: Map<any, Function>;
+
   constructor() {
     this.isProcessing = false;
     this.isOnline = navigator.onLine;
@@ -34,7 +39,7 @@ class SyncProcessor {
    * @param {string} type - Mutation type (e.g., 'ADD_ITEM')
    * @param {Function} handler - Async function(mutation) => result
    */
-  registerHandler(type, handler) {
+  registerHandler(type: string, handler: Function): void {
     this.handlers.set(type, handler);
     console.log('[SyncProcessor] Registered handler:', type);
   }
@@ -42,7 +47,7 @@ class SyncProcessor {
   /**
    * Setup online/offline listeners
    */
-  setupListeners() {
+  setupListeners(): void {
     window.addEventListener('online', () => {
       console.log('[SyncProcessor] Online - triggering sync');
       this.isOnline = true;
@@ -58,7 +63,7 @@ class SyncProcessor {
   /**
    * Start periodic sync check
    */
-  startPeriodicSync() {
+  startPeriodicSync(): void {
     this.intervalId = setInterval(() => {
       if (this.isOnline && !this.isProcessing) {
         this.processPending();
@@ -69,7 +74,7 @@ class SyncProcessor {
   /**
    * Stop periodic sync
    */
-  stopPeriodicSync() {
+  stopPeriodicSync(): void {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
@@ -109,7 +114,7 @@ class SyncProcessor {
   /**
    * Process a single mutation
    */
-  async processMutation(mutation) {
+  async processMutation(mutation: any): Promise<void> {
     const { id, type, payload: _payload, entityId, retryCount = 0 } = mutation;
 
     // Check max retries
@@ -154,11 +159,11 @@ class SyncProcessor {
         throw new Error(result.error || 'Handler returned failure');
       }
     } catch (error) {
-      console.error(`[SyncProcessor] Failed ${id}:`, error.message);
+      console.error(`[SyncProcessor] Failed ${id}:`, (error as Error).message);
       const newRetryCount = await incrementRetry(id);
 
       if (newRetryCount >= MAX_RETRIES) {
-        await markFailed(id, error.message);
+        await markFailed(id, (error as Error).message);
       }
     }
   }
@@ -166,14 +171,14 @@ class SyncProcessor {
   /**
    * Sleep utility for delays
    */
-  sleep(ms) {
+  sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
    * Get sync status
    */
-  getStatus() {
+  getStatus(): any {
     return {
       isOnline: this.isOnline,
       isProcessing: this.isProcessing,
@@ -185,7 +190,7 @@ class SyncProcessor {
   /**
    * Force immediate sync attempt
    */
-  async forceSync() {
+  async forceSync(): Promise<void> {
     console.log('[SyncProcessor] Force sync triggered');
     return this.processPending();
   }

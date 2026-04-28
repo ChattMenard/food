@@ -4,6 +4,9 @@
  * Tracks key performance metrics for the application
  */
 class PerformanceMonitor {
+  metrics: Map<string, any>;
+  enabled: boolean;
+
   constructor() {
     this.metrics = new Map();
     this.enabled = typeof performance !== 'undefined';
@@ -14,7 +17,7 @@ class PerformanceMonitor {
    * @param {string} name - Name of the operation to track
    * @returns {string} Unique ID for this timing operation
    */
-  start(name) {
+  start(name: string): string | null {
     if (!this.enabled) return null;
     const id = `${name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     this.metrics.set(id, {
@@ -31,7 +34,7 @@ class PerformanceMonitor {
    * @param {string} id - ID returned from start()
    * @returns {number|null} Duration in milliseconds
    */
-  end(id) {
+  end(id: string): number | null {
     if (!this.enabled || !this.metrics.has(id)) return null;
     const metric = this.metrics.get(id);
     metric.endTime = performance.now();
@@ -51,7 +54,7 @@ class PerformanceMonitor {
    * Mark a point in time for a specific metric
    * @param {string} name - Name of the metric
    */
-  mark(name) {
+  mark(name: string): void {
     if (!this.enabled) return;
     performance.mark(name);
   }
@@ -63,7 +66,7 @@ class PerformanceMonitor {
    * @param {string} measureName - Name for the measurement
    * @returns {number|null} Duration in milliseconds
    */
-  measure(startMark, endMark, measureName) {
+  measure(startMark: string, endMark: string, measureName: string): number | null {
     if (!this.enabled) return null;
     try {
       performance.measure(measureName, startMark, endMark);
@@ -81,12 +84,12 @@ class PerformanceMonitor {
    * Get memory usage if available
    * @returns {Object|null} Memory usage information
    */
-  getMemoryUsage() {
-    if (typeof performance !== 'undefined' && performance.memory) {
+  getMemoryUsage(): any | null {
+    if (typeof performance !== 'undefined' && (performance as any).memory) {
       return {
-        usedJSHeapSize: performance.memory.usedJSHeapSize,
-        totalJSHeapSize: performance.memory.totalJSHeapSize,
-        jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
+        usedJSHeapSize: (performance as any).memory.usedJSHeapSize,
+        totalJSHeapSize: (performance as any).memory.totalJSHeapSize,
+        jsHeapSizeLimit: (performance as any).memory.jsHeapSizeLimit,
       };
     }
     return null;
@@ -95,24 +98,24 @@ class PerformanceMonitor {
   /**
    * Log current performance metrics summary
    */
-  logSummary() {
+  logSummary(): void {
     if (!this.enabled) return;
 
     console.group('[Performance Metrics Summary]');
 
     // Calculate average durations by operation name
-    const byName = new Map();
+    const byName = new Map<string, number[]>();
     this.metrics.forEach((metric) => {
       if (metric.duration !== null) {
         if (!byName.has(metric.name)) {
           byName.set(metric.name, []);
         }
-        byName.get(metric.name).push(metric.duration);
+        byName.get(metric.name)!.push(metric.duration);
       }
     });
 
     byName.forEach((durations, name) => {
-      const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
+      const avg = durations.reduce((a: number, b: number) => a + b, 0) / durations.length;
       const max = Math.max(...durations);
       const min = Math.min(...durations);
       console.log(
@@ -148,7 +151,7 @@ class PerformanceMonitor {
 export const performanceMonitor = new PerformanceMonitor();
 
 // Convenience function for timing operations
-export async function withPerformanceTiming(name, fn) {
+export async function withPerformanceTiming(name: string, fn: () => Promise<any>) {
   const id = performanceMonitor.start(name);
   try {
     const result = await fn();

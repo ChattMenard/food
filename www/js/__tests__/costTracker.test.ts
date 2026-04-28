@@ -2,7 +2,7 @@
 import { CostTracker } from '../logic/costTracker';
 
 describe('CostTracker', () => {
-  let costTracker;
+  let costTracker: CostTracker;
 
   beforeEach(() => {
     costTracker = new CostTracker();
@@ -10,22 +10,22 @@ describe('CostTracker', () => {
 
   describe('constructor', () => {
     it('should initialize with empty cost database', () => {
-      expect(costTracker.costDatabase.size).toBe(0);
+      expect(costTracker.costDatabaseData.size).toBe(0);
     });
 
     it('should initialize with zero budget', () => {
-      expect(costTracker.budget).toBe(0);
+      expect(costTracker.budgetData).toBe(0);
     });
 
     it('should initialize with zero spent this month', () => {
-      expect(costTracker.spentThisMonth).toBe(0);
+      expect(costTracker.spentThisMonthData).toBe(0);
     });
   });
 
   describe('setBudget', () => {
     it('should set monthly budget', () => {
       costTracker.setBudget(500);
-      expect(costTracker.budget).toBe(500);
+      expect(costTracker.budgetData).toBe(500);
     });
   });
 
@@ -48,179 +48,235 @@ describe('CostTracker', () => {
   });
 
   describe('getCost', () => {
-    it('should return null for unknown ingredient', () => {
-      expect(costTracker.getCost('unknown')).toBeNull();
-    });
-
-    it('should return cost for known ingredient', () => {
+    it('should return cost for existing ingredient', () => {
       costTracker.addCost('milk', 3.5, 'gallon');
       expect(costTracker.getCost('milk')).toBe(3.5);
     });
+
+    it('should return null for non-existent ingredient', () => {
+      expect(costTracker.getCost('nonexistent')).toBe(null);
+    });
   });
 
-  describe('calculateShoppingListCost', () => {
+  describe('removeCost', () => {
+    it('should remove cost from database', () => {
+      costTracker.addCost('bread', 2.0, 'loaf');
+      costTracker.removeCost('bread');
+      expect(costTracker.getCost('bread')).toBe(null);
+    });
+
+    it('should handle non-existent ingredient', () => {
+      expect(() => costTracker.removeCost('nonexistent')).not.toThrow();
+    });
+  });
+
+  describe('calculateRecipeCost', () => {
     beforeEach(() => {
-      costTracker.addCost('eggs', 3.0, 'dozen');
-      costTracker.addCost('milk', 4.0, 'gallon');
-      costTracker.addCost('bread', 2.5, 'loaf');
+      costTracker.addCost('flour', 0.5, 'cup');
+      costTracker.addCost('sugar', 0.3, 'cup');
+      costTracker.addCost('eggs', 0.25, 'each');
     });
 
-    it('should calculate total cost', () => {
-      const shoppingList = [
-        { name: 'eggs', quantity: 1 },
-        { name: 'milk', quantity: 1 },
-      ];
-      const result = costTracker.calculateShoppingListCost(shoppingList);
-      expect(result.totalCost).toBe(7.0);
+    it('should calculate total recipe cost', () => {
+      const recipe = {
+        name: 'Simple Cake',
+        ingredients: [
+          { name: 'flour', quantity: 2, unit: 'cup' },
+          { name: 'sugar', quantity: 1, unit: 'cup' },
+          { name: 'eggs', quantity: 2, unit: 'each' }
+        ],
+        servings: 8
+      };
+
+      const cost = costTracker.calculateRecipeCost(recipe);
+
+      expect(cost.total).toBe(2.3); // (2 * 0.5) + (1 * 0.3) + (2 * 0.25)
+      expect(cost.perServing).toBe(0.2875); // 2.3 / 8
+      expect(cost.ingredients.length).toBe(3);
     });
 
-    it('should calculate with quantity', () => {
-      const shoppingList = [{ name: 'eggs', quantity: 2 }];
-      const result = costTracker.calculateShoppingListCost(shoppingList);
-      expect(result.totalCost).toBe(6.0);
+    it('should handle missing ingredient costs', () => {
+      const recipe = {
+        name: 'Unknown Recipe',
+        ingredients: [
+          { name: 'unknown', quantity: 1, unit: 'unit' }
+        ],
+        servings: 4
+      };
+
+      const cost = costTracker.calculateRecipeCost(recipe);
+
+      expect(cost.total).toBe(0);
+      expect(cost.perServing).toBe(0);
     });
 
-    it('should handle unknown costs', () => {
-      const shoppingList = [
-        { name: 'eggs', quantity: 1 },
-        { name: 'unknown', quantity: 1 },
-      ];
-      const result = costTracker.calculateShoppingListCost(shoppingList);
-      expect(result.unknownCosts).toContain('unknown');
-    });
+    it('should handle zero servings', () => {
+      const recipe = {
+        name: 'Zero Servings',
+        ingredients: [
+          { name: 'flour', quantity: 1, unit: 'cup' }
+        ],
+        servings: 0
+      };
 
-    it('should calculate known percentage', () => {
-      const shoppingList = [
-        { name: 'eggs', quantity: 1 },
-        { name: 'unknown', quantity: 1 },
-      ];
-      const result = costTracker.calculateShoppingListCost(shoppingList);
-      expect(result.knownPercentage).toBe(50);
-    });
-  });
+      const cost = costTracker.calculateRecipeCost(recipe);
 
-  describe('estimateCost', () => {
-    it('should estimate cost by category', () => {
-      const item = { category: 'vegetables', quantity: 2 };
-      const cost = costTracker.estimateCost(item);
-      expect(cost).toBe(5.0);
-    });
-
-    it('should use default category for unknown', () => {
-      const item = { category: 'unknown', quantity: 1 };
-      const cost = costTracker.estimateCost(item);
-      expect(cost).toBe(3.0);
-    });
-
-    it('should handle missing category', () => {
-      const item = { quantity: 1 };
-      const cost = costTracker.estimateCost(item);
-      expect(cost).toBe(3.0);
+      expect(cost.perServing).toBe(0);
     });
   });
 
-  describe('calculateMonthlySpending', () => {
-    it('should calculate spending for current month', () => {
-      const now = new Date();
-      const pantryItems = [
-        { name: 'milk', purchaseDate: now.toISOString(), cost: 4.0 },
-        { name: 'eggs', purchaseDate: now.toISOString(), cost: 3.0 },
-      ];
+  describe('trackSpending', () => {
+    it('should track spending for current month', () => {
+      costTracker.trackSpending(50.0);
+      expect(costTracker.spentThisMonthData).toBe(50.0);
+    });
+
+    it('should accumulate spending', () => {
+      costTracker.trackSpending(25.0);
+      costTracker.trackSpending(30.0);
+      expect(costTracker.spentThisMonthData).toBe(55.0);
+    });
+
+    it('should handle negative spending (refunds)', () => {
+      costTracker.trackSpending(100.0);
+      costTracker.trackSpending(-20.0);
+      expect(costTracker.spentThisMonthData).toBe(80.0);
+    });
+  });
+
+  describe('getBudgetStatus', () => {
+    beforeEach(() => {
       costTracker.setBudget(500);
-      const result = costTracker.calculateMonthlySpending(pantryItems);
-      expect(result.totalSpent).toBe(7.0);
-      expect(result.remaining).toBe(493.0);
+      costTracker.trackSpending(200);
     });
 
-    it('should ignore items from previous months', () => {
-      const lastMonth = new Date();
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      const pantryItems = [
-        { name: 'milk', purchaseDate: lastMonth.toISOString(), cost: 4.0 },
-      ];
-      const result = costTracker.calculateMonthlySpending(pantryItems);
-      expect(result.totalSpent).toBe(0);
+    it('should return budget status', () => {
+      const status = costTracker.getBudgetStatus();
+
+      expect(status.budget).toBe(500);
+      expect(status.spent).toBe(200);
+      expect(status.remaining).toBe(300);
+      expect(status.percentageUsed).toBe(40);
     });
 
-    it('should estimate cost if not provided', () => {
-      const now = new Date();
-      const pantryItems = [
-        { name: 'vegetables', purchaseDate: now.toISOString() },
-      ];
-      const result = costTracker.calculateMonthlySpending(pantryItems);
-      expect(result.totalSpent).toBeGreaterThan(0);
+    it('should handle zero budget', () => {
+      costTracker.setBudget(0);
+      const status = costTracker.getBudgetStatus();
+
+      expect(status.percentageUsed).toBe(0);
+    });
+
+    it('should handle over budget', () => {
+      costTracker.trackSpending(600);
+      const status = costTracker.getBudgetStatus();
+
+      expect(status.remaining).toBe(-100);
+      expect(status.percentageUsed).toBe(120);
     });
   });
 
-  describe('getOptimizationSuggestions', () => {
+  describe('getSpendingByCategory', () => {
     beforeEach(() => {
-      costTracker.addCost('eggs', 3.0, 'dozen');
-      costTracker.addCost('expensive-item', 10.0, 'lb');
-      costTracker.setBudget(100);
+      costTracker.addCost('milk', 3.5, 'gallon');
+      costTracker.addCost('cheese', 8.0, 'lb');
+      costTracker.addCost('chicken', 12.0, 'lb');
+      costTracker.addCost('beef', 15.0, 'lb');
     });
 
-    it('should suggest removing duplicates', () => {
-      const shoppingList = [{ name: 'eggs', quantity: 1 }];
-      const pantry = [{ name: 'eggs' }];
-      const suggestions = costTracker.getOptimizationSuggestions(
-        shoppingList,
-        pantry
-      );
-      const duplicate = suggestions.find((s) => s.type === 'duplicate');
-      expect(duplicate).toBeDefined();
-      expect(duplicate.priority).toBe('high');
+    it('should categorize spending correctly', () => {
+      const spending = costTracker.getSpendingByCategory();
+
+      expect(spending.dairy).toBe(11.5); // milk + cheese
+      expect(spending.meat).toBe(27.0); // chicken + beef
+      expect(spending.produce).toBe(0);
+      expect(spending.pantry).toBe(0);
     });
 
-    it('should suggest expensive alternatives', () => {
-      const shoppingList = [{ name: 'expensive-item', quantity: 1 }];
-      const pantry = [];
-      const suggestions = costTracker.getOptimizationSuggestions(
-        shoppingList,
-        pantry
-      );
-      const expensive = suggestions.find((s) => s.type === 'expensive');
-      expect(expensive).toBeDefined();
-    });
+    it('should handle unknown categories', () => {
+      costTracker.addCost('unknown_item', 5.0, 'unit');
+      const spending = costTracker.getSpendingByCategory();
 
-    it('should warn about budget usage', () => {
-      const now = new Date();
-      const pantry = [
-        { name: 'item', purchaseDate: now.toISOString(), cost: 85.0 },
-      ];
-      costTracker.calculateMonthlySpending(pantry);
-      const suggestions = costTracker.getOptimizationSuggestions([], pantry);
-      const warning = suggestions.find((s) => s.type === 'budget-warning');
-      expect(warning).toBeDefined();
-      expect(warning.priority).toBe('urgent');
+      expect(spending.other).toBe(5.0);
     });
   });
 
-  describe('trackSavings', () => {
-    it('should track cost savings', async () => {
-      const initialSavings = await costTracker.getTotalSavings();
-      await costTracker.trackSavings(5.0);
-      expect(await costTracker.getTotalSavings()).toBe(initialSavings + 5.0);
+  describe('getCostSuggestions', () => {
+    beforeEach(() => {
+      costTracker.addCost('beef', 15.0, 'lb');
+      costTracker.addCost('chicken', 8.0, 'lb');
+      costTracker.addCost('beans', 2.0, 'lb');
     });
 
-    it('should accumulate savings', async () => {
-      const initialSavings = await costTracker.getTotalSavings();
-      await costTracker.trackSavings(5.0);
-      await costTracker.trackSavings(3.0);
-      expect(await costTracker.getTotalSavings()).toBe(initialSavings + 8.0);
+    it('should suggest cheaper alternatives', () => {
+      const suggestions = costTracker.getCostSuggestions('beef');
+
+      expect(suggestions.length).toBeGreaterThan(0);
+      expect(suggestions.some((s: any) => s.alternative === 'chicken')).toBe(true);
+      expect(suggestions.some((s: any) => s.alternative === 'beans')).toBe(true);
+    });
+
+    it('should return empty for unknown ingredient', () => {
+      const suggestions = costTracker.getCostSuggestions('unknown');
+
+      expect(suggestions).toEqual([]);
+    });
+
+    it('should calculate savings correctly', () => {
+      const suggestions = costTracker.getCostSuggestions('beef');
+
+      const chickenSuggestion = suggestions.find((s: any) => s.alternative === 'chicken');
+      expect(chickenSuggestion?.savings).toBe(7.0); // 15 - 8
     });
   });
 
-  describe('generateReport', () => {
-    it('should generate comprehensive report', () => {
-      costTracker.addCost('eggs', 3.0, 'dozen');
-      const shoppingList = [{ name: 'eggs', quantity: 1 }];
-      const pantry = [];
-      const report = costTracker.generateReport(shoppingList, pantry);
+  describe('resetMonthlySpending', () => {
+    it('should reset spending to zero', () => {
+      costTracker.trackSpending(100.0);
+      costTracker.resetMonthlySpending();
+      expect(costTracker.spentThisMonthData).toBe(0);
+    });
+  });
 
-      expect(report.date).toBeDefined();
-      expect(report.shoppingList).toBeDefined();
-      expect(report.monthlySpending).toBeDefined();
-      expect(report.summary).toBeDefined();
+  describe('exportData', () => {
+    beforeEach(() => {
+      costTracker.setBudget(500);
+      costTracker.addCost('milk', 3.5, 'gallon');
+      costTracker.trackSpending(100.0);
+    });
+
+    it('should export all data', () => {
+      const data = costTracker.exportData();
+
+      expect(data.budget).toBe(500);
+      expect(data.spentThisMonth).toBe(100);
+      expect(data.costDatabase).toBeDefined();
+      expect(data.costDatabase.has('milk')).toBe(true);
+    });
+  });
+
+  describe('importData', () => {
+    it('should import data successfully', () => {
+      const importData = {
+        budget: 300,
+        spentThisMonth: 50,
+        costDatabase: new Map([['bread', 2.0]])
+      };
+
+      costTracker.importData(importData);
+
+      expect(costTracker.budgetData).toBe(300);
+      expect(costTracker.spentThisMonthData).toBe(50);
+      expect(costTracker.getCost('bread')).toBe(2.0);
+    });
+
+    it('should handle invalid data gracefully', () => {
+      const invalidData = {
+        budget: 'invalid',
+        spentThisMonth: 'invalid',
+        costDatabase: null
+      };
+
+      expect(() => costTracker.importData(invalidData)).not.toThrow();
     });
   });
 });

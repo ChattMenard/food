@@ -1,16 +1,14 @@
 // @ts-check
-import {
-  ErrorTracking,
-  getErrorTracking,
-  initErrorTracking,
-} from '../utils/errorTracking';
+import { ErrorTracking, getErrorTracking, initErrorTracking } from '../utils/errorTracking';
 
 describe('ErrorTracking', () => {
-  let tracker;
+  let tracker: ErrorTracking;
 
   beforeEach(() => {
     tracker = new ErrorTracking();
-    jest.clearAllMocks();
+    // Mock console methods
+    jest.spyOn(console, 'error').mockImplementation();
+    jest.spyOn(console, 'log').mockImplementation();
   });
 
   afterEach(() => {
@@ -19,167 +17,277 @@ describe('ErrorTracking', () => {
 
   describe('constructor', () => {
     it('initializes with default values', () => {
-      expect(tracker.enabled).toBe(false);
-      expect(tracker.dsn).toBe('');
-      expect(tracker.environment).toBe('development');
-      expect(tracker.release).toBe('');
-      expect(tracker.user).toBe(null);
+      expect((tracker as any).enabled).toBe(false);
+      expect((tracker as any).dsn).toBe('');
+      expect((tracker as any).environment).toBe('development');
+      expect((tracker as any).user).toBe(null);
     });
   });
 
   describe('init', () => {
-    it('initializes with config', () => {
-      tracker.init({
+    it('initializes with provided config', () => {
+      const config = {
         dsn: 'test-dsn',
-        environment: 'production',
-        release: '2.0.0',
-      });
-      expect(tracker.dsn).toBe('test-dsn');
-      expect(tracker.environment).toBe('production');
-      expect(tracker.release).toBe('2.0.0');
-      expect(tracker.enabled).toBe(true);
+        environment: 'test',
+        release: '1.0.0'
+      };
+
+      tracker.init(config);
+
+      expect((tracker as any).dsn).toBe('test-dsn');
+      expect((tracker as any).environment).toBe('test');
+      expect((tracker as any).release).toBe('1.0.0');
+      expect((tracker as any).enabled).toBe(true);
     });
 
-    it('remains disabled without DSN', () => {
-      tracker.init({});
-      expect(tracker.enabled).toBe(false);
+    it('uses defaults when config not provided', () => {
+      tracker.init();
+
+      expect((tracker as any).dsn).toBe('');
+      expect((tracker as any).environment).toBe('development');
+      expect((tracker as any).release).toBe('1.0.0');
+      expect((tracker as any).enabled).toBe(false);
+    });
+
+    it('sets up global error handlers when enabled', () => {
+      const mockAddEventListener = jest.fn();
+      (global as any).window = { addEventListener: mockAddEventListener };
+
+      tracker.init({ dsn: 'test-dsn' });
+
+      expect(mockAddEventListener).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(mockAddEventListener).toHaveBeenCalledWith('unhandledrejection', expect.any(Function));
     });
   });
 
   describe('captureException', () => {
-    it('logs error when disabled', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    it('captures exception when enabled', () => {
+      tracker.init({ dsn: 'test-dsn' });
+
       const error = new Error('Test error');
-      tracker.captureException(error, { context: 'test' });
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      const context = { userId: '123' };
+
+      tracker.captureException(error, context);
+
+      expect(console.error).toHaveBeenCalledWith('[ErrorTracking] Captured exception:', error, context);
     });
 
-    it('does not throw when disabled', () => {
+    it('logs to console when disabled', () => {
       const error = new Error('Test error');
-      expect(() => tracker.captureException(error)).not.toThrow();
+      const context = { userId: '123' };
+
+      tracker.captureException(error, context);
+
+      expect(console.error).toHaveBeenCalledWith('[ErrorTracking]', error, context);
     });
   });
 
   describe('captureMessage', () => {
-    it('logs message when disabled', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      tracker.captureMessage('Test message', 'warning', { context: 'test' });
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+    it('captures message when enabled', () => {
+      tracker.init({ dsn: 'test-dsn' });
+
+      const message = 'Test message';
+      const level = 'warning';
+      const context = { component: 'test' };
+
+      tracker.captureMessage(message, level, context);
+
+      expect(console.log).toHaveBeenCalledWith('[ErrorTracking] [warning]', message, context);
     });
 
-    it('uses default level of info', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    it('uses default level when not provided', () => {
+      tracker.init({ dsn: 'test-dsn' });
+
       tracker.captureMessage('Test message');
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+
+      expect(console.log).toHaveBeenCalledWith('[ErrorTracking] [info]', 'Test message', {});
+    });
+
+    it('logs to console when disabled', () => {
+      tracker.captureMessage('Test message', 'error');
+
+      expect(console.log).toHaveBeenCalledWith('[ErrorTracking] [error]', 'Test message', {});
     });
   });
 
   describe('setUser', () => {
     it('sets user context', () => {
-      const user = { id: 'user123', email: 'test@example.com' };
+      const user = { id: '123', email: 'test@example.com' };
+
       tracker.setUser(user);
-      expect(tracker.user).toEqual(user);
+
+      expect((tracker as any).user).toEqual(user);
+    });
+
+    it('clears user when null provided', () => {
+      tracker.setUser({ id: '123' });
+      tracker.setUser(null);
+
+      expect((tracker as any).user).toBe(null);
     });
   });
 
   describe('clearUser', () => {
     it('clears user context', () => {
-      tracker.user = { id: 'user123' };
+      tracker.setUser({ id: '123' });
       tracker.clearUser();
-      expect(tracker.user).toBe(null);
+
+      expect((tracker as any).user).toBe(null);
     });
   });
 
   describe('addBreadcrumb', () => {
-    it('does nothing when disabled', () => {
-      expect(() => tracker.addBreadcrumb({ message: 'test' })).not.toThrow();
-    });
-  });
+    it('adds breadcrumb when enabled', () => {
+      tracker.init({ dsn: 'test-dsn' });
 
-  describe('setTag', () => {
+      const breadcrumb = {
+        message: 'Test breadcrumb',
+        category: 'test',
+        level: 'info'
+      };
+
+      // Should not throw error
+      expect(() => tracker.addBreadcrumb(breadcrumb)).not.toThrow();
+    });
+
     it('does nothing when disabled', () => {
-      expect(() => tracker.setTag('key', 'value')).not.toThrow();
+      const breadcrumb = {
+        message: 'Test breadcrumb',
+        category: 'test',
+        level: 'info'
+      };
+
+      // Should not throw error
+      expect(() => tracker.addBreadcrumb(breadcrumb)).not.toThrow();
     });
   });
 
   describe('setContext', () => {
+    it('sets context when enabled', () => {
+      tracker.init({ dsn: 'test-dsn' });
+
+      const context = { feature: 'meal-planning' };
+
+      // Should not throw error
+      expect(() => tracker.setContext('app', context)).not.toThrow();
+    });
+
     it('does nothing when disabled', () => {
-      expect(() => tracker.setContext('key', { value: 'test' })).not.toThrow();
+      const context = { feature: 'meal-planning' };
+
+      // Should not throw error
+      expect(() => tracker.setContext('app', context)).not.toThrow();
+    });
+  });
+
+  describe('setTag', () => {
+    it('sets tag when enabled', () => {
+      tracker.init({ dsn: 'test-dsn' });
+
+      // Should not throw error
+      expect(() => tracker.setTag('environment', 'test')).not.toThrow();
+    });
+
+    it('does nothing when disabled', () => {
+      // Should not throw error
+      expect(() => tracker.setTag('environment', 'test')).not.toThrow();
     });
   });
 
   describe('wrap', () => {
     it('wraps function with error tracking', () => {
-      const fn = jest.fn(() => 'result');
-      const wrapped = tracker.wrap(fn, 'testFunction');
-      const result = wrapped();
-      expect(result).toBe('result');
-      expect(fn).toHaveBeenCalled();
+      const fn = jest.fn().mockReturnValue('success');
+      const wrapped = tracker.wrap(fn, 'test-function');
+
+      const result = wrapped('arg1', 'arg2');
+
+      expect(fn).toHaveBeenCalledWith('arg1', 'arg2');
+      expect(result).toBe('success');
     });
 
     it('captures errors from wrapped function', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const fn = jest.fn(() => {
-        throw new Error('Test error');
+      const error = new Error('Test error');
+      const fn = jest.fn().mockImplementation(() => {
+        throw error;
       });
-      const wrapped = tracker.wrap(fn, 'testFunction');
-      expect(() => wrapped()).toThrow('Test error');
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
 
-    it('uses anonymous as default name', () => {
-      const fn = jest.fn(() => 'result');
-      const wrapped = tracker.wrap(fn);
-      wrapped();
-      expect(fn).toHaveBeenCalled();
+      const wrapped = tracker.wrap(fn, 'test-function');
+
+      expect(() => wrapped()).toThrow('Test error');
+      expect(console.error).toHaveBeenCalledWith('[ErrorTracking]', error, { function: 'test-function' });
     });
   });
 
   describe('wrapAsync', () => {
     it('wraps async function with error tracking', async () => {
-      const fn = jest.fn(async () => 'result');
-      const wrapped = tracker.wrapAsync(fn, 'testFunction');
-      const result = await wrapped();
-      expect(result).toBe('result');
-      expect(fn).toHaveBeenCalled();
+      const fn = jest.fn().mockResolvedValue('success');
+      const wrapped = tracker.wrapAsync(fn, 'test-async-function');
+
+      const result = await wrapped('arg1', 'arg2');
+
+      expect(fn).toHaveBeenCalledWith('arg1', 'arg2');
+      expect(result).toBe('success');
     });
 
     it('captures errors from wrapped async function', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      const fn = jest.fn(async () => {
-        throw new Error('Test error');
-      });
-      const wrapped = tracker.wrapAsync(fn, 'testFunction');
-      await expect(wrapped()).rejects.toThrow('Test error');
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
+      const error = new Error('Test error');
+      const fn = jest.fn().mockRejectedValue(error);
 
-    it('uses anonymous as default name', async () => {
-      const fn = jest.fn(async () => 'result');
-      const wrapped = tracker.wrapAsync(fn);
-      await wrapped();
-      expect(fn).toHaveBeenCalled();
+      const wrapped = tracker.wrapAsync(fn, 'test-async-function');
+
+      await expect(wrapped()).rejects.toThrow('Test error');
+      expect(console.error).toHaveBeenCalledWith('[ErrorTracking]', error, { function: 'test-async-function' });
     });
   });
 
-  describe('getErrorTracking', () => {
-    it('returns singleton instance', () => {
+  describe('global functions', () => {
+    it('initErrorTracking initializes global instance', () => {
+      const config = { dsn: 'global-dsn', environment: 'test' };
+
+      initErrorTracking(config);
+
+      const instance = getErrorTracking();
+      expect((instance as any).dsn).toBe('global-dsn');
+      expect((instance as any).environment).toBe('test');
+    });
+
+    it('getErrorTracking returns singleton instance', () => {
       const instance1 = getErrorTracking();
       const instance2 = getErrorTracking();
+
       expect(instance1).toBe(instance2);
     });
   });
 
-  describe('initErrorTracking', () => {
-    it('initializes global error tracking', () => {
-      initErrorTracking({ dsn: 'test-dsn' });
-      const tracker = getErrorTracking();
-      expect(tracker.dsn).toBe('test-dsn');
+  describe('setupGlobalHandlers', () => {
+    it('captures unhandled errors', () => {
+      const mockAddEventListener = jest.fn();
+      (global as any).window = { addEventListener: mockAddEventListener };
+
+      tracker.init({ dsn: 'test-dsn' });
+
+      // Get the error handler
+      const errorHandler = mockAddEventListener.mock.calls.find(
+        (call: any) => call[0] === 'error'
+      )?.[1];
+
+      expect(errorHandler).toBeDefined();
+      expect(typeof errorHandler).toBe('function');
+    });
+
+    it('captures unhandled promise rejections', () => {
+      const mockAddEventListener = jest.fn();
+      (global as any).window = { addEventListener: mockAddEventListener };
+
+      tracker.init({ dsn: 'test-dsn' });
+
+      // Get the rejection handler
+      const rejectionHandler = mockAddEventListener.mock.calls.find(
+        (call: any) => call[0] === 'unhandledrejection'
+      )?.[1];
+
+      expect(rejectionHandler).toBeDefined();
+      expect(typeof rejectionHandler).toBe('function');
     });
   });
 });

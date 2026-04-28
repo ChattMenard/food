@@ -49,7 +49,7 @@ class MigrationManager {
   /**
    * Set current schema version
    */
-  async setCurrentVersion(version) {
+  async setCurrentVersion(version: number): Promise<void> {
     await db.put('preferences', {
       key: MIGRATION_KEY,
       value: version.toString(),
@@ -100,7 +100,7 @@ class MigrationManager {
         }
       } catch (error) {
         console.error('[Migration] v' + version + ' error:', error);
-        results.push({ version, success: false, error: error.message });
+        results.push({ version, success: false, error: (error as Error).message });
         break;
       }
     }
@@ -119,7 +119,7 @@ class MigrationManager {
   /**
    * Rollback to previous version (destructive - use carefully)
    */
-  async rollback(targetVersion) {
+  async rollback(targetVersion: number): Promise<any> {
     const currentVersion = await this.getCurrentVersion();
 
     if (targetVersion >= currentVersion) {

@@ -10,7 +10,7 @@ import {
 } from '../features/plan/budgetMealPlanner';
 
 describe('BudgetMealPlanner', () => {
-  let planner;
+  let planner: BudgetMealPlanner;
 
   beforeEach(() => {
     planner = new BudgetMealPlanner();
@@ -18,7 +18,7 @@ describe('BudgetMealPlanner', () => {
 
   describe('initialization', () => {
     it('should default to medium tier', () => {
-      expect(planner.currentTier).toBe('medium');
+      expect(planner.currentTierData).toBe('medium');
     });
 
     it('should get current tier details', () => {
@@ -32,14 +32,14 @@ describe('BudgetMealPlanner', () => {
     it('should list all tiers', () => {
       const tiers = planner.getAllTiers();
       expect(tiers.length).toBe(3);
-      expect(tiers.some((t) => t.id === 'low')).toBe(true);
-      expect(tiers.some((t) => t.id === 'medium')).toBe(true);
-      expect(tiers.some((t) => t.id === 'high')).toBe(true);
+      expect(tiers.some((t: any) => t.id === 'low')).toBe(true);
+      expect(tiers.some((t: any) => t.id === 'medium')).toBe(true);
+      expect(tiers.some((t: any) => t.id === 'high')).toBe(true);
     });
 
     it('should set tier correctly', async () => {
       await planner.setTier('low');
-      expect(planner.currentTier).toBe('low');
+      expect(planner.currentTierData).toBe('low');
       expect(planner.getCurrentTier().maxPerServing).toBe(3.0);
     });
 
@@ -117,18 +117,18 @@ describe('BudgetMealPlanner', () => {
     ];
 
     it('should filter recipes by low budget', () => {
-      planner.currentTier = 'low';
+      planner.currentTierData = 'low';
       const filtered = planner.filterByBudget(mockRecipes);
 
       // Rice & beans should fit, expensive proteins should not
-      expect(filtered.some((r) => r.name === 'Rice & Beans')).toBe(true);
+      expect(filtered.some((r: any) => r.name === 'Rice & Beans')).toBe(true);
     });
 
     it('should mark budget compatibility', () => {
-      planner.currentTier = 'low';
+      planner.currentTierData = 'low';
       const filtered = planner.filterByBudget(mockRecipes);
 
-      const riceAndBeans = filtered.find((r) => r.name === 'Rice & Beans');
+      const riceAndBeans = filtered.find((r: any) => r.name === 'Rice & Beans');
       expect(riceAndBeans.withinBudget).toBe(true);
     });
   });
@@ -228,7 +228,7 @@ describe('BudgetMealPlanner', () => {
     ];
 
     it('should generate weekly plan', () => {
-      planner.currentTier = 'low';
+      planner.currentTierData = 'low';
       const plan = planner.generateWeeklyPlan(affordableRecipes, 7);
 
       expect(plan.mealCount).toBeGreaterThan(0);
@@ -237,7 +237,7 @@ describe('BudgetMealPlanner', () => {
     });
 
     it('should track budget remaining', () => {
-      planner.currentTier = 'low';
+      planner.currentTierData = 'low';
       const plan = planner.generateWeeklyPlan(affordableRecipes, 7);
 
       expect(plan.budgetRemaining).toBeDefined();
@@ -245,7 +245,7 @@ describe('BudgetMealPlanner', () => {
     });
 
     it('should handle no affordable recipes', () => {
-      planner.currentTier = 'low';
+      planner.currentTierData = 'low';
       // Recipe with expensive meat that definitely exceeds $3/serving
       const expensiveRecipes = [
         {
@@ -297,7 +297,7 @@ describe('BudgetMealPlanner', () => {
       const comparison = planner.compareTiers(cheapRecipe);
 
       // Cheap recipe should fit all tiers
-      const fitsAll = comparison.comparisons.every((c) => c.fits);
+      const fitsAll = comparison.comparisons.every((c: any) => c.fits);
       expect(fitsAll).toBe(true);
     });
   });
@@ -336,8 +336,8 @@ describe('BudgetMealPlanner', () => {
       const suggestions = planner.getBudgetSuggestions([expensiveRecipe]);
 
       expect(suggestions.length).toBeGreaterThan(0);
-      expect(suggestions.some((s) => s.type === 'substitutions')).toBe(true);
-      expect(suggestions.some((s) => s.type === 'budget-bases')).toBe(true);
+      expect(suggestions.some((s: any) => s.type === 'substitutions')).toBe(true);
+      expect(suggestions.some((s: any) => s.type === 'budget-bases')).toBe(true);
     });
   });
 });

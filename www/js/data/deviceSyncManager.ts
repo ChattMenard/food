@@ -76,7 +76,7 @@ export class DeviceSyncManager {
     await db.ready;
 
     // Load existing device info
-    const deviceInfo = await db.get('preferences', 'device-sync-info');
+    const deviceInfo: any = await db.get('preferences', 'device-sync-info');
 
     if (deviceInfo && deviceInfo.value) {
       this.deviceId = deviceInfo.value.deviceId;
@@ -85,7 +85,7 @@ export class DeviceSyncManager {
       this.vectorClock = deviceInfo.value.vectorClock || {};
       this.isRegistered = true;
 
-      log(
+      console.log(
         '[DeviceSync] Loaded device:',
         this.deviceId,
         this.deviceName
@@ -101,7 +101,7 @@ export class DeviceSyncManager {
   /**
    * Register this device for sync
    */
-  async registerDevice(customName = null) {
+  async registerDevice(customName: string | null = null): Promise<any> {
     this.deviceId = this.generateDeviceId();
     this.deviceName = customName || this.generateDeviceName();
     this.vectorClock = { [this.deviceId]: 0 };
@@ -123,7 +123,7 @@ export class DeviceSyncManager {
   /**
    * Generate unique device ID
    */
-  generateDeviceId() {
+  generateDeviceId(): string {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);
     return `dev-${timestamp}-${random}`;
@@ -132,7 +132,7 @@ export class DeviceSyncManager {
   /**
    * Generate readable device name
    */
-  generateDeviceName() {
+  generateDeviceName(): string {
     const deviceTypes = ['Phone', 'Tablet', 'Laptop', 'Desktop'];
     const type = deviceTypes[Math.floor(Math.random() * deviceTypes.length)];
     const number = Math.floor(Math.random() * 1000);
@@ -142,7 +142,7 @@ export class DeviceSyncManager {
   /**
    * Save device info to IndexedDB
    */
-  async saveDeviceInfo() {
+  async saveDeviceInfo(): Promise<void> {
     await db.put('preferences', {
       key: 'device-sync-info',
       value: {
@@ -159,7 +159,7 @@ export class DeviceSyncManager {
   /**
    * Get current device info
    */
-  getDeviceInfo() {
+  getDeviceInfo(): any {
     return {
       deviceId: this.deviceId,
       deviceName: this.deviceName,
@@ -172,7 +172,7 @@ export class DeviceSyncManager {
   /**
    * Update device name
    */
-  async setDeviceName(name) {
+  async setDeviceName(name: string): Promise<any> {
     this.deviceName = name;
     await this.saveDeviceInfo();
     this.notifyListeners('renamed', {
@@ -185,7 +185,7 @@ export class DeviceSyncManager {
   /**
    * Generate sync payload for all data types
    */
-  async generateSyncPayload() {
+  async generateSyncPayload(): Promise<any> {
     const payload = {
       deviceId: this.deviceId,
       timestamp: Date.now(),
@@ -542,4 +542,4 @@ export class DeviceSyncManager {
 
 const deviceSyncManager = new DeviceSyncManager();
 export default deviceSyncManager;
-export { DeviceSyncManager, CONFLICT_STRATEGIES, DATA_TYPE_CONFIG };
+export { CONFLICT_STRATEGIES, DATA_TYPE_CONFIG };

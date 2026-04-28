@@ -243,7 +243,7 @@ export class Analytics {
    * @param {string} key - Property key
    * @param {number} value - Increment value
    */
-  incrementUserProperty(key, value = 1) {
+  incrementUserProperty(key: string, value: number = 1): void {
     const current = this.userProperties[key] || 0;
     this.userProperties[key] = current + value;
 

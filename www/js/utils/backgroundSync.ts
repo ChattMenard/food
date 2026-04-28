@@ -39,7 +39,7 @@ export class BackgroundSyncManager {
   /**
    * Load sync queue from localStorage
    */
-  loadSyncQueue() {
+  loadSyncQueue(): void {
     try {
       const saved = localStorage.getItem(this.storageKey);
       if (saved) {
@@ -56,7 +56,7 @@ export class BackgroundSyncManager {
   /**
    * Save sync queue to localStorage
    */
-  saveSyncQueue() {
+  saveSyncQueue(): void {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(this.syncQueue));
     } catch (error) {
@@ -67,7 +67,7 @@ export class BackgroundSyncManager {
   /**
    * Setup sync event listeners
    */
-  setupSyncListeners() {
+  setupSyncListeners(): void {
     // Sync when coming back online
     window.addEventListener('online', () => {
       console.log('[Sync] Connection restored, triggering sync');
@@ -104,7 +104,7 @@ export class BackgroundSyncManager {
    * @param {string} type - Sync operation type
    * @param {Object} data - Data to sync
    */
-  queueSync(type, data) {
+  queueSync(type: string, data: any): void {
     const syncItem = {
       id: Date.now() + Math.random(),
       type,
@@ -128,7 +128,7 @@ export class BackgroundSyncManager {
    * Sync meal plan changes
    * @param {Object} mealPlan - Meal plan to sync
    */
-  syncMealPlan(mealPlan) {
+  syncMealPlan(mealPlan: any): void {
     this.queueSync('mealPlan', mealPlan);
   }
 
@@ -136,7 +136,7 @@ export class BackgroundSyncManager {
    * Sync pantry changes
    * @param {Array} pantry - Pantry items to sync
    */
-  syncPantry(pantry) {
+  syncPantry(pantry: any): void {
     this.queueSync('pantry', pantry);
   }
 
@@ -144,14 +144,14 @@ export class BackgroundSyncManager {
    * Sync preferences
    * @param {Object} preferences - Preferences to sync
    */
-  syncPreferences(preferences) {
+  syncPreferences(preferences: any): void {
     this.queueSync('preferences', preferences);
   }
 
   /**
    * Process all pending sync operations
    */
-  async syncAll() {
+  async syncAll(): Promise<void> {
     if (this.isSyncing || this.syncQueue.length === 0 || !navigator.onLine) {
       return;
     }
@@ -196,7 +196,7 @@ export class BackgroundSyncManager {
    * Process a single sync item
    * @param {Object} item - Sync item to process
    */
-  async processSyncItem(item) {
+  async processSyncItem(item: any): Promise<boolean> {
     switch (item.type) {
       case 'mealPlan':
         return this.syncMealPlanToServer(item.data);
@@ -213,7 +213,7 @@ export class BackgroundSyncManager {
    * Sync meal plan to server
    * @param {Object} mealPlan - Meal plan data
    */
-  async syncMealPlanToServer(mealPlan) {
+  async syncMealPlanToServer(mealPlan: any): Promise<boolean> {
     try {
       // Store locally for now, sync to server when available
       localStorage.setItem('meal_plan_backup', JSON.stringify({
@@ -257,7 +257,7 @@ export class BackgroundSyncManager {
    * Sync pantry to server
    * @param {Array} pantry - Pantry data
    */
-  async syncPantryToServer(pantry) {
+  async syncPantryToServer(pantry: any): Promise<boolean> {
     try {
       // Store locally for now, sync to server when available
       localStorage.setItem('pantry_backup', JSON.stringify({
@@ -301,7 +301,7 @@ export class BackgroundSyncManager {
    * Sync preferences to server
    * @param {Object} preferences - Preferences data
    */
-  async syncPreferencesToServer(preferences) {
+  async syncPreferencesToServer(preferences: any): Promise<boolean> {
     try {
       // Store locally for now, sync to server when available
       localStorage.setItem('preferences_backup', JSON.stringify({
@@ -345,7 +345,7 @@ export class BackgroundSyncManager {
    * Notify user that sync completed
    * @param {number} count - Number of items synced
    */
-  notifySyncComplete(count) {
+  notifySyncComplete(count: number): void {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Main - Sync Complete', {
         body: `Synced ${count} items successfully`,
@@ -360,7 +360,7 @@ export class BackgroundSyncManager {
    * Start periodic sync interval
    * @param {number} interval - Sync interval in milliseconds
    */
-  startPeriodicSync(interval = 300000) {
+  startPeriodicSync(interval: number = 300000): void {
     // 5 minutes default
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
@@ -376,7 +376,7 @@ export class BackgroundSyncManager {
   /**
    * Stop periodic sync
    */
-  stopPeriodicSync() {
+  stopPeriodicSync(): void {
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
@@ -387,7 +387,7 @@ export class BackgroundSyncManager {
    * Get sync status
    * @returns {Object} Sync status
    */
-  getSyncStatus() {
+  getSyncStatus(): any {
     return {
       pending: this.syncQueue.length,
       isSyncing: this.isSyncing,
@@ -398,7 +398,7 @@ export class BackgroundSyncManager {
   /**
    * Clear sync queue
    */
-  clearQueue() {
+  clearQueue(): void {
     this.syncQueue = [];
     this.saveSyncQueue();
     console.log('[Sync] Cleared sync queue');
@@ -406,7 +406,7 @@ export class BackgroundSyncManager {
 }
 
 // Global sync manager instance
-let globalSyncManager = null;
+let globalSyncManager: BackgroundSyncManager | null = null;
 
 /**
  * Get or create the global background sync manager

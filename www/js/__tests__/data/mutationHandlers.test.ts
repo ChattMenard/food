@@ -3,27 +3,16 @@ import { handleAddItem, handleUpdateItem, handleDeleteItem, registerAllHandlers 
 
 jest.mock('../../data/db', () => ({
   ready: Promise.resolve(),
-  put: jest.fn().mockResolvedValue(undefined),
+  add: jest.fn().mockResolvedValue(undefined),
   get: jest.fn().mockResolvedValue(null),
+  put: jest.fn().mockResolvedValue(undefined),
   delete: jest.fn().mockResolvedValue(undefined),
-  setPantry: jest.fn().mockResolvedValue(undefined),
-  getPantry: jest.fn().mockImplementation(() => Promise.resolve([]))
+  getPantry: jest.fn().mockResolvedValue([])
 }));
 
 jest.mock('../../core/appState', () => ({
-  savePantryState: jest.fn().mockImplementation(() => Promise.resolve(undefined))
+  savePantryState: jest.fn().mockResolvedValue(undefined)
 }));
-
-const mockDb = {
-  ready: Promise.resolve(),
-  put: jest.fn().mockResolvedValue(undefined),
-  get: jest.fn().mockResolvedValue(null),
-  delete: jest.fn().mockResolvedValue(undefined),
-  setPantry: jest.fn().mockResolvedValue(undefined),
-  getPantry: jest.fn().mockImplementation(() => Promise.resolve([]))
-};
-
-jest.mock('../../data/db', () => mockDb);
 
 import db from '../../data/db';
 import { savePantryState } from '../../core/appState';
@@ -59,45 +48,61 @@ describe('MutationHandlers', () => {
       expect(savePantryState).toHaveBeenCalled();
     });
 
-    it('should handle missing quantity with default', async () => {
+    it('should handle missing optional fields', async () => {
       const mutation = {
         type: 'ADD_ITEM',
-        payload: { name: 'Banana' }
+        payload: {
+          name: 'Banana',
+          quantity: '3'
+        }
       };
 
-      await handleAddItem(mutation);
+      const result = await handleAddItem(mutation);
 
-      expect(db.add).toHaveBeenCalledWith('pantry', expect.objectContaining({
-        quantity: 1,
-        unit: 'item'
-      }));
+      expect(result.success).toBe(true);
+      expect(db.add).toHaveBeenCalledWith('pantry', {
+        name: 'banana',
+        quantity: 3,
+        unit: null,
+        category: null,
+        purchaseDate: expect.any(String),
+        expiryDate: null
+      });
     });
 
-    it('should return error on failure', async () => {
-      db.add.mockRejectedValue(new Error('DB error'));
+    it('should handle database errors', async () => {
+      (db.add as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       const mutation = {
         type: 'ADD_ITEM',
-        payload: { name: 'Apple' }
+        payload: { name: 'Apple', quantity: '1' }
       };
 
       const result = await handleAddItem(mutation);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('DB error');
+      expect(result.error).toBe('Database error');
     });
   });
 
   describe('handleUpdateItem', () => {
     it('should update existing item', async () => {
-      const existingItem = { id: 'item-1', name: 'Apple', quantity: 5 };
-      db.get.mockResolvedValue(existingItem);
+      const existingItem = {
+        id: 'item-1',
+        name: 'apple',
+        quantity: 5,
+        unit: 'kg',
+        category: 'fruit'
+      };
+
+      (db.get as jest.Mock).mockResolvedValue(existingItem);
 
       const mutation = {
         type: 'UPDATE_ITEM',
         payload: {
           id: 'item-1',
-          updates: { quantity: 10, category: 'updated' }
+          quantity: '10',
+          unit: 'kg'
         }
       };
 
@@ -106,21 +111,22 @@ describe('MutationHandlers', () => {
       expect(result.success).toBe(true);
       expect(db.put).toHaveBeenCalledWith('pantry', {
         id: 'item-1',
-        name: 'Apple',
+        name: 'apple',
         quantity: 10,
-        category: 'updated'
+        unit: 'kg',
+        category: 'fruit'
       });
       expect(savePantryState).toHaveBeenCalled();
     });
 
     it('should return error if item not found', async () => {
-      db.get.mockResolvedValue(null);
+      (db.get as jest.Mock).mockResolvedValue(null);
 
       const mutation = {
         type: 'UPDATE_ITEM',
         payload: {
-          id: 'nonexistent',
-          updates: { quantity: 10 }
+          id: 'non-existent',
+          quantity: '10'
         }
       };
 
@@ -130,23 +136,31 @@ describe('MutationHandlers', () => {
       expect(result.error).toBe('Item not found');
     });
 
-    it('should return error on failure', async () => {
-      db.get.mockRejectedValue(new Error('DB error'));
+    it('should handle database errors', async () => {
+      (db.get as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       const mutation = {
         type: 'UPDATE_ITEM',
-        payload: { id: 'item-1', updates: {} }
+        payload: { id: 'item-1', quantity: '10' }
       };
 
       const result = await handleUpdateItem(mutation);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('DB error');
+      expect(result.error).toBe('Database error');
     });
   });
 
   describe('handleDeleteItem', () => {
-    it('should delete item from pantry', async () => {
+    it('should delete existing item', async () => {
+      const existingItem = {
+        id: 'item-1',
+        name: 'apple',
+        quantity: 5
+      };
+
+      (db.get as jest.Mock).mockResolvedValue(existingItem);
+
       const mutation = {
         type: 'DELETE_ITEM',
         payload: { id: 'item-1' }
@@ -159,8 +173,22 @@ describe('MutationHandlers', () => {
       expect(savePantryState).toHaveBeenCalled();
     });
 
-    it('should return error on failure', async () => {
-      db.delete.mockRejectedValue(new Error('DB error'));
+    it('should return error if item not found', async () => {
+      (db.get as jest.Mock).mockResolvedValue(null);
+
+      const mutation = {
+        type: 'DELETE_ITEM',
+        payload: { id: 'non-existent' }
+      };
+
+      const result = await handleDeleteItem(mutation);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Item not found');
+    });
+
+    it('should handle database errors', async () => {
+      (db.get as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       const mutation = {
         type: 'DELETE_ITEM',
@@ -170,22 +198,102 @@ describe('MutationHandlers', () => {
       const result = await handleDeleteItem(mutation);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('DB error');
+      expect(result.error).toBe('Database error');
     });
   });
 
   describe('registerAllHandlers', () => {
-    it('should register all handlers with sync processor', () => {
-      const mockSyncProcessor = {
-        registerHandler: jest.fn()
+    it('should register all mutation handlers', () => {
+      const mockRegister = jest.fn();
+      
+      registerAllHandlers(mockRegister);
+
+      expect(mockRegister).toHaveBeenCalledWith('ADD_ITEM', expect.any(Function));
+      expect(mockRegister).toHaveBeenCalledWith('UPDATE_ITEM', expect.any(Function));
+      expect(mockRegister).toHaveBeenCalledWith('DELETE_ITEM', expect.any(Function));
+    });
+  });
+
+  describe('data normalization', () => {
+    it('should normalize item names', async () => {
+      const mutation = {
+        type: 'ADD_ITEM',
+        payload: {
+          name: '  ORANGE  ',
+          quantity: '2',
+          unit: 'kg'
+        }
       };
 
-      registerAllHandlers(mockSyncProcessor);
+      await handleAddItem(mutation);
 
-      expect(mockSyncProcessor.registerHandler).toHaveBeenCalledWith('ADD_ITEM', handleAddItem);
-      expect(mockSyncProcessor.registerHandler).toHaveBeenCalledWith('UPDATE_ITEM', handleUpdateItem);
-      expect(mockSyncProcessor.registerHandler).toHaveBeenCalledWith('DELETE_ITEM', handleDeleteItem);
-      expect(mockSyncProcessor.registerHandler).toHaveBeenCalledTimes(3);
+      expect(db.add).toHaveBeenCalledWith('pantry', expect.objectContaining({
+        name: 'orange'
+      }));
+    });
+
+    it('should convert string quantities to numbers', async () => {
+      const mutation = {
+        type: 'ADD_ITEM',
+        payload: {
+          name: 'Apple',
+          quantity: '5.5',
+          unit: 'kg'
+        }
+      };
+
+      await handleAddItem(mutation);
+
+      expect(db.add).toHaveBeenCalledWith('pantry', expect.objectContaining({
+        quantity: 5.5
+      }));
+    });
+
+    it('should handle invalid quantities', async () => {
+      const mutation = {
+        type: 'ADD_ITEM',
+        payload: {
+          name: 'Apple',
+          quantity: 'invalid'
+        }
+      };
+
+      const result = await handleAddItem(mutation);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Invalid quantity');
+    });
+  });
+
+  describe('validation', () => {
+    it('should validate required fields', async () => {
+      const mutation = {
+        type: 'ADD_ITEM',
+        payload: {
+          name: '',
+          quantity: '1'
+        }
+      };
+
+      const result = await handleAddItem(mutation);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Name is required');
+    });
+
+    it('should validate quantity is positive', async () => {
+      const mutation = {
+        type: 'ADD_ITEM',
+        payload: {
+          name: 'Apple',
+          quantity: '-5'
+        }
+      };
+
+      const result = await handleAddItem(mutation);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Quantity must be positive');
     });
   });
 });

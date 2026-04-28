@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   presets: [
     ['@babel/preset-env', {
       targets: {
@@ -6,9 +6,6 @@ module.exports = {
       },
       modules: 'commonjs'
     }]
-  ],
-  plugins: [
-    '@babel/plugin-transform-runtime'
   ],
   env: {
     test: {
@@ -19,9 +16,6 @@ module.exports = {
           },
           modules: 'commonjs'
         }]
-      ],
-      plugins: [
-        '@babel/plugin-transform-runtime'
       ]
     }
   }
