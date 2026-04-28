@@ -741,6 +741,15 @@ export class DeviceSyncManager {
   }
 
   /**
+   * Sync a single data type
+   */
+  async syncDataType(dataType: DataTypeKey): Promise<void> {
+    const data = await this.getDataForSync(dataType);
+    await this.saveData(dataType, data);
+    console.log(`[DeviceSync] Synced data type: ${dataType}`);
+  }
+
+  /**
    * Start a new sync session
    * @returns {Promise<void>}
    */

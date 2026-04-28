@@ -16,7 +16,7 @@ declare global {
 export class BackgroundSyncManager {
   private syncQueue: any[] = [];
   private isSyncing: boolean = false;
-  private storageKey: string = 'main-sync-queue';
+  private storageKey: string = 'ftf-sync-queue';
   private syncInterval: NodeJS.Timeout | null = null;
 
   constructor() {
@@ -154,8 +154,8 @@ export class BackgroundSyncManager {
       `[Sync] Processing ${this.syncQueue.length} pending operations`
     );
 
-    const successful = [];
-    const failed = [];
+    const successful: any[] = [];
+    const failed: any[] = [];
 
     for (const item of this.syncQueue) {
       try {

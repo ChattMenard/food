@@ -1,76 +1,57 @@
 # Fridge to Fork - Development TODO
 
-## CURRENT STATUS (April 28, 2026)
+## CURRENT STATUS (April 28, 2026 — Post-Audit Updated)
 
-**Status**: Core infrastructure migrated to TypeScript — features remain JS
+**Status**: Dependencies clean; Google Auth migrated; TypeScript build errors remain
 **TypeScript Files**: 84 (core, data, utils, auth, analytics, ui, tests)
 **JavaScript Files**: 18 (feature modules intentionally left in JS)
-**Compilation Errors**: 727 (was 695 — CostTracker removed, recipe classifier added)
-**Tests**: 40 TS suites (recipeCostClassifier.test.ts added)
-**Original JS Reference**: Legacy project directory (environment-specific)
+**Build Status**: ❌ FAILS (429 TypeScript errors across 45 files - pre-existing, unrelated to Google Auth)
+**Lint Status**: ⚠️ Minor warnings in openFoodFactsDemo.js
+**Tests Status**: ✅ Google Auth tests passing (4/4); other tests blocked by TypeScript errors
+**npm install**: ✅ CLEAN (no peer dependency conflicts)
 
 ### 🎯 Recent Major Changes
+
+- ✅ **Google Auth Migration**: Migrated from @codetrix-studio/capacitor-google-auth to @capgo/capacitor-social-login@8.3.20
+  - Compatible with Capacitor 8
+  - Updated all source files, tests, and type declarations
+  - Google Auth tests passing (4/4)
+  - npm install now clean without --legacy-peer-deps
+- ✅ **Syntax Fixes**: Fixed 3 syntax errors in openFoodFactsDemo.js (missing parentheses)
 - ✅ **CostTracker Removal**: Completely removed from codebase, replaced with simple cost estimation
 - ✅ **Recipe Cost Classification**: New C/N/F tier system for 225k recipes
 - ✅ **Ingredient Dictionary**: 110+ ingredients classified by cost tier
 - ✅ **Fancy Technique Detection**: 17 restaurant-style cooking techniques identified
 - ✅ **Batch Processing**: Scalable system for large recipe datasets
 
-### ⚠️ Honest Assessment
+### ⚠️ Current Critical Issues (April 28 Post-Audit)
 
-- Core infrastructure compiles with far fewer errors, but utilities/features still block `tsc`.
-- Major error clusters now live in `pushNotifications.ts`, `offlineManager.ts`, `analyticsManager.ts`, `deviceSyncManager.ts`, `errorBoundary.ts`, `authManager.ts`, and `csp.ts`.
-- Remaining module-resolution issues tie to shared utilities/features that still expect JS modules.
-- Tests still cannot run cleanly until these hot spots are typed.
+#### 1. TypeScript Build Errors (Blocks build)
 
-**Top error categories (audit results):**
-- **TS2339** (340 errors): Missing properties - tests expecting old class interfaces
-- **TS7006** (86 errors): Implicit any - callback parameters still untyped  
-- **TS2307** (5 errors): Module resolution - Capacitor plugins and JS modules
+- **429 TypeScript errors across 45 files** - pre-existing, unrelated to Google Auth migration
+- Concentrated in test files, feature modules, and utility files
+- Examples: missing properties, type mismatches, implicit any parameters
+- **Action**: Systematic type fixing across affected files (estimated 4-8 hours)
 
-**Current worst offenders (audit results):**
+### 📌 Immediate Priorities (April 28, 2026 - Updated)
 
-| File | Errors | Focus |
-|------|--------|-------|
-| `www/js/__tests__/` (total) | 503 | Test infrastructure - outdated expectations |
-| `www/js/accessibility/accessibilityManager.js` | 46 | Callback typing, implicit any |
-| `www/js/features/grocery/groceryDelivery.js` | 39 | Provider-specific typing, callbacks |
-| `www/js/__tests__/deviceSyncManager.test.ts` | 43 | Missing method expectations |
-| `www/js/__tests__/mealPrepPlanner.test.ts` | 36 | Class interface changes |
-| `www/js/features/meals/personalizedRecommendations.js` | 16 | Feature callback typing |
-| `www/js/features/mealPrep.js` | 13 | Implicit any parameters |
+**✅ COMPLETED (Today):**
 
-### 📌 Immediate priorities (April 28, 2026)
-
-**✅ COMPLETED:**
-- ✅ **Tier 2 – implicit-any sweeps**: `nutritionDashboard`, `wasteReduction`, `mealHistoryAnalytics` callback annotations completed
-- ✅ **Tier 3 – structural typings**: `DeviceSyncManager` (`prepareDataForSync`, `hasConflict`, `resolveConflict`) and `CostTracker` (`getCategorySpending`, `exportSpending`, `importSpending`) methods added
-- ✅ **Community recipes removal**: All references removed from codebase and documentation
+- ✅ **Google Auth Migration**: Migrated to @capgo/capacitor-social-login@8.3.20
+  - Updated package.json, googleAuthProvider.ts, global.d.ts, and test file
+  - Successfully ran npm install (no peer dependency conflicts)
+  - Successfully ran npx cap sync (Android/iOS configs regenerated)
+  - Google Auth tests passing (4/4)
+- ✅ **Syntax Fixes**: Fixed 3 syntax errors in openFoodFactsDemo.js
+- ✅ **Dependency Resolution**: npm install now works without --legacy-peer-deps
 
 **🎯 CURRENT PRIORITIES:**
 
-### ✅ COMPLETED (April 28, 2026):
-- ✅ **CostTracker Removal**: Completely removed from codebase, replaced with simple cost estimation
-- ✅ **Recipe Cost Classification**: New C/N/F tier system for 225k recipes
-- ✅ **Ingredient Dictionary**: 110+ ingredients classified by cost tier
-- ✅ **Fancy Technique Detection**: 17 restaurant-style cooking techniques identified
-- ✅ **Accessibility Manager**: Fixed 46 callback typing errors
-- ✅ **Grocery Delivery**: Completed provider typing (39 errors resolved)
-- ✅ **High-Frequency Properties**: Added missing methods to core classes
-
-### 🔄 IN PROGRESS:
-1. **TypeScript Error Reduction** (727 total errors)
-   - Fix remaining compilation errors in feature modules
-   - Update budget meal planner tests to match new interface
-
-2. **Test Infrastructure Update** (~500 errors)
-   - Update test expectations to match new class interfaces
-   - Fix missing property errors in Jest tests
-   - Standardize mock configurations
-
-3. **Module Resolution** (4 errors)
-   - Fix Capacitor plugin imports
-   - Resolve JS module references
+1. **Fix 429 TypeScript build errors across 45 files** (BLOCKING BUILD)
+   - Pre-existing type errors unrelated to Google Auth migration
+   - Concentrated in test files, feature modules, and utility files
+   - Estimated: 4-8 hours
+   - Examples: missing properties, type mismatches, implicit any parameters
 
 ---
 

@@ -73,7 +73,7 @@ class MigrationManager {
       '[Migration] Starting: v' + currentVersion + ' -> v' + targetVersion
     );
 
-    const results = [];
+    const results: Array<{ version: number; success: boolean; error?: string }> = [];
 
     for (
       let version = currentVersion + 1;

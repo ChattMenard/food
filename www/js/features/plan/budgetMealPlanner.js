@@ -321,11 +321,11 @@ class BudgetMealPlanner {
     /**
      * Estimate recipe cost per serving
      * @param {Object} recipe - Recipe object with ingredients
-     * @returns {{perServing: number, total: number, confidence: string, breakdown: Array}} Cost estimate with confidence
+     * @returns {{perServing: number, total: number, confidence: string, breakdown: Array, servings: number}} Cost estimate with confidence
      */
     estimateRecipeCost(recipe) {
         if (!recipe || !recipe.ingredients) {
-            return { perServing: 0, total: 0, confidence: 0, breakdown: [] };
+            return { perServing: 0, total: 0, confidence: 'low', breakdown: [], servings: 1 };
         }
         
         const servings = recipe.servings || 4;
@@ -361,7 +361,7 @@ class BudgetMealPlanner {
         return {
             perServing: Math.round(perServing * 100) / 100,
             total: Math.round(totalCost * 100) / 100,
-            confidence: Math.round(confidenceScore),
+            confidence: confidenceScore > 70 ? 'high' : confidenceScore > 40 ? 'medium' : 'low',
             breakdown,
             servings
         };

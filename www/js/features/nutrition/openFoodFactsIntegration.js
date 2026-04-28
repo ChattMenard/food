@@ -39,10 +39,10 @@ class OpenFoodFactsClient {
             // Search for products matching ingredient
             const searchParams = new URLSearchParams({
                 search_terms: ingredientName,
-                search_simple: 1,
+                search_simple: '1',
                 action: 'process',
-                json: 1,
-                page_size: 20,
+                json: '1',
+                page_size: '20',
                 fields: 'product_name,nutriments,image_url,brands,categories,ingredients_text,quantity,serving_size'
             });
 

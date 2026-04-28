@@ -69,19 +69,31 @@ declare module '@capacitor/share' {
   };
 }
 
-declare module '@codetrix-studio/capacitor-google-auth' {
-  export interface InitializeGoogleAuthOptions {
-    clientId: string;
-    scopes?: string[];
-    grantOfflineAccess?: boolean;
-    forceCodeForRefreshToken?: boolean;
+declare module '@capgo/capacitor-social-login' {
+  export interface GoogleAuthOptions {
+    webClientId: string;
+    iOSClientId?: string;
+    mode?: 'online' | 'offline';
   }
 
-  export const GoogleAuth: {
-    initialize: (options: InitializeGoogleAuthOptions) => Promise<any>;
-    signIn: () => Promise<any>;
-    signOut: () => Promise<void>;
-    refresh: () => Promise<any>;
+  export interface InitializeOptions {
+    google?: GoogleAuthOptions;
+  }
+
+  export interface LoginOptions {
+    scopes?: string[];
+    forceRefreshToken?: boolean;
+  }
+
+  export interface LoginRequest {
+    provider: 'google' | 'facebook' | 'apple' | string;
+    options?: LoginOptions;
+  }
+
+  export const SocialLogin: {
+    initialize: (options: InitializeOptions) => Promise<void>;
+    login: (request: LoginRequest) => Promise<any>;
+    logout: () => Promise<void>;
   };
 }
 
@@ -93,46 +105,5 @@ declare module '../advanced/recipeImages.js' {
   export function addImagesToRecipes(recipes: any[]): any[];
 }
 
-declare module '../logic/searchIndex.js' {
-  export class SearchIndex {
-    constructor(recipes: any[]);
-    search(query: string, filters?: any): any[];
-    getRecipeById(id: string): any;
-    getAllRecipes(): any[];
-    addRecipe(recipe: any): void;
-    removeRecipe(id: string): void;
-    getRecipesByCuisine(cuisine: string): any[];
-    getRecipesByIngredient(ingredient: string): any[];
-    getRandomRecipes(count: number, filters?: any): any[];
-  }
-}
-
-declare module '../auth/authManager.js' {
-  interface AuthManager {
-    loadSession(): Promise<any>;
-    signIn(): Promise<any>;
-    signOut(): Promise<void>;
-  }
-  
-  const authManager: AuthManager;
-  export default authManager;
-}
-
-declare module '../data/db.js' {
-  interface PantryDB {
-    ready: Promise<void>;
-    getPantry(): Promise<any[]>;
-    getMealPlan(): Promise<any>;
-    getPreferences(): Promise<any>;
-    get(store: string, key: any): Promise<any>;
-    setPantry(pantry: any[]): Promise<void>;
-    setMealPlan(mealPlan: any): Promise<void>;
-    setPreferences(preferences: any): Promise<void>;
-    put(store: string, data: any): Promise<void>;
-  }
-  
-  const db: PantryDB;
-  export default db;
-}
 
 export {};

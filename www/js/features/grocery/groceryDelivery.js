@@ -286,11 +286,11 @@ class GroceryDeliveryIntegration {
      * Convert shopping list to provider-specific format
      * @param {ShoppingListItem[]} shoppingList
      * @param {ProviderId} [providerId]
-     * @returns {{ provider: string; items: any[]; totalItems: number; directUrl: string; manualInstructions: string[] }}
+     * @returns {{ provider: string; items: any[]; totalItems: number; directUrl: string | null; manualInstructions: object }}
      */
-    formatShoppingList(shoppingList, providerId = this.preferredProvider) {
+    formatShoppingList(shoppingList, providerId = this.preferredProvider || undefined) {
         if (!providerId) {
-            return this.formatGenericList(shoppingList);
+            return /** @type {any} */ (this.formatGenericList(shoppingList));
         }
         
         const provider = PROVIDERS[providerId];
@@ -434,7 +434,7 @@ class GroceryDeliveryIntegration {
      */
     generateCartUrl(shoppingList, providerId) {
         const provider = PROVIDERS[providerId];
-        if (!provider) return null;
+        if (!provider) return /** @type {string} */ ('');
         
         // Most providers don't support direct cart population via URL
         // But we can generate search URLs for quick access
@@ -475,7 +475,7 @@ class GroceryDeliveryIntegration {
         const providers = this.getProviders();
         
         const comparisons = providers.map(provider => {
-            const formatted = this.formatShoppingList(shoppingList, provider.id);
+            const formatted = this.formatShoppingList(shoppingList, /** @type {any} */ (provider.id));
             const estimatedTotal = formatted.items.reduce((sum, item) => 
                 sum + (item.estimatedPrice || 0), 0
             );
@@ -606,7 +606,7 @@ class GroceryDeliveryIntegration {
      * @param {ProviderId} [providerId]
      * @returns {Object} Exported cart data
      */
-    exportCart(shoppingList, providerId = this.preferredProvider) {
+    exportCart(shoppingList, providerId = this.preferredProvider || undefined) {
         const formatted = this.formatShoppingList(shoppingList, providerId);
         return {
             provider: formatted.provider,

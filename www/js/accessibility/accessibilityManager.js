@@ -353,6 +353,65 @@ class AccessibilityManager {
     this.setupDynamicContentFocus();
   }
 
+  ensureFocusableElements() {
+    // Ensure all interactive elements are keyboard accessible
+    const elements = document.querySelectorAll('button:not([tabindex]), [onclick]:not([tabindex]), a:not([tabindex]), input:not([tabindex]), select:not([tabindex]), textarea:not([tabindex])');
+    elements.forEach((/** @type {Element} */ element) => {
+      element.setAttribute('tabindex', '0');
+    });
+  }
+
+  addFocusIndicators() {
+    // Add focus indicators via CSS class if needed
+    const style = document.createElement('style');
+    style.textContent = `
+      *:focus { outline: 2px solid #3b82f6; outline-offset: 2px; }
+      *:focus:not(:focus-visible) { outline: none; }
+      *:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  findFocusTrap(element) {
+    // Check if element is within a focus trap
+    if (!element) return null;
+    let current = element;
+    while (current) {
+      if (this.focusTrapElements.has(current)) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  closeModal(modal) {
+    // Close a modal by setting aria-hidden
+    if (modal) {
+      modal.setAttribute('aria-hidden', 'true');
+      this.releaseFocus(modal);
+    }
+  }
+
+  closeDropdown(dropdown) {
+    // Close a dropdown by removing show class
+    if (dropdown) {
+      dropdown.classList.remove('show');
+    }
+  }
+
+  exitFocusTrap() {
+    // Exit the current focus trap
+    const trappedElement = this.focusTrapElements.keys().next().value;
+    if (trappedElement) {
+      this.releaseFocus(trappedElement);
+      // Return focus to previously focused element
+      if (this.currentFocus && this.currentFocus instanceof HTMLElement) {
+        this.currentFocus.focus();
+      }
+    }
+  }
+
   setupModalFocusManagement() {
     // Observe for modal changes
     const observer = new MutationObserver((/** @type {MutationRecord[]} */ mutations) => {
@@ -420,8 +479,8 @@ class AccessibilityManager {
   }
 
   manageFocusTrap(event, focusTrap) {
-    const focusableElements = this.focusTrapElements.get(focusTrap) || [];
-    if (focusableElements.length === 0) return;
+    const focusableElements = this.focusTrapElements.get(focusTrap);
+    if (!focusableElements || !Array.isArray(focusableElements) || focusableElements.length === 0) return;
     
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
@@ -456,15 +515,22 @@ class AccessibilityManager {
     
     // Show skip links when focused
     const skipLinks = document.querySelector('.skip-links');
+    if (!skipLinks) return;
+    
     const skipLinkAnchors = skipLinks.querySelectorAll('a');
+    if (!skipLinkAnchors.length) return;
     
     skipLinkAnchors.forEach((/** @type {HTMLAnchorElement} */ anchor) => {
       anchor.addEventListener('focus', () => {
-        skipLinks.style.top = '0';
+        if (skipLinks instanceof HTMLElement) {
+          skipLinks.style.top = '0';
+        }
       });
       
       anchor.addEventListener('blur', () => {
-        skipLinks.style.top = '-40px';
+        if (skipLinks instanceof HTMLElement) {
+          skipLinks.style.top = '-40px';
+        }
       });
     });
   }
@@ -499,9 +565,14 @@ class AccessibilityManager {
     // Announce message
     this.liveRegion.textContent = message;
     
+    // Store reference for timeout
+    const liveRegion = this.liveRegion;
+    
     // Clear after announcement
     setTimeout(() => {
-      this.liveRegion.textContent = '';
+      if (liveRegion) {
+        liveRegion.textContent = '';
+      }
     }, 1000);
   }
 
@@ -541,17 +612,27 @@ class AccessibilityManager {
     document.body.appendChild(panel);
     
     // Add event listeners
-    document.getElementById('test-headings').addEventListener('click', () => {
-      this.testHeadings();
-    });
+    const testHeadingsBtn = document.getElementById('test-headings');
+    const testContrastBtn = document.getElementById('test-contrast');
+    const testFocusBtn = document.getElementById('test-focus');
     
-    document.getElementById('test-contrast').addEventListener('click', () => {
-      this.testContrast();
-    });
+    if (testHeadingsBtn) {
+      testHeadingsBtn.addEventListener('click', () => {
+        this.testHeadings();
+      });
+    }
     
-    document.getElementById('test-focus').addEventListener('click', () => {
-      this.testFocusOrder();
-    });
+    if (testContrastBtn) {
+      testContrastBtn.addEventListener('click', () => {
+        this.testContrast();
+      });
+    }
+    
+    if (testFocusBtn) {
+      testFocusBtn.addEventListener('click', () => {
+        this.testFocusOrder();
+      });
+    }
   }
 
   testHeadings() {
@@ -559,7 +640,7 @@ class AccessibilityManager {
     const results = [];
     let lastLevel = 0;
     
-    headings.forEach((/** @type {HTMLHeadingElement} */ heading, index) => {
+    headings.forEach((/** @type {HTMLHeadingElement} */ heading, _index) => {
       const level = parseInt(heading.tagName.charAt(1));
       const text = heading.textContent?.trim() || '';
       
@@ -677,7 +758,9 @@ class AccessibilityManager {
   // Initialize
   init() {
     // Make globally available
-    window.accessibilityManager = this;
+    if (typeof window !== 'undefined') {
+      /** @type {any} */ (window).accessibilityManager = this;
+    }
     
     console.log('Accessibility manager initialized');
   }

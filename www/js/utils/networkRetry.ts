@@ -184,7 +184,7 @@ export class OfflineRequestQueue {
   constructor() {
     this.queue = [];
     this.isProcessing = false;
-    this.storageKey = 'main-offline-queue';
+    this.storageKey = 'ftf-offline-queue';
 
     this.loadQueue();
     this.setupOnlineListener();
@@ -241,7 +241,7 @@ export class OfflineRequestQueue {
     this.isProcessing = true;
     console.log(`[Network] Processing ${this.queue.length} queued requests`);
 
-    const failed = [];
+    const failed: any[] = [];
 
     for (let i = 0; i < this.queue.length; i++) {
       const request = this.queue[i];

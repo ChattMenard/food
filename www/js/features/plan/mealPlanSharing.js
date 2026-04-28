@@ -93,7 +93,7 @@ END:VEVENT
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const data = JSON.parse(e.target.result);
+                    const data = JSON.parse(/** @type {string} */ (e.target && e.target.result));
                     
                     if (!data.mealPlan || typeof data.mealPlan !== 'object') {
                         throw new Error('Invalid meal plan file format');

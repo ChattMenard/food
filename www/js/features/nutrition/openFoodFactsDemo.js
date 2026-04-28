@@ -61,7 +61,7 @@ async function demonstrateOpenFoodFactsIntegration() {
             // Calculate nutrition using real-time data
             const nutrition = await enhancedNutritionCalculator.calculateRecipeNutrition(recipe, 'ca');
             
-            console.log(`   🥗 Total Nutrition:`);
+            console.log('   🥗 Total Nutrition:');
             console.log(`      Calories: ${nutrition.totalNutrition.calories.toFixed(0)} kcal`);
             console.log(`      Protein: ${nutrition.totalNutrition.protein.toFixed(1)}g`);
             console.log(`      Carbs: ${nutrition.totalNutrition.carbs.toFixed(1)}g`);
@@ -70,13 +70,13 @@ async function demonstrateOpenFoodFactsIntegration() {
             console.log(`      Sugar: ${nutrition.totalNutrition.sugar.toFixed(1)}g`);
             console.log(`      Sodium: ${nutrition.totalNutrition.sodium.toFixed(0)}mg`);
             
-            console.log(`   🍽️  Per Serving:`);
+            console.log('   🍽️  Per Serving:');
             console.log(`      Calories: ${nutrition.nutritionPerServing.calories.toFixed(0)} kcal`);
             console.log(`      Protein: ${nutrition.nutritionPerServing.protein.toFixed(1)}g`);
             console.log(`      Carbs: ${nutrition.nutritionPerServing.carbs.toFixed(1)}g`);
             console.log(`      Fat: ${nutrition.nutritionPerServing.fat.toFixed(1)}g`);
             
-            console.log(`   📋 Ingredient Breakdown:`);
+            console.log('   📋 Ingredient Breakdown:');
             nutrition.ingredientBreakdown.forEach((ing, index) => {
                 const sourceIcon = ing.source === 'open_food_facts' ? '🌐' : '📝';
                 const productInfo = ing.productInfo ? ` (${ing.productInfo.name})` : '';
@@ -136,7 +136,7 @@ async function demonstrateOpenFoodFactsIntegration() {
     }
 
     console.log('\n📈 Batch Processing Demo');
-    console.log('=' .repeat(25);
+    console.log('='.repeat(25));
     
     const batchIngredients = [
         { name: 'rice', quantity: 100 },
@@ -182,7 +182,7 @@ async function demonstrateOpenFoodFactsIntegration() {
     }
 
     console.log('\n📊 Integration Statistics');
-    console.log('=' .repeat(25);
+    console.log('='.repeat(25));
     
     const stats = enhancedNutritionCalculator.getStats();
     console.log(`💾 Cache Size: ${stats.cacheStats.size} entries`);
@@ -218,7 +218,7 @@ async function updateFallbackNutrition() {
  */
 async function demonstrateNutritionGoals() {
     console.log('🎯 Nutrition Goals Tracking Demo');
-    console.log('=' .repeat(30);
+    console.log('='.repeat(30));
     
     const recipe = {
         name: 'Balanced Meal',

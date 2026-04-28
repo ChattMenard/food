@@ -167,7 +167,7 @@ describe('CacheManager', () => {
       cache.set('key2', 'value2');
       jest.advanceTimersByTime(600);
       
-      cache.cleanup();
+      cache.cleanExpired();
       
       expect(cache.get('key1')).toBe(null);
       expect(cache.get('key2')).toBe('value2');
@@ -181,7 +181,7 @@ describe('CacheManager', () => {
       cache.set('key2', 'value2');
       jest.advanceTimersByTime(600);
       
-      const cleaned = cache.cleanup();
+      const cleaned = cache.cleanExpired();
       
       expect(cleaned).toBe(1);
       jest.useRealTimers();
@@ -190,11 +190,11 @@ describe('CacheManager', () => {
 
   describe('size', () => {
     it('returns current cache size', () => {
-      expect(cache.size).toBe(0);
+      expect(cache.getStats().size).toBe(0);
       cache.set('key1', 'value1');
-      expect(cache.size).toBe(1);
+      expect(cache.getStats().size).toBe(1);
       cache.set('key2', 'value2');
-      expect(cache.size).toBe(2);
+      expect(cache.getStats().size).toBe(2);
     });
   });
 
@@ -202,7 +202,7 @@ describe('CacheManager', () => {
     it('returns all cache keys', () => {
       cache.set('key1', 'value1');
       cache.set('key2', 'value2');
-      const keys = cache.keys();
+      const keys = Array.from(cache.cacheData.keys());
       expect(keys).toContain('key1');
       expect(keys).toContain('key2');
       expect(keys.length).toBe(2);

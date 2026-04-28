@@ -23,6 +23,9 @@ export interface Recipe {
   ingredients: Ingredient[];
   instructions: string[];
   minutes: number;
+  time?: number;
+  cookTime?: number;
+  servings?: number;
   difficulty: 'easy' | 'medium' | 'hard';
   calories?: number;
   protein?: number;
@@ -39,6 +42,7 @@ export interface Recipe {
     dairy_free?: boolean;
     nut_free?: boolean;
   };
+  [key: string]: unknown;
 }
 
 export interface PantryItem extends Ingredient {

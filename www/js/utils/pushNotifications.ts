@@ -358,7 +358,7 @@ class PushNotificationManager {
     const defaultOptions = {
       icon: '/icon-192x192.png',
       badge: '/icon-72x72.png',
-      tag: 'main-notification',
+      tag: 'ftf-notification',
       requireInteraction: false,
       silent: false,
     };

@@ -36,7 +36,7 @@ describe('RecipeEngine', () => {
     engine = new RecipeEngine({
       getRecipes: () => mockRecipes,
       getRecipeRatings: () => mockRecipeRatings,
-      persistRecipeRatings: () => {},
+      persistRecipeRatings: () => Promise.resolve(),
       announce: () => {},
     });
   });
@@ -182,7 +182,7 @@ describe('RecipeEngine', () => {
       engine = new RecipeEngine({
         getRecipes: () => [],
         getRecipeRatings: () => ({}),
-        persistRecipeRatings: () => {},
+        persistRecipeRatings: () => Promise.resolve(),
         announce: () => {},
       });
 
@@ -196,7 +196,7 @@ describe('RecipeEngine', () => {
       engine = new RecipeEngine({
         getRecipes: () => mockRecipes,
         getRecipeRatings: () => ({}),
-        persistRecipeRatings: () => {},
+        persistRecipeRatings: () => Promise.resolve(),
         announce: () => {},
       });
 
@@ -268,7 +268,7 @@ describe('RecipeEngine', () => {
       engine = new RecipeEngine({
         getRecipes: () => [],
         getRecipeRatings: () => ({}),
-        persistRecipeRatings: () => {},
+        persistRecipeRatings: () => Promise.resolve(),
         announce: () => {},
       });
 
@@ -372,9 +372,9 @@ describe('RecipeEngine', () => {
   describe('error handling', () => {
     it('should handle invalid recipe data', () => {
       engine = new RecipeEngine({
-        getRecipes: () => [null, undefined, {}],
+        getRecipes: () => [null, undefined, {}] as any,
         getRecipeRatings: () => ({}),
-        persistRecipeRatings: () => {},
+        persistRecipeRatings: () => Promise.resolve(),
         announce: () => {},
       });
 

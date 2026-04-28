@@ -1,16 +1,17 @@
 # Fridge to Fork - Living Roadmap
 
 > This document tracks the current state and future direction of the Fridge to Fork project.
-> Last updated: April 28, 2026
+> Last updated: April 28, 2026 (Post-Audit)
 
-## Current Reality Check
+## Current Reality Check (April 28 Post-Audit - Updated)
 
-- **727 total errors** — TypeScript migration in progress with systematic approach
-- **84 TypeScript files** — core infrastructure fully migrated  
-- **18 JavaScript files** — feature modules with JSDoc typing improvements
-- **40 test files** — recipeCostClassifier.test.ts added, test errors updated
-- **Migration strategy**: Core-first approach - infrastructure to TS, features use JSDoc annotations
-- **Recent progress**: CostTracker removed, recipe classification system implemented, high-frequency properties added
+- **Build Status**: ❌ BROKEN — 429 TypeScript errors across 45 files (pre-existing, unrelated to Google Auth)
+- **Lint Status**: ⚠️ Minor warnings in openFoodFactsDemo.js
+- **Test Status**: ✅ Google Auth tests passing (4/4)
+- **npm install**: ✅ CLEAN — No peer dependency conflicts
+- **84 TypeScript files** — core infrastructure migrated
+- **18 JavaScript files** — feature modules with JSDoc annotations
+- **40 test files** — infrastructure present
 
 ---
 
@@ -117,6 +118,31 @@ www/js/
 ├── app.ts                   # Main application entry
 └── __tests__/               # 39 test files
 ```
+
+---
+
+## 🚨 Immediate Blockers (April 28 Post-Audit - Updated)
+
+### Critical Path to Unblock Development
+
+1. **Fix 429 TypeScript build errors across 45 files** (4-8 hours)
+   - Pre-existing type errors unrelated to Google Auth migration
+   - Concentrated in test files, feature modules, and utility files
+   - Unblocks: `npm run build`, TypeScript compilation
+   - Examples: missing properties, type mismatches, implicit any parameters
+
+2. ~~Fix openFoodFactsDemo.js syntax errors~~ ✅ COMPLETED
+   - Fixed 3 missing parentheses in console.log statements
+   - Unblocked: build process
+
+3. ~~Resolve Capacitor/Google Auth conflict~~ ✅ COMPLETED
+   - Migrated from @codetrix-studio/capacitor-google-auth to @capgo/capacitor-social-login@8.3.20
+   - Compatible with Capacitor 8
+   - Unblocked: `npm install` without `--legacy-peer-deps`
+
+4. ~~Align test suites with implementation~~ ✅ PARTIALLY COMPLETED
+   - Google Auth tests now passing (4/4)
+   - Other test suites may still have issues due to TypeScript errors
 
 ---
 

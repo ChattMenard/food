@@ -97,7 +97,7 @@ export class CacheManager {
    * Remove least recently used entry
    */
   evictLRU() {
-    let oldestKey = null;
+    let oldestKey: string | null = null;
     let oldestTime = Infinity;
 
     for (const [key, entry] of this.cache.entries()) {

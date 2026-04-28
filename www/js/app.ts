@@ -9,7 +9,7 @@ import offlineManager from './utils/offlineManager';
 import accessibilityManager from './accessibility/accessibilityManager';
 import analyticsManager from './analytics/analyticsManager';
 
-log('=== MODULE START ===');
+log.log('=== MODULE START ===');
 import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState, signInUser } from './core/appState';
 import { PantryManager } from './features/pantry/pantryManager';
 import { MealPlanner } from './features/meals/mealPlanner';
@@ -191,7 +191,7 @@ async function loadAdvancedFeatures(): Promise<void> {
 
 async function loadNutritionFeatures(): Promise<void> {
   try {
-    const { default: NutritionGoalsManager } = await import('./features/nutrition/nutritionGoals.js');
+    const { NutritionGoalsManager } = await import('./features/nutrition/nutritionGoals.js');
     nutritionGoalsManager = new NutritionGoalsManager();
   } catch (error) {
     console.error('Failed to load nutrition features:', error);
@@ -200,7 +200,7 @@ async function loadNutritionFeatures(): Promise<void> {
 
 async function loadBudgetFeatures(): Promise<void> {
   try {
-    const { default: BudgetMealPlanner } = await import('./features/plan/budgetMealPlanner.js');
+    const { BudgetMealPlanner } = await import('./features/plan/budgetMealPlanner.js');
     budgetMealPlanner = new BudgetMealPlanner();
   } catch (error) {
     console.error('Failed to load budget features:', error);
@@ -220,21 +220,18 @@ function debounce(func: Function, wait: number): (...args: any[]) => void {
 async function initializeApp(): Promise<void> {
   try {
     // Initialize core services
-    await db.initialize();
+    await db.ready;
     await loadAppData();
     
-    // Setup error tracking
-    errorTracker.initialize();
-    
     // Setup CSP
-    cspManager.setup();
+    cspManager.init();
     
     // Initialize managers
     const uiManager = new UIManager({ updateMeals, updateShoppingList });
     const pantryManager = new PantryManager({
       getPantry: () => pantry,
       persistPantry: savePantryState,
-      announce: (message: string) => log(message),
+      announce: (message: string) => log.log(message),
       getAutocompleteIngredients: () => autocompleteIngredients,
       getEditingIndex: () => editingIndex,
       setEditingIndex: (index: number) => { editingIndex = index; },
@@ -253,11 +250,11 @@ async function initializeApp(): Promise<void> {
     // Mark as initialized
     window._appInitialized = true;
     
-    log('Application initialized successfully');
+    log.log('Application initialized successfully');
     
   } catch (error) {
     console.error('Failed to initialize application:', error);
-    errorTracker.trackError(error);
+    errorTracker.reportCustomError?.(error?.message || 'Unknown error', 'initialization', { error });
   }
 }
 
@@ -287,11 +284,14 @@ function setupEventListeners(): void {
 function trackPerformance(): void {
   if (typeof performance !== 'undefined' && (performance as any).memory) {
     const memory = (performance as any).memory;
-    performanceMonitor.trackMetric('memory', {
+    // Log memory metrics to console for now
+    console.log('[Performance] Memory:', {
       usedJSHeapSize: memory.usedJSHeapSize,
       totalJSHeapSize: memory.totalJSHeapSize,
       jsHeapSizeLimit: memory.jsHeapSizeLimit,
     });
+    // Mark memory check point
+    performanceMonitor.mark?.('memory-check');
   }
 }
 

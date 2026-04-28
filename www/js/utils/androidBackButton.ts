@@ -23,7 +23,7 @@ export class AndroidBackButtonHandler {
    */
   async init(): Promise<void> {
     try {
-      App.addListener('backButton', ({ canGoBack }: any) => {
+      (App as any).addListener('backButton', ({ canGoBack }: any) => {
         this.handleBackButton(canGoBack);
       });
 

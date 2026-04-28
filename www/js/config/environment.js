@@ -35,7 +35,7 @@ class EnvironmentConfig {
       
       // AI Configuration
       AI_PROXY_URL: this.getAiProxyUrl(),
-      AI_ENABLED: this.isAiEnabled(),
+      AI_ENABLED: this.isAiEnabled,
       
       // Feature Flags
       ENABLE_AI_FEATURES: this.getFeatureFlag('ENABLE_AI_FEATURES', true),
@@ -66,6 +66,7 @@ class EnvironmentConfig {
 
   getNumber(key, defaultValue = 0) {
     const value = this.getString(key);
+    if (typeof value !== 'string') return defaultValue;
     const parsed = parseInt(value, 10);
     return isNaN(parsed) ? defaultValue : parsed;
   }
@@ -103,7 +104,7 @@ class EnvironmentConfig {
     return proxyUrl || '';
   }
 
-  isAiEnabled() {
+  checkAiEnabled() {
     const proxyUrl = this.getAiProxyUrl();
     return !!proxyUrl && proxyUrl !== 'http://localhost:3001/ai';
   }
@@ -123,7 +124,10 @@ class EnvironmentConfig {
   // Convenience getters
   get apiBaseUrl() { return this.config.API_BASE_URL; }
   get aiProxyUrl() { return this.config.AI_PROXY_URL; }
-  get isAiEnabled() { return this.config.AI_ENABLED; }
+  get isAiEnabled() {
+    const proxyUrl = this.getAiProxyUrl();
+    return !!proxyUrl && proxyUrl !== '';
+  }
   get enableDebugMode() { return this.config.ENABLE_DEBUG_MODE; }
   get enableServiceWorker() { return this.config.ENABLE_SERVICE_WORKER; }
   get cacheTtl() { return this.config.CACHE_TTL; }

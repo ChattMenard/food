@@ -70,7 +70,7 @@ class CSPManager {
   }
 
   generateCSPHeader(): string {
-    const directives = [];
+    const directives: string[] = [];
     
     for (const [directive, value] of Object.entries(this.cspConfig)) {
       if (value && value !== "'none'" && value !== '') {

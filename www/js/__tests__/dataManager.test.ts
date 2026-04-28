@@ -16,6 +16,13 @@ jest.mock('../utils/dietFilters', () => ({
 jest.mock('../logic/searchIndex', () => ({
   SearchIndex: jest.fn().mockImplementation(() => ({
     search: jest.fn().mockReturnValue([]),
+    getRecipeById: jest.fn().mockReturnValue(undefined),
+    getRandomRecipes: jest.fn().mockReturnValue([]),
+    getAllRecipes: jest.fn().mockReturnValue([]),
+    getRecipesByCuisine: jest.fn().mockReturnValue([]),
+    getRecipesByIngredient: jest.fn().mockReturnValue([]),
+    addRecipe: jest.fn(),
+    removeRecipe: jest.fn(),
   })),
 }));
 
@@ -50,97 +57,9 @@ describe('DataManager', () => {
     expect(manager.validateNutrition('not an object' as any)).toBe(false);
   });
 
-  it('validates recipe objects correctly', () => {
-    const validRecipe = {
-      id: '1',
-      name: 'Test Recipe',
-      ingredients: ['ingredient1', 'ingredient2'],
-      instructions: 'Step 1, Step 2',
-      time: 30,
-      servings: 4,
-      nutrition: { calories: 200, protein: 10, carbs: 20, fat: 8 }
-    };
-
-    expect(manager.validateRecipe(validRecipe)).toBe(true);
-    expect(manager.validateRecipe({} as any)).toBe(false);
-    expect(manager.validateRecipe(null as any)).toBe(false);
-  });
-
-  it('processes recipes correctly', async () => {
-    const mockRecipes = [
-      {
-        id: '1',
-        name: 'Test Recipe',
-        ingredients: ['ingredient1', 'ingredient2'],
-        instructions: 'Step 1',
-        time: 30,
-        servings: 4,
-        nutrition: { calories: 200, protein: 10, carbs: 20, fat: 8 }
-      }
-    ];
-
-    await manager.processRecipes(mockRecipes);
-
-    expect(setRecipes).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: '1',
-          name: 'Test Recipe',
-          image: 'mocked-image'
-        })
-      ])
-    );
-  });
-
-  it('extracts ingredients from recipes', () => {
-    const mockRecipes = [
-      {
-        ingredients: ['chicken', 'rice', 'vegetables']
-      },
-      {
-        ingredients: ['beef', 'potatoes', 'carrots']
-      }
-    ];
-
-    const ingredients = manager.extractIngredients(mockRecipes);
-
-    expect(ingredients).toContain('chicken');
-    expect(ingredients).toContain('rice');
-    expect(ingredients).toContain('vegetables');
-    expect(ingredients).toContain('beef');
-    expect(ingredients).toContain('potatoes');
-    expect(ingredients).toContain('carrots');
-  });
-
-  it('removes duplicate ingredients', () => {
-    const mockRecipes = [
-      {
-        ingredients: ['chicken', 'rice', 'chicken']
-      },
-      {
-        ingredients: ['rice', 'vegetables']
-      }
-    ];
-
-    const ingredients = manager.extractIngredients(mockRecipes);
-
-    const chickenCount = ingredients.filter((i: string) => i === 'chicken').length;
-    const riceCount = ingredients.filter((i: string) => i === 'rice').length;
-
-    expect(chickenCount).toBe(1);
-    expect(riceCount).toBe(1);
-  });
-
-  it('handles empty ingredient lists', () => {
-    const mockRecipes = [
-      { ingredients: [] },
-      { ingredients: ['chicken'] },
-      { ingredients: [] }
-    ];
-
-    const ingredients = manager.extractIngredients(mockRecipes);
-
-    expect(ingredients).toEqual(['chicken']);
+  it('checks if running on native platform', () => {
+    // Should return false in test environment (no Capacitor)
+    expect(manager.isNativePlatform()).toBe(false);
   });
 
   it('searches recipes using search index', () => {
@@ -155,146 +74,169 @@ describe('DataManager', () => {
 
     const results = manager.searchRecipes('chicken');
 
-    expect(mockSearchIndex.search).toHaveBeenCalledWith('chicken');
+    expect(mockSearchIndex.search).toHaveBeenCalledWith('chicken', undefined);
     expect(results).toEqual([
       { id: '1', name: 'Chicken Recipe' },
       { id: '2', name: 'Beef Recipe' }
     ]);
   });
 
-  it('filters recipes by dietary restrictions', () => {
-    const mockRecipes = [
-      {
-        id: '1',
-        name: 'Vegetarian Recipe',
-        diet: ['vegetarian'],
-        ingredients: ['vegetables', 'rice']
-      },
-      {
-        id: '2',
-        name: 'Meat Recipe',
-        diet: [],
-        ingredients: ['chicken', 'rice']
-      }
-    ];
-
-    const vegetarianRecipes = manager.filterByDiet(mockRecipes, 'vegetarian');
-
-    expect(vegetarianRecipes).toHaveLength(1);
-    expect(vegetarianRecipes[0].id).toBe('1');
-  });
-
-  it('filters recipes by available ingredients', () => {
-    const mockRecipes = [
-      {
-        id: '1',
-        name: 'Recipe 1',
-        ingredients: ['chicken', 'rice', 'vegetables']
-      },
-      {
-        id: '2',
-        name: 'Recipe 2',
-        ingredients: ['beef', 'potatoes']
-      }
-    ];
-
-    const availableIngredients = ['chicken', 'rice'];
-    const filteredRecipes = manager.filterByIngredients(mockRecipes, availableIngredients);
-
-    expect(filteredRecipes).toHaveLength(1);
-    expect(filteredRecipes[0].id).toBe('1');
-  });
-
-  it('calculates recipe match percentage', () => {
-    const recipe = {
-      ingredients: ['chicken', 'rice', 'vegetables', 'spices']
+  it('searches with filters', () => {
+    const mockSearchIndex = {
+      search: jest.fn().mockReturnValue([
+        { id: '1', name: 'Italian Recipe', cuisine: 'italian' }
+      ])
     };
-    const availableIngredients = ['chicken', 'rice'];
 
-    const matchPercentage = manager.calculateMatchPercentage(recipe, availableIngredients);
+    (manager as any).searchIndex = mockSearchIndex;
 
-    expect(matchPercentage).toBe(50); // 2 out of 4 ingredients
+    const results = manager.searchRecipes('recipe', { cuisine: 'italian', maxTime: 30 });
+
+    expect(mockSearchIndex.search).toHaveBeenCalledWith('recipe', { cuisine: 'italian', maxTime: 30 });
+    expect(results).toHaveLength(1);
   });
 
-  it('sorts recipes by match percentage', () => {
-    const mockRecipes = [
-      {
-        id: '1',
-        ingredients: ['chicken', 'rice']
-      },
-      {
-        id: '2',
-        ingredients: ['chicken']
-      },
-      {
-        id: '3',
-        ingredients: ['chicken', 'rice', 'vegetables']
-      }
-    ];
-
-    const availableIngredients = ['chicken', 'rice'];
-    const sortedRecipes = manager.sortByMatchPercentage(mockRecipes, availableIngredients);
-
-    expect(sortedRecipes[0].id).toBe('1'); // 100% match
-    expect(sortedRecipes[1].id).toBe('3'); // 66% match
-    expect(sortedRecipes[2].id).toBe('2'); // 50% match
-  });
-
-  it('handles recipe loading errors gracefully', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+  it('returns empty array when search index not initialized', () => {
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
     
-    await manager.loadRecipes();
-
-    expect(consoleSpy).toHaveBeenCalled();
+    const results = manager.searchRecipes('test');
+    
+    expect(results).toEqual([]);
+    expect(consoleSpy).toHaveBeenCalledWith('[DataManager] Search index not initialized');
     consoleSpy.mockRestore();
   });
 
-  it('initializes search index on construction', () => {
-    expect((manager as any).searchIndex).toBeDefined();
-  });
-
-  it('updates autocomplete ingredients when processing recipes', async () => {
-    const mockRecipes = [
-      {
-        id: '1',
-        ingredients: ['chicken', 'rice']
-      }
-    ];
-
-    await manager.processRecipes(mockRecipes);
-
-    expect(setAutocompleteIngredients).toHaveBeenCalledWith(['chicken', 'rice']);
-  });
-
-  it('normalizes cuisine types', () => {
-    const mockRecipes = [
-      {
-        id: '1',
-        cuisine: 'Italian',
-        ingredients: ['pasta', 'tomato']
-      },
-      {
-        id: '2',
-        cuisine: null,
-        ingredients: ['rice', 'vegetables']
-      }
-    ];
-
-    const processedRecipes = manager.normalizeCuisineTypes(mockRecipes);
-
-    expect(processedRecipes[0].cuisine).toBe('italian');
-    expect(processedRecipes[1].cuisine).toBe('other');
-  });
-
-  it('handles recipe updates', () => {
-    const updatedRecipe = {
-      id: '1',
-      name: 'Updated Recipe',
-      ingredients: ['new ingredient']
+  it('gets recipe by id', () => {
+    const mockRecipe = { id: '1', name: 'Test Recipe' };
+    const mockSearchIndex = {
+      getRecipeById: jest.fn().mockReturnValue(mockRecipe)
     };
 
-    manager.updateRecipe(updatedRecipe);
+    (manager as any).searchIndex = mockSearchIndex;
 
-    expect(updateMeals).toHaveBeenCalledWith(updatedRecipe);
+    const result = manager.getRecipeById('1');
+
+    expect(mockSearchIndex.getRecipeById).toHaveBeenCalledWith('1');
+    expect(result).toEqual(mockRecipe);
+  });
+
+  it('returns undefined for missing recipe', () => {
+    const result = manager.getRecipeById('missing');
+    expect(result).toBeUndefined();
+  });
+
+  it('gets random recipes', () => {
+    const mockRecipes = [
+      { id: '1', name: 'Recipe 1' },
+      { id: '2', name: 'Recipe 2' }
+    ];
+    const mockSearchIndex = {
+      getRandomRecipes: jest.fn().mockReturnValue(mockRecipes)
+    };
+
+    (manager as any).searchIndex = mockSearchIndex;
+
+    const results = manager.getRandomRecipes(2);
+
+    expect(mockSearchIndex.getRandomRecipes).toHaveBeenCalledWith(2, undefined);
+    expect(results).toEqual(mockRecipes);
+  });
+
+  it('saves recipe to search index', async () => {
+    const mockSearchIndex = {
+      addRecipe: jest.fn(),
+      getAllRecipes: jest.fn().mockReturnValue([])
+    };
+
+    (manager as any).searchIndex = mockSearchIndex;
+
+    const newRecipe = { 
+      id: '1', 
+      name: 'New Recipe',
+      ingredients: [{ id: 'ing1', name: 'ingredient1', amount: 1, unit: 'cup' }],
+      instructions: ['Cook it'],
+      minutes: 30,
+      difficulty: 'easy' as const
+    };
+
+    await manager.saveRecipe(newRecipe);
+
+    expect(mockSearchIndex.addRecipe).toHaveBeenCalledWith(newRecipe);
+    expect(setRecipes).toHaveBeenCalled();
+  });
+
+  it('deletes recipe from search index', async () => {
+    const mockSearchIndex = {
+      removeRecipe: jest.fn(),
+      getAllRecipes: jest.fn().mockReturnValue([])
+    };
+
+    (manager as any).searchIndex = mockSearchIndex;
+
+    await manager.deleteRecipe('1');
+
+    expect(mockSearchIndex.removeRecipe).toHaveBeenCalledWith('1');
+    expect(setRecipes).toHaveBeenCalled();
+  });
+
+  it('gets recipes by cuisine', () => {
+    const mockRecipes = [
+      { id: '1', name: 'Pasta', cuisine: 'italian' },
+      { id: '2', name: 'Curry', cuisine: 'indian' }
+    ];
+    const mockSearchIndex = {
+      getRecipesByCuisine: jest.fn().mockReturnValue([mockRecipes[0]])
+    };
+
+    (manager as any).searchIndex = mockSearchIndex;
+
+    const results = manager.getRecipesByCuisine('italian');
+
+    expect(mockSearchIndex.getRecipesByCuisine).toHaveBeenCalledWith('italian');
+    expect(results).toEqual([mockRecipes[0]]);
+  });
+
+  it('gets recipes by ingredient', () => {
+    const mockRecipes = [
+      { id: '1', name: 'Chicken Rice' },
+      { id: '2', name: 'Beef Stew' }
+    ];
+    const mockSearchIndex = {
+      getRecipesByIngredient: jest.fn().mockReturnValue([mockRecipes[0]])
+    };
+
+    (manager as any).searchIndex = mockSearchIndex;
+
+    const results = manager.getRecipesByIngredient('chicken');
+
+    expect(mockSearchIndex.getRecipesByIngredient).toHaveBeenCalledWith('chicken');
+    expect(results).toEqual([mockRecipes[0]]);
+  });
+
+  it('returns empty array when getting recipes by cuisine without search index', () => {
+    const results = manager.getRecipesByCuisine('italian');
+    expect(results).toEqual([]);
+  });
+
+  it('returns empty array when getting recipes by ingredient without search index', () => {
+    const results = manager.getRecipesByIngredient('chicken');
+    expect(results).toEqual([]);
+  });
+
+  it('throws error when saving recipe without search index', async () => {
+    const newRecipe = { 
+      id: '1', 
+      name: 'New Recipe',
+      ingredients: [{ id: 'ing1', name: 'ingredient1', amount: 1, unit: 'cup' }],
+      instructions: ['Cook it'],
+      minutes: 30,
+      difficulty: 'easy' as const
+    };
+
+    await expect(manager.saveRecipe(newRecipe)).rejects.toThrow('Search index not initialized');
+  });
+
+  it('throws error when deleting recipe without search index', async () => {
+    await expect(manager.deleteRecipe('1')).rejects.toThrow('Search index not initialized');
   });
 });

@@ -21,7 +21,7 @@ class OpenPricesClient {
      * @param {string} [location] - Optional location code for regional pricing
      * @returns {Promise<Object>} Price data with metadata
      */
-    async getIngredientPrice(ingredientName, location = null) {
+    async getIngredientPrice(ingredientName, location = undefined) {
         const cacheKey = `${ingredientName}_${location || 'global'}`;
         
         // Check cache first
@@ -76,7 +76,7 @@ class OpenPricesClient {
      * @param {string} [location] - Location filter
      * @returns {Object} Normalized price data
      */
-    processPriceData(apiData, location = null) {
+    processPriceData(apiData, location = undefined) {
         // Open Prices API returns prices directly, not nested in products
         if (!apiData.prices || apiData.prices.length === 0) {
             return null;
@@ -152,7 +152,7 @@ class OpenPricesClient {
      * @param {string} [location] - Location filter
      * @returns {Promise<Object>} Historical price data
      */
-    async getPriceTrends(ingredientName, location = null) {
+    async getPriceTrends(ingredientName, location = undefined) {
         // This would require additional API endpoints for historical data
         // For now, return placeholder
         return {
@@ -195,7 +195,7 @@ class EnhancedRecipeCostClassifier {
      * @param {string} [location] - User's location
      * @returns {Promise<number>} Estimated cost per unit
      */
-    async getIngredientCost(ingredientName, location = null) {
+    async getIngredientCost(ingredientName, location = undefined) {
         try {
             const priceData = await this.openPrices.getIngredientPrice(ingredientName, location);
             
@@ -217,7 +217,7 @@ class EnhancedRecipeCostClassifier {
      * @param {string} [location] - User's location
      * @returns {Promise<Object>} Enhanced classification with real costs
      */
-    async classifyRecipeWithRealPrices(recipe, location = null) {
+    async classifyRecipeWithRealPrices(recipe, location = undefined) {
         const { ingredients = [] } = recipe;
         
         // Get real prices for all ingredients
@@ -272,7 +272,7 @@ class EnhancedRecipeCostClassifier {
      * Update fallback costs based on recent API data
      * @param {string} [location] - Location to update for
      */
-    async updateFallbackCosts(location = null) {
+    async updateFallbackCosts(location = undefined) {
         const commonIngredients = Object.keys(this.fallbackCosts);
         
         for (const ingredient of commonIngredients) {

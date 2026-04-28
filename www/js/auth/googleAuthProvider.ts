@@ -1,4 +1,4 @@
-import { GoogleAuth, InitializeGoogleAuthOptions } from '@codetrix-studio/capacitor-google-auth';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 
 export interface SignInResult {
   id: string;
@@ -11,25 +11,34 @@ export interface SignInResult {
   authentication?: Record<string, unknown>;
 }
 
-export interface RefreshResult {
-  token?: string;
-  idToken?: string;
-  authentication?: Record<string, unknown>;
+export interface InitializeGoogleAuthOptions {
+  clientId: string;
+  iOSClientId?: string;
+  scopes?: string[];
+  grantOfflineAccess?: boolean;
 }
 
-function getGoogleAuth(): typeof GoogleAuth {
-  if (!GoogleAuth) {
-    throw new Error('GoogleAuth plugin is not available');
-  }
-  return GoogleAuth;
+function getSocialLogin(): typeof SocialLogin {
+  return SocialLogin;
 }
 
-export async function initializeGoogleAuth(options: InitializeGoogleAuthOptions): Promise<any> {
-  return getGoogleAuth().initialize(options);
+export async function initializeGoogleAuth(options: InitializeGoogleAuthOptions): Promise<void> {
+  await getSocialLogin().initialize({
+    google: {
+      webClientId: options.clientId,
+      iOSClientId: options.iOSClientId,
+      mode: options.grantOfflineAccess ? 'offline' : 'online',
+    }
+  });
 }
 
 export async function signInWithGoogle(): Promise<SignInResult> {
-  const result = await getGoogleAuth().signIn();
+  const result = await getSocialLogin().login({
+    provider: 'google',
+    options: {
+      scopes: ['email', 'profile'],
+    }
+  });
   return {
     id: result?.id || result?.idToken || '',
     email: result?.email || '',
@@ -43,11 +52,17 @@ export async function signInWithGoogle(): Promise<SignInResult> {
 }
 
 export async function signOutFromGoogle(): Promise<void> {
-  await getGoogleAuth().signOut();
+  await getSocialLogin().logout();
 }
 
-export async function refreshGoogleSession(): Promise<RefreshResult> {
-  const result = await getGoogleAuth().refresh();
+export async function refreshGoogleSession(): Promise<any> {
+  const result = await getSocialLogin().login({
+    provider: 'google',
+    options: {
+      scopes: ['email', 'profile'],
+      forceRefreshToken: true,
+    }
+  });
   return {
     token: result?.token,
     idToken: result?.idToken,
