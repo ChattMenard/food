@@ -1,7 +1,7 @@
 {
-  "name": "pantry-ai",
+  "name": "fridge-to-fork",
   "version": "1.0.0",
-  "description": "Pantry AI - AI-Powered Meal Planner & Shopping Assistant",
+  "description": "Fridge to Fork - AI-Powered Meal Planner & Shopping Assistant",
   "type": "module",
   "scripts": {
     "start": "node scripts/kill-port.js 8080 && npx serve -p 8080 www",
@@ -30,6 +30,7 @@
     "format:check": "prettier --check www/js/**/*.{js,ts}",
     "validate-dataset": "python3 scripts/build_dataset.py --validate-only",
     "android": "npm run sync && npx cap open android",
+    "android:studio": "npm run sync && CAPACITOR_ANDROID_STUDIO_PATH=${ANDROID_STUDIO_PATH:-/opt/android-studio/bin/studio.sh} npx cap open android",
     "android:debug": "bash scripts/optimize-debug.sh",
     "android:wireless": "bash scripts/wireless-debug.sh",
     "android:build": "./android/gradlew -p android :app:assembleDebug",

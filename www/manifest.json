@@ -1,6 +1,6 @@
 {
-  "name": "Pantry AI - Smart Meal Planner",
-  "short_name": "Pantry AI",
+  "name": "Fridge to Fork - Smart Meal Planner",
+  "short_name": "Fridge to Fork",
   "description": "AI-powered meal planning and pantry management. Scan ingredients, get personalized meal suggestions, and plan your week.",
   "start_url": "/",
   "scope": "/",

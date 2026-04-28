@@ -17,7 +17,7 @@ test.describe('Pantry AI Basic Workflow', () => {
 
   test('should load the main application', async ({ page }) => {
     // Check main elements are present
-    await expect(page.locator('h1')).toContainText('Pantry AI');
+    await expect(page.locator('h1')).toContainText('Fridge to Fork');
     await expect(page.locator('#new-ingredient')).toBeVisible();
     await expect(page.locator('#pantry-list')).toBeVisible();
     await expect(page.locator('#meal-plan')).toBeVisible();
