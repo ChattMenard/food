@@ -6,6 +6,7 @@
 
 import db from './db.js';
 import { savePantryState } from '../core/appState.js';
+import { log } from '../utils/logger.js';
 
 /**
  * Handler for ADD_ITEM mutations
@@ -93,5 +94,5 @@ export function registerAllHandlers(syncProcessor) {
   syncProcessor.registerHandler('UPDATE_ITEM', handleUpdateItem);
   syncProcessor.registerHandler('DELETE_ITEM', handleDeleteItem);
 
-  console.log('[MutationHandlers] All handlers registered');
+  log('[MutationHandlers] All handlers registered');
 }

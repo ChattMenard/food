@@ -32,7 +32,7 @@ export class GroceryDelivery {
       requiresAuth: true,
     });
 
-    console.log('[GroceryDelivery] Initialized');
+    log('[GroceryDelivery] Initialized');
   }
 
   /**

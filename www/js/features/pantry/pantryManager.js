@@ -184,6 +184,13 @@ export class PantryManager {
     async startCapacitorSpeechRecognition() {
         const status = document.getElementById('speech-status');
         try {
+            // Check if running in Capacitor environment
+            if (typeof window === 'undefined' || !window.Capacitor) {
+                status.textContent = 'Speech recognition is only available in the mobile app.';
+                setTimeout(() => this.stopSpeechRecognition(), 1500);
+                return;
+            }
+            
             const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
             const { available } = await SpeechRecognition.available();
             if (!available) {

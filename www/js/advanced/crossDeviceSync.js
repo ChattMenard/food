@@ -15,7 +15,7 @@ export class CrossDeviceSync {
    */
   async init() {
     this.loadLastSyncTime();
-    console.log('[CrossDeviceSync] Initialized');
+    log('[CrossDeviceSync] Initialized');
   }
 
   /**
@@ -41,7 +41,7 @@ export class CrossDeviceSync {
    */
   async sync() {
     if (this.syncInProgress) {
-      console.log('[CrossDeviceSync] Sync already in progress');
+      log('[CrossDeviceSync] Sync already in progress');
       return { status: 'syncing' };
     }
 
@@ -66,7 +66,7 @@ export class CrossDeviceSync {
       this.lastSyncTime = new Date();
       this.saveLastSyncTime();
 
-      console.log('[CrossDeviceSync] Sync complete');
+      log('[CrossDeviceSync] Sync complete');
       return {
         status: 'success',
         timestamp: this.lastSyncTime,
@@ -176,7 +176,7 @@ export class CrossDeviceSync {
    */
   async pushChanges(changes) {
     // Placeholder - would push to remote server
-    console.log('[CrossDeviceSync] Pushing changes to server:', changes);
+    log('[CrossDeviceSync] Pushing changes to server:', changes);
   }
 
   /**

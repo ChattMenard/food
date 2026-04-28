@@ -15,7 +15,7 @@ export class ReceiptScanner {
    */
   async init() {
     // In production, initialize Tesseract.js or similar OCR library
-    console.log('[ReceiptScanner] Initialized');
+    log('[ReceiptScanner] Initialized');
   }
 
   /**

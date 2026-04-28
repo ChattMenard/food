@@ -20,7 +20,7 @@ export class AuthManager {
     // firebase.initializeApp(config);
 
     this.loadUserFromStorage();
-    console.log('[AuthManager] Initialized');
+    log('[AuthManager] Initialized');
   }
 
   /**
@@ -100,7 +100,7 @@ export class AuthManager {
     this.user = null;
     this.authenticated = false;
     localStorage.removeItem('auth-user');
-    console.log('[AuthManager] Signed out');
+    log('[AuthManager] Signed out');
   }
 
   /**
@@ -128,7 +128,7 @@ export class AuthManager {
     // Placeholder implementation
     return new Promise((resolve) => {
       setTimeout(() => {
-        console.log(`[AuthManager] Password reset email sent to ${email}`);
+        log(`[AuthManager] Password reset email sent to ${email}`);
         resolve();
       }, 500);
     });
@@ -164,7 +164,7 @@ export class AuthManager {
       try {
         this.user = JSON.parse(saved);
         this.authenticated = true;
-        console.log('[AuthManager] User loaded from storage');
+        log('[AuthManager] User loaded from storage');
       } catch (error) {
         console.error('[AuthManager] Failed to load user:', error);
       }

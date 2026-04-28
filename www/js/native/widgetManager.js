@@ -14,7 +14,7 @@ export async function updateWidget(data) {
     // Only update on native platforms
     if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
       await WidgetManager.updateWidgetData(data);
-      console.log('[Widget] Widget data updated:', data);
+      log('[Widget] Widget data updated:', data);
     }
   } catch (error) {
     console.error('[Widget] Failed to update widget:', error);
@@ -28,7 +28,7 @@ export async function getWidgetData() {
   try {
     if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
       const data = await WidgetManager.getWidgetData();
-      console.log('[Widget] Current widget data:', data);
+      log('[Widget] Current widget data:', data);
       return data;
     }
   } catch (error) {

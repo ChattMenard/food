@@ -2,13 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pantry AI - Smart Meal Planner</title>
+    <meta name="description" content="AI-powered meal planning and pantry management. Scan ingredients, get personalized meal suggestions, and plan your week.">
+    <meta name="keywords" content="meal planning, pantry management, AI, recipes, food, cooking">
+    <meta name="author" content="Pantry AI">
+    <meta name="theme-color" content="#10b981">
+    <meta name="background_color" content="#f0fdf4">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/icons/icon-16x16.png">
+    <link rel="apple-touch-icon" href="images/icons/icon-192x192.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/output.css">
+    
+    <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="main">
-    <meta name="theme-color" content="#f97316">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="screen-orientation" content="portrait">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Pantry AI">
+    <meta name="application-name" content="Pantry AI">
+    <meta name="msapplication-TileColor" content="#10b981">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Pantry AI - Smart Meal Planner">
+    <meta property="og:description" content="AI-powered meal planning and pantry management">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="images/icons/icon-512x512.png">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pantry AI - Smart Meal Planner">
+    <meta name="twitter:description" content="AI-powered meal planning and pantry management">
+    <meta name="twitter:image" content="images/icons/icon-512x512.png">
     <meta http-equiv="ScreenOrientation" content="autoRotate:disabled">
     <link rel="manifest" href="manifest.json?v=6">
     <link rel="apple-touch-icon" href="logo.png">
@@ -1140,6 +1171,94 @@
     </div>
 
     <script type="module" src="js/app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered:', registration);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Show update notification
+                                    if (confirm('A new version is available. Would you like to update?')) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+        
+        // Handle service worker messages
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                const { type, data } = event.data;
+                
+                switch (type) {
+                    case 'BACKGROUND_SYNC':
+                        console.log('Background sync completed:', data);
+                        // Refresh UI if needed
+                        if (window.updateMeals) {
+                            window.updateMeals();
+                        }
+                        break;
+                        
+                    case 'NOTIFICATION_CLICKED':
+                        console.log('Notification clicked:', data);
+                        // Handle notification click
+                        if (data.action === 'explore') {
+                            // Navigate to suggestions
+                            window.location.hash = '#suggestions';
+                        }
+                        break;
+                }
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button
+            const installButton = document.getElementById('install-app');
+            if (installButton) {
+                installButton.style.display = 'block';
+                installButton.addEventListener('click', () => {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('User accepted the install prompt');
+                        } else {
+                            console.log('User dismissed the install prompt');
+                        }
+                        deferredPrompt = null;
+                    });
+                });
+            }
+        });
+        
+        // Handle app installed
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            const installButton = document.getElementById('install-app');
+            if (installButton) {
+                installButton.style.display = 'none';
+            }
+        });
+    </script>
 
     <!-- Diet chip click handling (toggle hidden checkboxes) -->
     <script>

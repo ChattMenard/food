@@ -20,7 +20,7 @@ export async function scheduleNativeNotification(options) {
   try {
     if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
       await NativePush.scheduleNotification(options);
-      console.log('[NativePush] Scheduled notification:', options.id);
+      log('[NativePush] Scheduled notification:', options.id);
     }
   } catch (error) {
     console.error('[NativePush] Failed to schedule notification:', error);
@@ -35,7 +35,7 @@ export async function cancelNativeNotification(id) {
   try {
     if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
       await NativePush.cancelNotification({ id });
-      console.log('[NativePush] Cancelled notification:', id);
+      log('[NativePush] Cancelled notification:', id);
     }
   } catch (error) {
     console.error('[NativePush] Failed to cancel notification:', error);
@@ -49,7 +49,7 @@ export async function cancelAllNativeNotifications() {
   try {
     if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
       await NativePush.cancelAllNotifications();
-      console.log('[NativePush] Cancelled all notifications');
+      log('[NativePush] Cancelled all notifications');
     }
   } catch (error) {
     console.error('[NativePush] Failed to cancel all notifications:', error);
@@ -64,7 +64,7 @@ export async function getPendingNativeNotifications() {
   try {
     if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
       const result = await NativePush.getPendingNotifications();
-      console.log('[NativePush] Pending notifications:', result.notifications);
+      log('[NativePush] Pending notifications:', result.notifications);
       return result.notifications;
     }
   } catch (error) {

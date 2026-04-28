@@ -3,6 +3,8 @@
  * Handles IndexedDB quota management and graceful error handling
  */
 
+import { log } from '../utils/logger.js';
+
 /**
  * Check available storage space
  * @returns {Promise<{usage: number, quota: number, usagePercentage: number}>}
@@ -48,7 +50,7 @@ export async function clearOldDatabaseData(dbName) {
     const request = indexedDB.deleteDatabase(dbName);
 
     request.onsuccess = () => {
-      console.log(`[Storage] Cleared old database: ${dbName}`);
+      log(`[Storage] Cleared old database: ${dbName}`);
       resolve();
     };
 
@@ -125,7 +127,7 @@ export async function clearOldCaches() {
 
     await Promise.all(
       pantryCaches.map((name) => {
-        console.log(`[Storage] Clearing cache: ${name}`);
+        log(`[Storage] Clearing cache: ${name}`);
         return caches.delete(name);
       })
     );
@@ -180,7 +182,7 @@ export async function migrateToLocalStorage(
         const data = getAllRequest.result;
         try {
           localStorage.setItem(localStorageKey, JSON.stringify(data));
-          console.log(`[Storage] Migrated ${storeName} to localStorage`);
+          log(`[Storage] Migrated ${storeName} to localStorage`);
           resolve();
         } catch (e) {
           console.error('[Storage] Failed to migrate to localStorage:', e);

@@ -1,15 +1,13 @@
 import { RecipeEngine } from '../logic/recipeEngine.js';
 import { IngredientVectors } from '../logic/ingredientVectors.js';
 import { aiCache } from '../utils/cacheManager.js';
+import environmentConfig from '../config/environment.js';
 
-// Backend proxy endpoint - set this via environment variable or config
-// Example: https://your-cloud-function-url/aiProxy
-const AI_PROXY_URL = import.meta.env.VITE_AI_PROXY_URL || 
-  (typeof window !== 'undefined' && window.AI_PROXY_URL) || 
-  'http://localhost:3001/ai';
+// Backend proxy endpoint from environment configuration
+const AI_PROXY_URL = environmentConfig.aiProxyUrl;
 
-// Fallback: If no proxy is configured, AI features will be disabled
-const AI_ENABLED = !!AI_PROXY_URL && AI_PROXY_URL !== 'http://localhost:3001/ai';
+// AI features enabled based on environment configuration
+const AI_ENABLED = environmentConfig.isAiEnabled;
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute

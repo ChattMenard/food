@@ -1,5 +1,7 @@
 import { normalizeCuisine } from '../utils/dietFilters.js';
 import { addImagesToRecipes } from '../advanced/recipeImages.js';
+import RecipeEngine from '../logic/recipeEngine.js';
+import log from '../utils/logger.js';
 import { SearchIndex } from '../logic/searchIndex.js';
 import type { Recipe, Ingredient, NutritionData } from '../types/index.js';
 
@@ -99,20 +101,20 @@ export class DataManager {
 
   async loadRecipes(): Promise<Recipe[]> {
     try {
-      console.log('[DataManager] Loading recipes...');
+      log('[DataManager] Loading recipes...');
       
       // Try mobile first
       if (this.isNativePlatform()) {
         const mobileRecipes = await this.loadMobileRecipes();
         if (mobileRecipes.length > 0) {
-          console.log(`[DataManager] Loaded ${mobileRecipes.length} recipes from mobile storage`);
+          log(`[DataManager] Loaded ${mobileRecipes.length} recipes from mobile storage`);
           return mobileRecipes;
         }
       }
 
       // Fallback to web
       const webRecipes = await this.loadWebRecipes();
-      console.log(`[DataManager] Loaded ${webRecipes.length} recipes from web`);
+      log(`[DataManager] Loaded ${webRecipes.length} recipes from web`);
       return webRecipes;
 
     } catch (error) {
@@ -145,7 +147,7 @@ export class DataManager {
   }
 
   private processRecipes(recipes: Recipe[]): Recipe[] {
-    console.log(`[DataManager] Processing ${recipes.length} recipes...`);
+    log(`[DataManager] Processing ${recipes.length} recipes...`);
 
     // Validate and filter recipes
     const validRecipes = recipes.filter(recipe => {
@@ -191,7 +193,7 @@ export class DataManager {
     // Trigger meals update
     setTimeout(() => this.updateMeals(), 100);
 
-    console.log(`[DataManager] Processed ${recipesWithImages.length} valid recipes`);
+    log(`[DataManager] Processed ${recipesWithImages.length} valid recipes`);
     return recipesWithImages;
   }
 

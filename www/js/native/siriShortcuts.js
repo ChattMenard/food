@@ -13,7 +13,7 @@ export async function donateAddIngredientShortcut(ingredient) {
   try {
     if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() === 'ios') {
       await SiriShortcuts.donateAddIngredient({ ingredient });
-      console.log('[Siri] Donated shortcut for ingredient:', ingredient);
+      log('[Siri] Donated shortcut for ingredient:', ingredient);
     }
   } catch (error) {
     console.error('[Siri] Failed to donate ingredient shortcut:', error);
@@ -28,7 +28,7 @@ export async function donateAddMealShortcut(meal) {
   try {
     if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() === 'ios') {
       await SiriShortcuts.donateAddMeal({ meal });
-      console.log('[Siri] Donated shortcut for meal:', meal);
+      log('[Siri] Donated shortcut for meal:', meal);
     }
   } catch (error) {
     console.error('[Siri] Failed to donate meal shortcut:', error);

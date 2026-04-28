@@ -1,4 +1,14 @@
-console.log('=== MODULE START ===');
+import { log } from './utils/logger.js';
+import { sanitize } from './utils/sanitizer.js';
+import environmentConfig from './config/environment.js';
+import cspManager from './security/csp.js';
+import errorTracker from './monitoring/errorTracker.js';
+import errorBoundary from './ui/errorBoundary.js';
+import offlineManager from './utils/offlineManager.js';
+import accessibilityManager from './accessibility/accessibilityManager.js';
+import analyticsManager from './analytics/analyticsManager.js';
+
+log('=== MODULE START ===');
 import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState, signInUser } from './core/appState.js';
 import { PantryManager } from './features/pantry/pantryManager.js';
 import { MealPlanner } from './features/meals/mealPlanner.js';
@@ -296,14 +306,14 @@ Object.assign(window, {
         const btn = document.getElementById('ai-suggestions-btn');
         const ai = await getGeminiAI();
         if (ai.isLoading) return;
-        container.innerHTML = '<p style="color:#6b21a8; font-size:13px; text-align:center; padding:10px;">🤖 Thinking…</p>';
+        container.innerHTML = sanitize('<p style="color:#6b21a8; font-size:13px; text-align:center; padding:10px;">🤖 Thinking…</p>');
         btn.disabled = true;
         const suggestions = await ai.generateAISuggestions();
         btn.disabled = false;
         if (Array.isArray(suggestions) && suggestions.length) {
-            container.innerHTML = suggestions.map(s => `<div class="list-item"><div class="list-item-body"><div class="list-item-title">${s.name || s}</div><div class="list-item-sub">${s.description || ''}</div></div></div>`).join('');
+            container.innerHTML = sanitize(suggestions.map(s => `<div class="list-item"><div class="list-item-body"><div class="list-item-title">${s.name || s}</div><div class="list-item-sub">${s.description || ''}</div></div></div>`).join(''));
         } else {
-            container.innerHTML = '<p style="color:#6b7280; font-size:13px; text-align:center; padding:10px;">No suggestions right now.</p>';
+            container.innerHTML = sanitize('<p style="color:#6b7280; font-size:13px; text-align:center; padding:10px;">No suggestions right now.</p>');
         }
     },
     routeInput: async () => {
@@ -451,17 +461,17 @@ function renderSeasonalSuggestions() {
     const container = document.getElementById('seasonal-suggestions');
     if (!container) return;
     if (!suggestions.length) {
-        container.innerHTML = '<p style="color:#6b7280; font-size:13px; padding:6px;">All seasonal ingredients are in your pantry!</p>';
+        container.innerHTML = sanitize('<p style="color:#6b7280; font-size:13px; padding:6px;">All seasonal ingredients are in your pantry!</p>');
         return;
     }
-    container.innerHTML = suggestions.map(ing => `
+    container.innerHTML = sanitize(suggestions.map(ing => `
         <button class="list-item" style="width:100%; cursor:pointer; border:1px solid #bbf7d0;" onclick="addShopItem('${ing}')">
             <div class="list-item-body">
                 <div class="list-item-title">+ ${ing}</div>
                 <div class="list-item-sub">Tap to add</div>
             </div>
         </button>
-    `).join('');
+    `).join(''));
 }
 
 function renderLeftovers() {
@@ -640,11 +650,19 @@ async function init() {
     
     performanceMonitor.end(initId);
     
+    // Initialize security, monitoring, error handling, offline, accessibility, and analytics features
+    cspManager.init();
+    errorTracker.init();
+    errorBoundary.init();
+    offlineManager.init();
+    accessibilityManager.init();
+    analyticsManager.init();
+    
     // Signal that app is initialized for E2E tests
     window._appInitialized = true;
     
     // Log performance metrics in development
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if (environmentConfig.IS_DEVELOPMENT) {
         setTimeout(() => performanceMonitor.logSummary(), 1000);
     }
 }

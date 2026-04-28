@@ -4,6 +4,7 @@
  * Last-write-wins strategy with vector clock tracking
  */
 
+import { log } from '../utils/logger.js';
 import db from './db.js';
 
 // Conflict resolution strategies
@@ -54,7 +55,7 @@ class DeviceSyncManager {
       this.vectorClock = deviceInfo.value.vectorClock || {};
       this.isRegistered = true;
 
-      console.log(
+      log(
         '[DeviceSync] Loaded device:',
         this.deviceId,
         this.deviceName
@@ -79,7 +80,7 @@ class DeviceSyncManager {
 
     await this.saveDeviceInfo();
 
-    console.log(
+    log(
       '[DeviceSync] Registered new device:',
       this.deviceId,
       this.deviceName
@@ -224,7 +225,7 @@ class DeviceSyncManager {
     }
 
     if (payload.deviceId === this.deviceId) {
-      console.log('[DeviceSync] Ignoring own payload');
+      log('[DeviceSync] Ignoring own payload');
       return { applied: false, reason: 'own-device' };
     }
 

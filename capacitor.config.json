@@ -14,9 +14,21 @@
     "scheme": "Main"
   },
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": false
   },
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "cleartext": true,
+    "allowNavigation": ["*"]
+  },
+  "liveReload": {
+    "enabled": false,
+    "ignore": [
+      "www/js/__tests__/**",
+      "www/data/**",
+      "**/*.test.js",
+      "**/*.spec.js"
+    ]
   }
 }

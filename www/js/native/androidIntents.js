@@ -16,7 +16,7 @@ export async function sendAddIngredientIntent(ingredient) {
       Capacitor.getPlatform() === 'android'
     ) {
       await AndroidIntents.sendAddIngredientIntent({ ingredient });
-      console.log('[AndroidIntents] Sent add ingredient intent:', ingredient);
+      log('[AndroidIntents] Sent add ingredient intent:', ingredient);
     }
   } catch (error) {
     console.error('[AndroidIntents] Failed to send intent:', error);
@@ -34,7 +34,7 @@ export async function sendAddMealIntent(meal) {
       Capacitor.getPlatform() === 'android'
     ) {
       await AndroidIntents.sendAddMealIntent({ meal });
-      console.log('[AndroidIntents] Sent add meal intent:', meal);
+      log('[AndroidIntents] Sent add meal intent:', meal);
     }
   } catch (error) {
     console.error('[AndroidIntents] Failed to send intent:', error);
@@ -51,7 +51,7 @@ export async function registerIntentListener() {
       Capacitor.getPlatform() === 'android'
     ) {
       await AndroidIntents.registerIntentListener();
-      console.log('[AndroidIntents] Intent listener registered');
+      log('[AndroidIntents] Intent listener registered');
     }
   } catch (error) {
     console.error('[AndroidIntents] Failed to register listener:', error);

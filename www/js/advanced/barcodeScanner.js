@@ -65,7 +65,7 @@ export class BarcodeScannerManager {
         }
       });
 
-      console.log('[BarcodeScanner] Scanning started');
+      log('[BarcodeScanner] Scanning started');
     } catch (error) {
       console.error('[BarcodeScanner] Failed to start scan:', error);
       this.stopScan();
@@ -85,7 +85,7 @@ export class BarcodeScannerManager {
       document.body.classList.remove('barcode-scanner-active');
       this.isScanning = false;
       this.scanCallback = null;
-      console.log('[BarcodeScanner] Scanning stopped');
+      log('[BarcodeScanner] Scanning stopped');
     } catch (error) {
       console.error('[BarcodeScanner] Failed to stop scan:', error);
     }
@@ -241,7 +241,7 @@ export async function scanAndAddToPantry(onAdd) {
 
     if (!available) {
       // Fallback to photo capture
-      console.log(
+      log(
         '[BarcodeScanner] Barcode scanner not available, using photo capture'
       );
       await scanner.capturePhoto();

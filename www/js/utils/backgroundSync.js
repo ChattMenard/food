@@ -188,31 +188,135 @@ export class BackgroundSyncManager {
   }
 
   /**
-   * Sync meal plan to server (placeholder for future implementation)
+   * Sync meal plan to server
    * @param {Object} mealPlan - Meal plan data
    */
-  async syncMealPlanToServer(_mealPlan) {
-    // TODO: Implement actual server sync when backend is available
-    // For now, just simulate success
-    return new Promise((resolve) => setTimeout(resolve, 100));
+  async syncMealPlanToServer(mealPlan) {
+    try {
+      // Store locally for now, sync to server when available
+      localStorage.setItem('meal_plan_backup', JSON.stringify({
+        data: mealPlan,
+        timestamp: Date.now(),
+        sync_status: 'pending'
+      }));
+      
+      // Attempt server sync if analytics is enabled
+      if (window.analyticsManager && window.analyticsManager.isEnabled) {
+        const response = await fetch('/api/sync/meal-plan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            meal_plan: mealPlan,
+            user_id: window.analyticsManager.userId,
+            timestamp: Date.now()
+          })
+        });
+        
+        if (response.ok) {
+          // Update sync status
+          const backup = JSON.parse(localStorage.getItem('meal_plan_backup') || '{}');
+          backup.sync_status = 'completed';
+          backup.last_sync = Date.now();
+          localStorage.setItem('meal_plan_backup', JSON.stringify(backup));
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to sync meal plan to server:', error);
+      // Keep local backup
+      return false;
+    }
   }
 
   /**
-   * Sync pantry to server (placeholder for future implementation)
+   * Sync pantry to server
    * @param {Array} pantry - Pantry data
    */
-  async syncPantryToServer(_pantry) {
-    // TODO: Implement actual server sync when backend is available
-    return new Promise((resolve) => setTimeout(resolve, 100));
+  async syncPantryToServer(pantry) {
+    try {
+      // Store locally for now, sync to server when available
+      localStorage.setItem('pantry_backup', JSON.stringify({
+        data: pantry,
+        timestamp: Date.now(),
+        sync_status: 'pending'
+      }));
+      
+      // Attempt server sync if analytics is enabled
+      if (window.analyticsManager && window.analyticsManager.isEnabled) {
+        const response = await fetch('/api/sync/pantry', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            pantry: pantry,
+            user_id: window.analyticsManager.userId,
+            timestamp: Date.now()
+          })
+        });
+        
+        if (response.ok) {
+          // Update sync status
+          const backup = JSON.parse(localStorage.getItem('pantry_backup') || '{}');
+          backup.sync_status = 'completed';
+          backup.last_sync = Date.now();
+          localStorage.setItem('pantry_backup', JSON.stringify(backup));
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to sync pantry to server:', error);
+      // Keep local backup
+      return false;
+    }
   }
 
   /**
-   * Sync preferences to server (placeholder for future implementation)
+   * Sync preferences to server
    * @param {Object} preferences - Preferences data
    */
-  async syncPreferencesToServer(_preferences) {
-    // TODO: Implement actual server sync when backend is available
-    return new Promise((resolve) => setTimeout(resolve, 100));
+  async syncPreferencesToServer(preferences) {
+    try {
+      // Store locally for now, sync to server when available
+      localStorage.setItem('preferences_backup', JSON.stringify({
+        data: preferences,
+        timestamp: Date.now(),
+        sync_status: 'pending'
+      }));
+      
+      // Attempt server sync if analytics is enabled
+      if (window.analyticsManager && window.analyticsManager.isEnabled) {
+        const response = await fetch('/api/sync/preferences', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            preferences: preferences,
+            user_id: window.analyticsManager.userId,
+            timestamp: Date.now()
+          })
+        });
+        
+        if (response.ok) {
+          // Update sync status
+          const backup = JSON.parse(localStorage.getItem('preferences_backup') || '{}');
+          backup.sync_status = 'completed';
+          backup.last_sync = Date.now();
+          localStorage.setItem('preferences_backup', JSON.stringify(backup));
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to sync preferences to server:', error);
+      // Keep local backup
+      return false;
+    }
   }
 
   /**

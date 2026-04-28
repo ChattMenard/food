@@ -30,9 +30,9 @@ export class PushNotificationManager {
         // Set up listeners
         this.setupListeners();
 
-        console.log('[PushNotifications] Initialized');
+        log('[PushNotifications] Initialized');
       } else {
-        console.log('[PushNotifications] Permission denied');
+        log('[PushNotifications] Permission denied');
       }
     } catch (error) {
       console.error('[PushNotifications] Initialization failed:', error);
@@ -48,7 +48,7 @@ export class PushNotificationManager {
     try {
       await LocalNotifications.requestPermissions();
       this.enabled = true;
-      console.log('[PushNotifications] Using local notifications');
+      log('[PushNotifications] Using local notifications');
     } catch (error) {
       console.error('[PushNotifications] Local notifications failed:', error);
     }
@@ -59,7 +59,7 @@ export class PushNotificationManager {
    */
   setupListeners() {
     PushNotifications.addListener('registration', (token) => {
-      console.log('[PushNotifications] Registration token:', token.value);
+      log('[PushNotifications] Registration token:', token.value);
       // Send token to server for push notifications
       this.sendTokenToServer(token.value);
     });
@@ -71,14 +71,14 @@ export class PushNotificationManager {
     PushNotifications.addListener(
       'pushNotificationReceived',
       (notification) => {
-        console.log('[PushNotifications] Push received:', notification);
+        log('[PushNotifications] Push received:', notification);
       }
     );
 
     PushNotifications.addListener(
       'pushNotificationActionPerformed',
       (notification) => {
-        console.log('[PushNotifications] Push action performed:', notification);
+        log('[PushNotifications] Push action performed:', notification);
         this.handleNotificationAction(notification);
       }
     );
@@ -89,8 +89,31 @@ export class PushNotificationManager {
    * @param {string} token - Registration token
    */
   async sendTokenToServer(token) {
-    // TODO: Implement server-side token storage
-    console.log('[PushNotifications] Token to store:', token);
+    try {
+      // Store token locally for now
+      localStorage.setItem('push_notification_token', token);
+      
+      // Send to server if available
+      if (window.analyticsManager && window.analyticsManager.isEnabled) {
+        await fetch('/api/push-notifications/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            token: token,
+            platform: 'web',
+            user_id: window.analyticsManager.userId
+          })
+        });
+      }
+      
+      log('[PushNotifications] Token stored:', token);
+    } catch (error) {
+      console.error('[PushNotifications] Failed to store token:', error);
+      // Fallback to local storage only
+      localStorage.setItem('push_notification_token', token);
+    }
   }
 
   /**
