@@ -49,7 +49,7 @@ export async function retryWithBackoff(requestFn: () => Promise<any>, options: a
 
       console.warn(
         `[Network] Request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
-        error.message
+        (error as Error).message
       );
 
       // Wait before retry

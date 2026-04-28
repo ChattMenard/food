@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Push Notification Manager
  * Handles push notifications, scheduling, and subscription management
@@ -12,10 +11,52 @@ const PERMISSION = {
   GRANTED: 'granted',
   DENIED: 'denied',
   DEFAULT: 'default',
-};
+} as const;
+
+type PermissionState = typeof PERMISSION[keyof typeof PERMISSION];
+
+// Notification type configuration
+interface NotificationTypeConfig {
+  id: string;
+  title: string;
+  description: string;
+  defaultEnabled: boolean;
+  schedule: 'daily' | 'weekly' | 'immediate';
+}
+
+// Notification type settings
+interface NotificationTypeSettings {
+  enabled: boolean;
+  schedule: string;
+  [key: string]: boolean | string;
+}
+
+// Scheduled notification
+interface ScheduledNotification {
+  typeId?: string;
+  title?: string;
+  body?: string;
+  scheduledTime?: Date;
+  type?: 'daily' | 'weekly';
+}
+
+// Notification options
+interface NotificationOptions {
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  requireInteraction?: boolean;
+  silent?: boolean;
+  body?: string;
+  actions?: Array<{ action: string; title: string }>;
+  data?: Record<string, unknown>;
+}
+
+// Listener callback type
+type NotificationListener = (event: string, data: Record<string, unknown>) => void;
 
 // Notification types with their settings
-const NOTIFICATION_TYPES = {
+const NOTIFICATION_TYPES: Record<string, NotificationTypeConfig> = {
   mealPrep: {
     id: 'mealPrep',
     title: 'Meal Prep Reminder',
@@ -54,19 +95,19 @@ const NOTIFICATION_TYPES = {
 };
 
 class PushNotificationManager {
-  permission: string;
-  subscriptions: Map<string, any>;
-  scheduledNotifications: Map<string, any>;
-  typeSettings: Record<string, any>;
+  permission: PermissionState;
+  subscriptions: Map<string, PushSubscription>;
+  scheduledNotifications: Map<string, ScheduledNotification>;
+  typeSettings: Record<string, NotificationTypeSettings>;
   storageKey: string;
-  listeners: Array<(callback: any) => void>;
-  swRegistration: any;
+  listeners: NotificationListener[];
+  swRegistration: ServiceWorkerRegistration | null;
 
   constructor() {
     this.permission = PERMISSION.DEFAULT;
     this.subscriptions = new Map();
     this.scheduledNotifications = new Map();
-    this.typeSettings = {};
+    this.typeSettings = {} as Record<string, NotificationTypeSettings>;
     this.storageKey = 'notification-settings';
     this.listeners = [];
     this.swRegistration = null;
@@ -75,7 +116,14 @@ class PushNotificationManager {
   /**
    * Initialize notification manager
    */
-  async init() {
+  async init(): Promise<{
+    supported: boolean;
+    permission: PermissionState;
+    enabled: boolean;
+    enabledTypes: string[];
+    allTypes: Array<NotificationTypeConfig & { settings: NotificationTypeSettings }>;
+    hasPushSubscription: boolean;
+  }> {
     // Check current permission
     if ('Notification' in window) {
       this.permission = Notification.permission;
@@ -89,7 +137,7 @@ class PushNotificationManager {
       try {
         const swReady = Promise.race([
           navigator.serviceWorker.ready,
-          new Promise((_, reject) =>
+          new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('SW timeout')), 3000)
           ),
         ]);
@@ -97,7 +145,7 @@ class PushNotificationManager {
       } catch (e) {
         console.warn(
           '[PushNotifications] Service worker not available:',
-          e.message
+          e instanceof Error ? e.message : String(e)
         );
       }
     }
@@ -113,7 +161,7 @@ class PushNotificationManager {
   /**
    * Request notification permission
    */
-  async requestPermission() {
+  async requestPermission(): Promise<{ granted: boolean; permission?: string; error?: string }> {
     if (!('Notification' in window)) {
       return { granted: false, error: 'Notifications not supported' };
     }
@@ -129,19 +177,19 @@ class PushNotificationManager {
         permission: result,
       };
     } catch (err) {
-      return { granted: false, error: err.message };
+      return { granted: false, error: err instanceof Error ? err.message : String(err) };
     }
   }
 
   /**
    * Load notification settings from IndexedDB
    */
-  async loadSettings() {
+  async loadSettings(): Promise<void> {
     await db.ready;
 
-    const stored = await db.get('preferences', this.storageKey);
+    const stored = await db.get('preferences', this.storageKey) as { value?: { types?: Record<string, NotificationTypeSettings> } } | undefined;
 
-    if (stored && stored.value) {
+    if (stored?.value && typeof stored.value === 'object' && 'types' in stored.value) {
       this.typeSettings = stored.value.types || {};
     } else {
       // Initialize with defaults
@@ -152,7 +200,7 @@ class PushNotificationManager {
   /**
    * Save notification settings to IndexedDB
    */
-  async saveSettings() {
+  async saveSettings(): Promise<void> {
     await db.ready;
 
     await db.put('preferences', {
@@ -170,8 +218,8 @@ class PushNotificationManager {
   /**
    * Get default settings for all types
    */
-  getDefaultSettings() {
-    const defaults = {};
+  getDefaultSettings(): Record<string, NotificationTypeSettings> {
+    const defaults: Record<string, NotificationTypeSettings> = {};
     Object.values(NOTIFICATION_TYPES).forEach((type) => {
       defaults[type.id] = {
         enabled: type.defaultEnabled,
@@ -184,13 +232,15 @@ class PushNotificationManager {
   /**
    * Enable/disable notification type
    */
-  async setTypeEnabled(typeId, enabled) {
-    if (!NOTIFICATION_TYPES[typeId]) {
+  async setTypeEnabled(typeId: string, enabled: boolean): Promise<NotificationTypeSettings> {
+    const validTypes = Object.keys(NOTIFICATION_TYPES as Record<string, NotificationTypeConfig>);
+    if (!validTypes.includes(typeId)) {
       throw new Error(`Unknown notification type: ${typeId}`);
     }
 
+    const existingSettings = this.typeSettings[typeId] || { enabled: false, schedule: 'immediate' };
     this.typeSettings[typeId] = {
-      ...this.typeSettings[typeId],
+      ...existingSettings,
       enabled,
     };
 
@@ -209,7 +259,7 @@ class PushNotificationManager {
   /**
    * Get all notification type settings
    */
-  getTypeSettings() {
+  getTypeSettings(): Array<NotificationTypeConfig & { settings: NotificationTypeSettings }> {
     return Object.values(NOTIFICATION_TYPES).map((type) => ({
       ...type,
       settings: this.typeSettings[type.id] || { enabled: type.defaultEnabled },
@@ -219,9 +269,9 @@ class PushNotificationManager {
   /**
    * Get enabled notification types
    */
-  getEnabledTypes() {
+  getEnabledTypes(): string[] {
     return Object.keys(this.typeSettings).filter(
-      (id) => this.typeSettings[id]?.enabled
+      (id) => this.typeSettings[id]?.enabled === true
     );
   }
 
@@ -252,7 +302,12 @@ class PushNotificationManager {
   /**
    * Schedule a notification (convenience method for tests)
    */
-  async schedule(notification: { type: string | { id: string }; title: string; body: string; scheduledTime?: Date }): Promise<string> {
+  async schedule(notification: {
+    type: string | { id: string };
+    title: string;
+    body: string;
+    scheduledTime?: Date;
+  }): Promise<string> {
     const { type, title, body, scheduledTime } = notification;
     const typeId = typeof type === 'string' ? type : type.id;
 
@@ -288,14 +343,14 @@ class PushNotificationManager {
   /**
    * Get all notification types (convenience method for tests)
    */
-  getAllTypes() {
+  getAllTypes(): NotificationTypeConfig[] {
     return Object.values(NOTIFICATION_TYPES);
   }
 
   /**
    * Show immediate notification
    */
-  async show(title, options = {}) {
+  async show(title: string, options: NotificationOptions = {}): Promise<{ shown: boolean; error?: string }> {
     if (this.permission !== PERMISSION.GRANTED) {
       return { shown: false, error: 'Permission not granted' };
     }
@@ -321,14 +376,14 @@ class PushNotificationManager {
 
       return { shown: true };
     } catch (err) {
-      return { shown: false, error: err.message };
+      return { shown: false, error: err instanceof Error ? err.message : String(err) };
     }
   }
 
   /**
    * Schedule notifications for enabled types
    */
-  scheduleAllEnabled() {
+  scheduleAllEnabled(): void {
     this.getEnabledTypes().forEach((typeId) => {
       this.scheduleType(typeId);
     });
@@ -337,7 +392,7 @@ class PushNotificationManager {
   /**
    * Schedule specific notification type
    */
-  scheduleType(typeId) {
+  scheduleType(typeId: string): void {
     // Cancel existing schedule
     this.cancelScheduledType(typeId);
 
@@ -360,27 +415,27 @@ class PushNotificationManager {
   /**
    * Schedule daily notification
    */
-  scheduleDaily(typeId) {
+  scheduleDaily(typeId: string): void {
     // For now, just log the schedule
     // In production, this would use a service worker periodic sync
     console.log(`[PushNotifications] Daily schedule: ${typeId}`);
 
     // Store reference for cancellation
-    this.scheduledNotifications.set(typeId, { type: 'daily' });
+    this.scheduledNotifications.set(typeId, { typeId, type: 'daily' } as ScheduledNotification);
   }
 
   /**
    * Schedule weekly notification
    */
-  scheduleWeekly(typeId) {
+  scheduleWeekly(typeId: string): void {
     console.log(`[PushNotifications] Weekly schedule: ${typeId}`);
-    this.scheduledNotifications.set(typeId, { type: 'weekly' });
+    this.scheduledNotifications.set(typeId, { typeId, type: 'weekly' } as ScheduledNotification);
   }
 
   /**
    * Cancel scheduled notifications for a type
    */
-  cancelScheduledType(typeId) {
+  cancelScheduledType(typeId: string): void {
     const existing = this.scheduledNotifications.get(typeId);
     if (existing) {
       console.log(`[PushNotifications] Cancelled: ${typeId}`);
@@ -391,7 +446,7 @@ class PushNotificationManager {
   /**
    * Trigger meal prep notification
    */
-  async triggerMealPrep(prepPlan) {
+  async triggerMealPrep(prepPlan: { recipes: unknown[] }): Promise<{ shown: boolean; error?: string } | undefined> {
     if (!this.typeSettings.mealPrep?.enabled) return;
 
     return this.show('Time to Meal Prep!', {
@@ -408,7 +463,7 @@ class PushNotificationManager {
   /**
    * Trigger expiration warning
    */
-  async triggerExpiration(expiringItems) {
+  async triggerExpiration(expiringItems: Array<{ name: string }>): Promise<{ shown: boolean; error?: string } | undefined> {
     if (!this.typeSettings.expiration?.enabled) return;
     if (expiringItems.length === 0) return;
 
@@ -430,7 +485,7 @@ class PushNotificationManager {
   /**
    * Trigger grocery delivery reminder
    */
-  async triggerGroceryReminder(shoppingList) {
+  async triggerGroceryReminder(shoppingList: unknown[]): Promise<{ shown: boolean; error?: string } | undefined> {
     if (!this.typeSettings.groceryDelivery?.enabled) return;
 
     return this.show('Grocery Order Reminder', {
@@ -447,7 +502,7 @@ class PushNotificationManager {
   /**
    * Trigger nutrition goal update
    */
-  async triggerNutritionUpdate(progress) {
+  async triggerNutritionUpdate(progress: { percentage: number }): Promise<{ shown: boolean; error?: string } | undefined> {
     if (!this.typeSettings.nutritionGoal?.enabled) return;
 
     const percentage = Math.round(progress.percentage);
@@ -462,7 +517,7 @@ class PushNotificationManager {
   /**
    * Trigger sync complete notification
    */
-  async triggerSyncComplete(syncResult) {
+  async triggerSyncComplete(syncResult: { deviceName?: string }): Promise<{ shown: boolean; error?: string } | undefined> {
     if (!this.typeSettings.syncComplete?.enabled) return;
 
     return this.show('Sync Complete', {
@@ -476,17 +531,18 @@ class PushNotificationManager {
   /**
    * Subscribe to push notifications (for server-sent push)
    */
-  async subscribeToPush() {
-    if (!this.swRegistration) {
-      return { subscribed: false, error: 'Service Worker not available' };
+  async subscribeToPush(): Promise<{ subscribed: boolean; subscription?: PushSubscription; error?: string }> {
+    const pushManager = this.getPushManager();
+    if (!pushManager) {
+      return { subscribed: false, error: 'Push manager not available' };
     }
 
     try {
-      const subscription = await this.swRegistration.pushManager.subscribe({
+      const subscription = await pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(
-          'BEl62iTMg5A8F4pklCN9x9w0wS9z8z8z8z8z8z8z8z8z8z8z8z8z8z8z8' // Placeholder key
-        ),
+          'BEl62iTMg5A8F4pklCN9x9w0wS9z8z8z8z8z8z8z8z8z8z8z8z8z8z8' // Placeholder key
+        ) as BufferSource,
       });
 
       this.subscriptions.set('push', subscription);
@@ -499,14 +555,14 @@ class PushNotificationManager {
 
       return { subscribed: true, subscription };
     } catch (err) {
-      return { subscribed: false, error: err.message };
+      return { subscribed: false, error: err instanceof Error ? err.message : String(err) };
     }
   }
 
   /**
    * Unsubscribe from push notifications
    */
-  async unsubscribeFromPush() {
+  async unsubscribeFromPush(): Promise<{ unsubscribed: boolean; error?: string }> {
     const subscription = this.subscriptions.get('push');
     if (!subscription) return { unsubscribed: false };
 
@@ -515,14 +571,14 @@ class PushNotificationManager {
       this.subscriptions.delete('push');
       return { unsubscribed: true };
     } catch (err) {
-      return { unsubscribed: false, error: err.message };
+      return { unsubscribed: false, error: err instanceof Error ? err.message : String(err) };
     }
   }
 
   /**
    * Helper: Convert base64 to Uint8Array for VAPID key
    */
-  urlBase64ToUint8Array(base64String) {
+  urlBase64ToUint8Array(base64String: string): Uint8Array {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding)
       .replace(/\-/g, '+')
@@ -538,16 +594,30 @@ class PushNotificationManager {
   }
 
   /**
+   * Get push manager if available
+   */
+  private getPushManager(): PushManager | null {
+    return this.swRegistration?.pushManager || null;
+  }
+
+  /**
    * Check if notifications are supported
    */
-  isSupported() {
+  isSupported(): boolean {
     return 'Notification' in window;
   }
 
   /**
    * Get current status
    */
-  getStatus() {
+  getStatus(): {
+    supported: boolean;
+    permission: PermissionState;
+    enabled: boolean;
+    enabledTypes: string[];
+    allTypes: Array<NotificationTypeConfig & { settings: NotificationTypeSettings }>;
+    hasPushSubscription: boolean;
+  } {
     return {
       supported: this.isSupported(),
       permission: this.permission,
@@ -561,7 +631,7 @@ class PushNotificationManager {
   /**
    * Subscribe to notification events
    */
-  subscribe(callback) {
+  subscribe(callback: NotificationListener): () => void {
     this.listeners.push(callback);
     return () => {
       const index = this.listeners.indexOf(callback);
@@ -569,7 +639,7 @@ class PushNotificationManager {
     };
   }
 
-  notifyListeners(event, data) {
+  notifyListeners(event: string, data: Record<string, unknown>): void {
     this.listeners.forEach((cb) => {
       try {
         cb(event, data);

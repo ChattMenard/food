@@ -152,13 +152,13 @@ export const performanceMonitor = new PerformanceMonitor();
 
 // Convenience function for timing operations
 export async function withPerformanceTiming(name: string, fn: () => Promise<any>) {
-  const id = performanceMonitor.start(name);
+  const id = performanceMonitor.start(name || '');
   try {
     const result = await fn();
-    performanceMonitor.end(id);
+    performanceMonitor.end(id || '');
     return result;
   } catch (error) {
-    performanceMonitor.end(id);
+    performanceMonitor.end(id || '');
     throw error;
   }
 }

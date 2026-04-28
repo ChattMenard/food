@@ -499,8 +499,8 @@ class PantryDB {
           if (!termMap[term]) {
             termMap[term] = [];
           }
-          if (!termMap[term].includes(recipe.id as number)) {
-            termMap[term].push(recipe.id as number);
+          if (!termMap[term].includes(recipe.id as unknown as number)) {
+            termMap[term].push(recipe.id as unknown as number);
           }
         }
       }

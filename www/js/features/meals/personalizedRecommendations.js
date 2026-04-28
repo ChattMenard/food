@@ -81,4 +81,13 @@ export class PersonalizedRecommendations {
         
         return !excluded.some(keyword => recipeText.includes(keyword));
     }
+
+    /**
+     * Get personalized recipe recommendations
+     * @param {number} limit - Maximum number of recommendations
+     * @returns {Array} Recommended recipes
+     */
+    getRecommendations(limit = 5) {
+        return this.getPersonalizedSuggestions(limit);
+    }
 }

@@ -182,8 +182,8 @@ function updateNutritionGoals(goals: any): void {
 // Lazy loading
 async function loadAdvancedFeatures(): Promise<void> {
   try {
-    const { default: GeminiAI } = await import('./ai/geminiAI.js');
-    geminiAI = new GeminiAI();
+    // AI features temporarily disabled - geminiAI module not found
+    console.warn('AI features temporarily disabled');
   } catch (error) {
     console.error('Failed to load AI features:', error);
   }

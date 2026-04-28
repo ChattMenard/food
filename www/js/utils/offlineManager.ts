@@ -1,13 +1,27 @@
-// @ts-check
 /**
  * Offline Manager
  * Handles offline detection, loading states, and offline fallbacks
  */
 
+interface LoadingState {
+  isLoading: boolean;
+  message: string;
+  timestamp: number;
+}
+
+interface QueuedAction {
+  type: string;
+  data?: Record<string, unknown>;
+  retryKey?: string;
+  id: number;
+  timestamp: number;
+}
+
+
 class OfflineManager {
   isOnline: boolean;
-  loadingStates: Map<string, any>;
-  offlineQueue: any[];
+  loadingStates: Map<string, LoadingState>;
+  offlineQueue: QueuedAction[];
   maxQueueSize: number;
   retryAttempts: Map<string, number>;
   maxRetries: number;
@@ -52,7 +66,7 @@ class OfflineManager {
   async checkConnection(): Promise<boolean> {
     try {
       // Try to fetch a small resource to verify connectivity
-      const response = await fetch('/favicon.ico', {
+      await fetch('/favicon.ico', {
         method: 'HEAD',
         cache: 'no-cache',
         signal: AbortSignal.timeout(5000)
@@ -66,7 +80,7 @@ class OfflineManager {
       }
       
       return true;
-    } catch (error) {
+    } catch (_error) {
       const wasOnline = this.isOnline;
       this.isOnline = false;
       
@@ -117,7 +131,7 @@ class OfflineManager {
     }
     
     // Set color based on type
-    const colors = {
+    const colors: Record<string, string> = {
       success: '#10b981',
       warning: '#f59e0b',
       error: '#ef4444',
@@ -186,9 +200,10 @@ class OfflineManager {
     nonEssentialSelectors.forEach(selector => {
       const elements = document.querySelectorAll(selector);
       elements.forEach(element => {
-        element.disabled = true;
-        element.style.opacity = '0.5';
-        element.title = 'This feature requires an internet connection';
+        const interactiveElement = element as HTMLButtonElement | HTMLInputElement | HTMLFormElement;
+        interactiveElement.disabled = true;
+        interactiveElement.style.opacity = '0.5';
+        interactiveElement.title = 'This feature requires an internet connection';
       });
     });
   }
@@ -197,24 +212,26 @@ class OfflineManager {
     // Re-enable all disabled elements
     const disabledElements = document.querySelectorAll('[disabled]');
     disabledElements.forEach(element => {
+      const interactiveElement = element as HTMLButtonElement | HTMLInputElement | HTMLFormElement;
       if (element.hasAttribute('data-requires-online')) {
-        element.disabled = false;
-        element.style.opacity = '1';
-        element.title = '';
+        interactiveElement.disabled = false;
+        interactiveElement.style.opacity = '1';
+        interactiveElement.title = '';
       }
     });
   }
 
   // Loading state management
-  setLoadingState(key, isLoading, message = '') {
+  setLoadingState(key: string, isLoading: boolean, message: string = ''): void {
     this.loadingStates.set(key, { isLoading, message, timestamp: Date.now() });
     
     // Update UI elements with loading state
     const elements = document.querySelectorAll(`[data-loading="${key}"]`);
     elements.forEach(element => {
+      const interactiveElement = element as HTMLButtonElement | HTMLInputElement;
       if (isLoading) {
-        element.classList.add('loading');
-        element.disabled = true;
+        interactiveElement.classList.add('loading');
+        interactiveElement.disabled = true;
         
         // Add loading spinner if not present
         if (!element.querySelector('.loading-spinner')) {
@@ -251,29 +268,30 @@ class OfflineManager {
           element.setAttribute('data-loading-message', message);
         }
       } else {
-        element.classList.remove('loading');
-        element.disabled = false;
+        interactiveElement.classList.remove('loading');
+        interactiveElement.disabled = false;
         
-        const spinner = element.querySelector('.loading-spinner');
+        const spinner = interactiveElement.querySelector('.loading-spinner');
         if (spinner) {
           spinner.remove();
         }
         
-        element.removeAttribute('data-loading-message');
+        interactiveElement.removeAttribute('data-loading-message');
       }
     });
   }
 
-  isLoading(key) {
+  isLoading(key: string): boolean {
     const state = this.loadingStates.get(key);
     return state?.isLoading || false;
   }
 
   // Offline queue management
-  queueAction(action) {
+  queueAction(action: Omit<QueuedAction, 'id' | 'timestamp'>): Promise<{ queued: boolean; id?: number }> {
     if (this.isOnline) {
       // Execute immediately if online
-      return this.executeAction(action);
+      this.executeAction({ ...action, id: Date.now() + Math.random(), timestamp: Date.now() });
+      return Promise.resolve({ queued: false });
     }
     
     // Queue for when back online
@@ -313,7 +331,7 @@ class OfflineManager {
     }
   }
 
-  async executeAction(action) {
+  async executeAction(action: QueuedAction): Promise<Record<string, unknown> | { retry: boolean; attempts: number }> {
     const { type, data, retryKey } = action;
     
     try {
@@ -321,16 +339,16 @@ class OfflineManager {
       
       switch (type) {
         case 'ADD_ITEM':
-          result = await this.executeAddItem(data);
+          result = await this.executeAddItem(data || {});
           break;
         case 'UPDATE_ITEM':
-          result = await this.executeUpdateItem(data);
+          result = await this.executeUpdateItem(data || {});
           break;
         case 'DELETE_ITEM':
-          result = await this.executeDeleteItem(data);
+          result = await this.executeDeleteItem(data || {});
           break;
         case 'SYNC_DATA':
-          result = await this.executeSyncData(data);
+          result = await this.executeSyncData({});
           break;
         default:
           throw new Error(`Unknown action type: ${type}`);
@@ -357,37 +375,42 @@ class OfflineManager {
     }
   }
 
-  async executeAddItem(data) {
+  async executeAddItem(data: Record<string, unknown>): Promise<Record<string, unknown>> {
     // Implementation depends on your data management system
-    if (window.dataManager && window.dataManager.addItem) {
-      return await window.dataManager.addItem(data);
+    if ((window as any).dataManager && (window as any).dataManager.addItem) {
+      return await (window as any).dataManager.addItem(data);
     }
     throw new Error('Data manager not available');
   }
 
-  async executeUpdateItem(data) {
-    if (window.dataManager && window.dataManager.updateItem) {
-      return await window.dataManager.updateItem(data);
+  async executeUpdateItem(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    if ((window as any).dataManager && (window as any).dataManager.updateItem) {
+      return await (window as any).dataManager.updateItem(data);
     }
     throw new Error('Data manager not available');
   }
 
-  async executeDeleteItem(data) {
-    if (window.dataManager && window.dataManager.deleteItem) {
-      return await window.dataManager.deleteItem(data);
+  async executeDeleteItem(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    if ((window as any).dataManager && (window as any).dataManager.deleteItem) {
+      return await (window as any).dataManager.deleteItem(data);
     }
     throw new Error('Data manager not available');
   }
 
-  async executeSyncData(data) {
-    if (window.dataManager && window.dataManager.sync) {
-      return await window.dataManager.sync();
+  async executeSyncData(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    if ((window as any).dataManager && (window as any).dataManager.sync) {
+      return await (window as any).dataManager.sync();
     }
     throw new Error('Data manager not available');
   }
 
   // Public API
-  getConnectionStatus() {
+  getConnectionStatus(): {
+    isOnline: boolean;
+    loadingStates: Record<string, LoadingState>;
+    queuedActions: number;
+    retryAttempts: Record<string, number>;
+  } {
     return {
       isOnline: this.isOnline,
       loadingStates: Object.fromEntries(this.loadingStates),
@@ -396,15 +419,15 @@ class OfflineManager {
     };
   }
 
-  clearQueue() {
+  clearQueue(): void {
     this.offlineQueue = [];
     this.retryAttempts.clear();
   }
 
   // Initialize
-  init() {
+  init(): void {
     // Make globally available
-    window.offlineManager = this;
+    (window as any).offlineManager = this;
     
     // Initial connection check
     this.checkConnection();
@@ -417,13 +440,18 @@ class OfflineManager {
 const offlineManager = new OfflineManager();
 
 // Export convenience functions
-export const setLoading = (key, isLoading, message) => 
+export const setLoading = (key: string, isLoading: boolean, message?: string): void => 
   offlineManager.setLoadingState(key, isLoading, message);
 
-export const queueAction = (action) => 
+export const queueAction = (action: Omit<QueuedAction, 'id' | 'timestamp'>): Promise<{ queued: boolean; id?: number }> => 
   offlineManager.queueAction(action);
 
-export const getConnectionStatus = () => 
+export const getConnectionStatus = (): {
+  isOnline: boolean;
+  loadingStates: Record<string, LoadingState>;
+  queuedActions: number;
+  retryAttempts: Record<string, number>;
+} => 
   offlineManager.getConnectionStatus();
 
 export default offlineManager;

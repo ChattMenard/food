@@ -4,17 +4,49 @@
  * Provides suggestions to reduce food waste based on pantry items and expiry dates
  */
 
+import { BUDGET_SUBSTITUTIONS } from '../plan/budgetMealPlanner.js';
+
+/** @typedef {import('../../types/domain.d').PantryItem} PantryItem */
+/** @typedef {import('../../types/domain.d').RecipeSchema} RecipeSchema */
+/** @typedef {import('../../types/domain.d').RecipeIngredient} RecipeIngredient */
+
+/**
+ * @typedef {Object} WasteSuggestion
+ * @property {string} type
+ * @property {string} priority
+ * @property {string} item
+ * @property {string} message
+ * @property {string} action
+ * @property {string} actionText
+ * @property {string[]} [matchedIngredients]
+ * @property {number} [matchScore]
+ */
+
+/**
+ * @typedef {PantryItem & Record<string, unknown>} AnyPantryItem
+ */
+
 export class WasteReductionManager {
     constructor() {
+        /** @type {WasteSuggestion[]} */
         this.suggestions = [];
     }
     
     /**
+     * @param {Date} date
+     * @returns {boolean}
+     */
+    static isValidDate(date) {
+        return Number.isFinite(date.getTime());
+    }
+
+    /**
      * Analyze pantry for waste reduction opportunities
-     * @param {Array} pantry - Pantry items
-     * @returns {Array} Waste reduction suggestions
+     * @param {AnyPantryItem[]} pantry - Pantry items
+     * @returns {WasteSuggestion[]} Waste reduction suggestions
      */
     analyzePantry(pantry) {
+        /** @type {WasteSuggestion[]} */
         const suggestions = [];
         const today = new Date();
         
@@ -22,12 +54,20 @@ export class WasteReductionManager {
         const expiringSoon = pantry.filter(item => {
             if (!item.expiryDate) return false;
             const expiry = new Date(item.expiryDate);
-            const daysUntilExpiry = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+            if (!WasteReductionManager.isValidDate(expiry)) return false;
+            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
             return daysUntilExpiry >= 0 && daysUntilExpiry <= 3;
         });
         
         expiringSoon.forEach(item => {
-            const daysUntilExpiry = Math.ceil((new Date(item.expiryDate) - today) / (1000 * 60 * 60 * 24));
+            if (!item.expiryDate) {
+                return;
+            }
+            const expiryDate = new Date(item.expiryDate);
+            if (!WasteReductionManager.isValidDate(expiryDate)) {
+                return;
+            }
+            const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
             suggestions.push({
                 type: 'expiring-soon',
                 priority: 'high',
@@ -42,7 +82,7 @@ export class WasteReductionManager {
         const expired = pantry.filter(item => {
             if (!item.expiryDate) return false;
             const expiry = new Date(item.expiryDate);
-            return expiry < today;
+            return WasteReductionManager.isValidDate(expiry) && expiry < today;
         });
         
         expired.forEach(item => {
@@ -76,12 +116,20 @@ export class WasteReductionManager {
         const staleItems = pantry.filter(item => {
             if (!item.purchaseDate) return false;
             const purchase = new Date(item.purchaseDate);
-            const daysSincePurchase = Math.ceil((today - purchase) / (1000 * 60 * 60 * 24));
+            if (!WasteReductionManager.isValidDate(purchase)) return false;
+            const daysSincePurchase = Math.ceil((today.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24));
             return daysSincePurchase > 14;
         });
         
         staleItems.forEach(item => {
-            const daysSincePurchase = Math.ceil((today - new Date(item.purchaseDate)) / (1000 * 60 * 60 * 24));
+            if (!item.purchaseDate) {
+                return;
+            }
+            const purchase = new Date(item.purchaseDate);
+            if (!WasteReductionManager.isValidDate(purchase)) {
+                return;
+            }
+            const daysSincePurchase = Math.ceil((today.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24));
             suggestions.push({
                 type: 'stale',
                 priority: 'low',
@@ -93,8 +141,9 @@ export class WasteReductionManager {
         });
         
         // Sort by priority
+        /** @type {Record<string, number>} */
         const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
-        suggestions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+        suggestions.sort((a, b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
         
         this.suggestions = suggestions;
         return suggestions;
@@ -102,32 +151,33 @@ export class WasteReductionManager {
     
     /**
      * Get recipes using specific ingredients with enhanced matching
-     * @param {Array} ingredients - Ingredient names
-     * @param {Array} recipes - Available recipes
-     * @returns {Array} Matching recipes sorted by ingredient match ratio
+     * @param {string[]} ingredients - Ingredient names
+     * @param {RecipeSchema[]} recipes - Available recipes
+     * @returns {RecipeSchema[]} Matching recipes sorted by ingredient match ratio
      */
     findRecipesForIngredients(ingredients, recipes) {
         // Build enhanced ingredient set with substitutions and groups
+        /** @type {Set<string>} */
         const enhancedIngredientSet = new Set();
-        
-        ingredients.forEach(ingredient => {
+
+        ingredients.forEach((ingredient /** @type {string} */) => {
             const normalized = ingredient.toLowerCase().trim();
             enhancedIngredientSet.add(normalized);
-            
+
             // Add related ingredients (groups, substitutions, etc.)
-            const related = this.getRelatedIngredients ? 
-                this.getRelatedIngredients(normalized) : 
-                [normalized];
-            
-            related.forEach(rel => enhancedIngredientSet.add(rel.toLowerCase()));
+            const related = this.getRelatedIngredients(normalized);
+
+            related.forEach((rel /** @type {string} */) => enhancedIngredientSet.add(rel.toLowerCase()));
         });
-        
-        const scored = recipes.map(recipe => {
+
+        const scored = recipes.map((recipe /** @type {RecipeSchema} */) => {
             const recipeIngredients = (recipe.ingredients || [])
-                .map(i => i.toLowerCase().trim());
+                .map((i /** @type {string | RecipeIngredient} */) => (typeof i === 'string' ? i : i.name || '')
+                    .toLowerCase()
+                    .trim());
             
             // Enhanced matching with partial includes and normalization
-            const matches = recipeIngredients.filter(ing => {
+            const matches = recipeIngredients.filter((ing /** @type {string} */) => {
                 // Direct match
                 if (enhancedIngredientSet.has(ing)) return true;
                 
@@ -170,15 +220,9 @@ export class WasteReductionManager {
     /**
      * Get related ingredients for enhanced matching
      * @param {string} ingredient - Base ingredient
-     * @returns {Array} - Array of related ingredients
+     * @returns {string[]} Related ingredients
      */
     getRelatedIngredients(ingredient) {
-        // Import from budgetMealPlanner if available
-        if (typeof getRelatedIngredients === 'function') {
-            return getRelatedIngredients(ingredient);
-        }
-        
-        // Fallback to basic normalization
         const normalized = ingredient.toLowerCase().trim();
         const related = new Set([ingredient, normalized]);
         
@@ -199,26 +243,37 @@ export class WasteReductionManager {
             ['olive', 'vegetable', 'canola', 'coconut', 'avocado'].some(o => normalized.includes(o))) {
             ['oil', 'olive oil', 'vegetable oil', 'canola oil', 'coconut oil', 'avocado oil'].forEach(ing => related.add(ing));
         }
-        
+
+        if (BUDGET_SUBSTITUTIONS[normalized]) {
+            BUDGET_SUBSTITUTIONS[normalized].forEach((ing /** @type {string} */) => related.add(ing));
+        }
+        Object.entries(BUDGET_SUBSTITUTIONS).forEach(([base, subs]) => {
+            if (subs.some(sub => sub === normalized)) {
+                related.add(base);
+                (BUDGET_SUBSTITUTIONS[base] || []).forEach((ing /** @type {string} */) => related.add(ing));
+            }
+        });
+
         return Array.from(related);
     }
-    
+
     /**
      * Calculate potential waste cost
-     * @param {Array} pantry - Pantry items
-     * @param {Object} costEstimates - Estimated costs per item
-     * @returns {Object} Waste cost analysis
+     * @param {AnyPantryItem[]} pantry - Pantry items
+     * @param {Record<string, number>} costEstimates - Estimated costs per item
+     * @returns {{ totalCost: number; itemCount: number; items: Array<{ item: string; cost: number }> }} Waste cost analysis
      */
-    calculateWasteCost(pantry, costEstimates = {}) {
+    calculateWasteCost(pantry, costEstimates = /** @type {Record<string, number>} */ ({})) {
         const expired = pantry.filter(item => {
             if (!item.expiryDate) return false;
             return new Date(item.expiryDate) < new Date();
         });
         
         let totalCost = 0;
+        /** @type {Array<{ item: string; cost: number }>} */
         const itemCosts = [];
         
-        expired.forEach(item => {
+        expired.forEach((item) => {
             const cost = costEstimates[item.name] || this.estimateCost(item);
             totalCost += cost;
             itemCosts.push({
@@ -236,12 +291,13 @@ export class WasteReductionManager {
     
     /**
      * Estimate cost of an item
-     * @param {Object} item - Pantry item
+     * @param {PantryItem} item - Pantry item
      * @returns {number} Estimated cost
      */
     estimateCost(item) {
 
         // Simple estimation based on category
+        /** @type {Record<string, number>} */
         const categoryCosts = {
             'vegetables': 2,
             'fruits': 3,
@@ -253,7 +309,7 @@ export class WasteReductionManager {
         };
         
         const category = item.category || 'other';
-        const baseCost = categoryCosts[category] || 3;
+        const baseCost = categoryCosts[category] ?? 3;
         
         // Adjust by quantity
         const quantity = item.quantity || 1;
@@ -262,7 +318,7 @@ export class WasteReductionManager {
     
     /**
      * Get waste reduction tips
-     * @returns {Array} Tips for reducing waste
+     * @returns {Array<{ title: string; description: string; icon: string }>} Tips for reducing waste
      */
     getTips() {
         return [
@@ -301,7 +357,7 @@ export class WasteReductionManager {
     
     /**
      * Generate weekly waste report
-     * @param {Array} pantry - Pantry items
+     * @param {AnyPantryItem[]} pantry - Pantry items
      * @returns {Object} Weekly waste report
      */
     generateWeeklyReport(pantry) {
@@ -325,6 +381,7 @@ export class WasteReductionManager {
 }
 
 // Global waste reduction manager instance
+/** @type {WasteReductionManager | null} */
 let globalWasteReductionManager = null;
 
 /**

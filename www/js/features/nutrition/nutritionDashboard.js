@@ -1,10 +1,45 @@
 // @ts-check
 /**
  * Nutrition Dashboard Module
- * Handles nutrition tracking, visualization, and export functionality
+ * Provides visualization and analysis of meal history and nutrition data
+ */
+
+import { MealHistoryAnalytics } from './mealHistoryAnalytics.js';
+import db from '../../data/db.js';
+
+/**
+ * @typedef {import('../../types/index').NutritionData} NutritionData
+ */
+
+/**
+ * @typedef {NutritionData & {
+ *   fiber?: number;
+ *   sugar?: number;
+ *   sodium?: number;
+ * }} NutritionTotals
+ */
+/**
+ * @typedef {{
+ *   id?: number;
+ *   date: string;
+ *   recipeId: number;
+ *   recipeName: string;
+ *   servings: number;
+ *   meals?: never;
+ *   totals?: never;
+ *   nutrition: NutritionTotals;
+ * }} NutritionLogEntry
+ */
+/**
+ * @typedef {{
+ *   date: string;
+ *   meals: NutritionLogEntry[];
+ *   totals: NutritionTotals;
+ * }} WeeklyNutritionDay
  */
 
 export class NutritionDashboard {
+    /** @param {{ getDailyNutrition(date: Date|string): Promise<unknown>; getWeeklyNutrition(): Promise<unknown[]>; logNutrition(date: Date|string, recipeId: number, servings: number): Promise<unknown>; getAll(store: string): Promise<unknown[]> }} db */
     constructor(db) {
         this.db = db;
         this.currentDate = new Date();
@@ -21,7 +56,7 @@ export class NutritionDashboard {
     
     /**
      * Get weekly nutrition data
-     * @returns {Promise<Array>} Array of daily nutrition objects
+     * @returns {Promise<any[]>} Array of daily nutrition objects
      */
     async getWeeklyNutrition() {
         return this.db.getWeeklyNutrition();
@@ -40,9 +75,9 @@ export class NutritionDashboard {
     
     /**
      * Calculate nutrition goals progress
-     * @param {Object} dailyTotals - Daily nutrition totals
-     * @param {Object} goals - Nutrition goals
-     * @returns {Object} Progress percentages
+     * @param {NutritionTotals} dailyTotals - Daily nutrition totals
+     * @param {Partial<NutritionTotals>} goals - Nutrition goals
+     * @returns {{ calories: number; protein: number; carbs: number; fat: number; fiber: number }} Progress percentages
      */
     calculateProgress(dailyTotals, goals = {}) {
         const defaultGoals = {
@@ -60,19 +95,19 @@ export class NutritionDashboard {
             protein: Math.min(100, (dailyTotals.protein / mergedGoals.protein) * 100),
             carbs: Math.min(100, (dailyTotals.carbs / mergedGoals.carbs) * 100),
             fat: Math.min(100, (dailyTotals.fat / mergedGoals.fat) * 100),
-            fiber: Math.min(100, (dailyTotals.fiber / mergedGoals.fiber) * 100)
+            fiber: Math.min(100, ((dailyTotals.fiber ?? 0) / mergedGoals.fiber) * 100)
         };
     }
     
     /**
      * Export nutrition logs to CSV
-     * @param {Array} nutritionLogs - Array of nutrition log entries
+     * @param {Array<Record<string, any>>} nutritionLogs - Array of nutrition log entries
      * @returns {string} CSV string
      */
     exportToCSV(nutritionLogs) {
         const headers = ['date', 'recipeId', 'recipeName', 'servings', 'calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium'];
         
-        const rows = nutritionLogs.map(log => [
+        const rows = nutritionLogs.map((log /** @type {NutritionLogEntry} */) => [
             log.date,
             log.recipeId,
             log.recipeName,
@@ -88,7 +123,7 @@ export class NutritionDashboard {
         
         const csvContent = [
             headers.join(','),
-            ...rows.map(row => row.join(','))
+            ...rows.map((row /** @type {string[]} */) => row.join(','))
         ].join('\n');
         
         return csvContent;
@@ -96,7 +131,7 @@ export class NutritionDashboard {
     
     /**
      * Export nutrition logs to JSON
-     * @param {Array} nutritionLogs - Array of nutrition log entries
+     * @param {NutritionLogEntry[]} nutritionLogs - Array of nutrition log entries
      * @returns {string} JSON string
      */
     exportToJSON(nutritionLogs) {
@@ -151,12 +186,12 @@ export class NutritionDashboard {
         const weeklyData = await this.getWeeklyNutrition();
         
         const trends = {
-            labels: weeklyData.map(day => day.date),
-            calories: weeklyData.map(day => day.totals.calories),
-            protein: weeklyData.map(day => day.totals.protein),
-            carbs: weeklyData.map(day => day.totals.carbs),
-            fat: weeklyData.map(day => day.totals.fat),
-            fiber: weeklyData.map(day => day.totals.fiber)
+            labels: weeklyData.map((day /** @type {WeeklyNutritionDay} */) => day.date),
+            calories: weeklyData.map((day /** @type {WeeklyNutritionDay} */) => day.totals.calories),
+            protein: weeklyData.map((day /** @type {WeeklyNutritionDay} */) => day.totals.protein),
+            carbs: weeklyData.map((day /** @type {WeeklyNutritionDay} */) => day.totals.carbs),
+            fat: weeklyData.map((day /** @type {WeeklyNutritionDay} */) => day.totals.fat),
+            fiber: weeklyData.map((day /** @type {WeeklyNutritionDay} */) => day.totals.fiber)
         };
         
         return trends;
@@ -168,13 +203,13 @@ export class NutritionDashboard {
      */
     async getWeeklyAverages() {
         const weeklyData = await this.getWeeklyNutrition();
-        const daysWithData = weeklyData.filter(day => day.meals.length > 0);
+        const daysWithData = weeklyData.filter((day /** @type {WeeklyNutritionDay} */) => day.meals.length > 0);
         
         if (daysWithData.length === 0) {
             return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
         }
         
-        const totals = daysWithData.reduce((acc, day) => ({
+        const totals = daysWithData.reduce((acc, day /** @type {WeeklyNutritionDay} */) => ({
             calories: acc.calories + day.totals.calories,
             protein: acc.protein + day.totals.protein,
             carbs: acc.carbs + day.totals.carbs,
@@ -193,9 +228,9 @@ export class NutritionDashboard {
     
     /**
      * Check if nutrition goals are met for the day
-     * @param {Object} dailyTotals - Daily nutrition totals
-     * @param {Object} goals - Nutrition goals
-     * @returns {Object} Goal status
+     * @param {NutritionTotals} dailyTotals - Daily nutrition totals
+     * @param {Partial<Record<keyof NutritionTotals, { min: number; max: number }>>} goals - Nutrition goals
+     * @returns {{ calories: { met: boolean; status: string; value: number }; protein: { met: boolean; status: string; value: number }; carbs: { met: boolean; status: string; value: number }; fat: { met: boolean; status: string; value: number }; fiber: { met: boolean; status: string; value: number }; sodium?: { met: boolean; status: string; value: number }; sugar?: { met: boolean; status: string; value: number } }} Goal status
      */
     checkGoals(dailyTotals, goals = {}) {
         const defaultGoals = {
@@ -210,29 +245,29 @@ export class NutritionDashboard {
         
         return {
             calories: {
+                met: dailyTotals.calories >= mergedGoals.calories.min && dailyTotals.calories <= mergedGoals.calories.max,
                 status: this.getGoalStatus(dailyTotals.calories, mergedGoals.calories),
-                value: dailyTotals.calories,
-                goal: mergedGoals.calories
+                value: dailyTotals.calories
             },
             protein: {
+                met: dailyTotals.protein >= mergedGoals.protein.min && dailyTotals.protein <= mergedGoals.protein.max,
                 status: this.getGoalStatus(dailyTotals.protein, mergedGoals.protein),
-                value: dailyTotals.protein,
-                goal: mergedGoals.protein
+                value: dailyTotals.protein
             },
             carbs: {
+                met: dailyTotals.carbs >= mergedGoals.carbs.min && dailyTotals.carbs <= mergedGoals.carbs.max,
                 status: this.getGoalStatus(dailyTotals.carbs, mergedGoals.carbs),
-                value: dailyTotals.carbs,
-                goal: mergedGoals.carbs
+                value: dailyTotals.carbs
             },
             fat: {
+                met: dailyTotals.fat >= mergedGoals.fat.min && dailyTotals.fat <= mergedGoals.fat.max,
                 status: this.getGoalStatus(dailyTotals.fat, mergedGoals.fat),
-                value: dailyTotals.fat,
-                goal: mergedGoals.fat
+                value: dailyTotals.fat
             },
             fiber: {
-                status: this.getGoalStatus(dailyTotals.fiber, mergedGoals.fiber),
-                value: dailyTotals.fiber,
-                goal: mergedGoals.fiber
+                met: (dailyTotals.fiber ?? 0) >= mergedGoals.fiber.min && (dailyTotals.fiber ?? 0) <= mergedGoals.fiber.max,
+                status: this.getGoalStatus(dailyTotals.fiber ?? 0, mergedGoals.fiber),
+                value: dailyTotals.fiber ?? 0
             }
         };
     }
@@ -240,7 +275,7 @@ export class NutritionDashboard {
     /**
      * Get goal status (under, on-track, over)
      * @param {number} value - Current value
-     * @param {Object} goal - Goal range
+     * @param {{ min: number; max: number }} goal - Goal range
      * @returns {string} Status
      */
     getGoalStatus(value, goal) {
@@ -252,21 +287,22 @@ export class NutritionDashboard {
     /**
      * Get meal history for calendar view
      * @param {number} days - Number of days to look back
-     * @returns {Promise<Object>} Calendar data
+     * @returns {Promise<Record<string, { meals: NutritionLogEntry[]; totals: NutritionTotals }>>} Calendar data
      */
     async getMealHistory(days = 30) {
-        const allLogs = await this.db.getAll('nutritionLog');
+        const allLogs = /** @type {NutritionLogEntry[]} */ (await this.db.getAll('nutritionLog'));
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         
-        const recentLogs = allLogs.filter(log => {
+        const recentLogs = allLogs.filter((log /** @type {NutritionLogEntry} */) => {
             const logDate = new Date(log.date);
             return logDate >= cutoffDate;
         });
         
         // Group by date
+        /** @type {Record<string, { meals: NutritionLogEntry[]; totals: NutritionTotals }>} */
         const calendarData = {};
-        recentLogs.forEach(log => {
+        recentLogs.forEach((log /** @type {NutritionLogEntry} */) => {
             if (!calendarData[log.date]) {
                 calendarData[log.date] = {
                     meals: [],
@@ -277,8 +313,10 @@ export class NutritionDashboard {
             calendarData[log.date].meals.push(log);
             
             // Add to totals
-            Object.keys(calendarData[log.date].totals).forEach(key => {
-                calendarData[log.date].totals[key] += log.nutrition[key] || 0;
+            /** @type {Array<'calories' | 'protein' | 'carbs' | 'fat' | 'fiber' | 'sugar' | 'sodium'>} */
+            const keys = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium'];
+            keys.forEach((key) => {
+                calendarData[log.date].totals[key] += (log.nutrition[key] ?? 0);
             });
         });
         

@@ -5,6 +5,7 @@
  */
 
 import { Share } from '@capacitor/share';
+// @ts-ignore - Capacitor types are declared globally
 
 export class ShareSheetManager {
   /**
@@ -159,7 +160,7 @@ export class ShareSheetManager {
    * @returns {Promise<boolean>}
    */
   async canShare() {
-    return Share.canShare();
+    return (Share as any).canShare();
   }
 }
 

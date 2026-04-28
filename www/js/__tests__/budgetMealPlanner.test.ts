@@ -18,7 +18,7 @@ describe('BudgetMealPlanner', () => {
 
   describe('initialization', () => {
     it('should default to medium tier', () => {
-      expect(planner.currentTierData).toBe('medium');
+      expect(planner.currentTierData.id).toBe('medium');
     });
 
     it('should get current tier details', () => {
@@ -39,7 +39,7 @@ describe('BudgetMealPlanner', () => {
 
     it('should set tier correctly', async () => {
       await planner.setTier('low');
-      expect(planner.currentTierData).toBe('low');
+      expect(planner.currentTierData.id).toBe('low');
       expect(planner.getCurrentTier().maxPerServing).toBe(3.0);
     });
 

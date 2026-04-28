@@ -5,7 +5,6 @@
  * Integrates with CostTracker and NutritionDashboard
  */
 
-import { CostTracker } from '../../logic/costTracker.js';
 import db from '../../data/db.js';
 
 // Budget tiers with per-meal cost targets (USD)
@@ -224,7 +223,7 @@ function normalizeIngredient(ingredient) {
 /**
  * Get all related ingredients for a given ingredient (including substitutions)
  * @param {string} ingredient - Base ingredient
- * @returns {Array} - Array of related ingredients
+ * @returns {string[]} - Array of related ingredients
  */
 export function getRelatedIngredients(ingredient) {
     const normalized = normalizeIngredient(ingredient);
@@ -260,8 +259,8 @@ export { normalizeIngredient, INGREDIENT_GROUPS };
 
 class BudgetMealPlanner {
     constructor() {
-        this.costTracker = new CostTracker();
         this.currentTier = 'medium';
+        this.currentTierData = BUDGET_TIERS.medium;
         this.storageKey = 'budget-tier';
         this.listeners = [];
     }
@@ -276,6 +275,7 @@ class BudgetMealPlanner {
         
         if (stored && stored.value && BUDGET_TIERS[stored.value]) {
             this.currentTier = stored.value;
+            this.currentTierData = BUDGET_TIERS[stored.value];
         }
         
         console.log('[BudgetPlanner] Loaded tier:', this.currentTier);
@@ -291,6 +291,7 @@ class BudgetMealPlanner {
         }
         
         this.currentTier = tierId;
+        this.currentTierData = BUDGET_TIERS[tierId];
         
         await db.put('preferences', {
             key: this.storageKey,
@@ -336,22 +337,9 @@ class BudgetMealPlanner {
             const name = ing.name || ing;
             const quantity = ing.quantity || 1;
             
-            // Try exact match first
-            let cost = this.costTracker.getCost(name);
-            let confidence = 'high';
-            
-            // Fall back to estimation
-            if (cost === null) {
-                const category = ing.category || this.guessCategory(name);
-                cost = this.costTracker.estimateCost({ 
-                    name, 
-                    category,
-                    quantity: 1 
-                });
-                confidence = 'estimated';
-            } else {
-                knownCount++;
-            }
+            // Simple cost estimation based on ingredient category
+            let cost = this.estimateSimpleCost(name);
+            let confidence = 'estimated';
             
             const itemCost = cost * quantity;
             totalCost += itemCost;
@@ -447,7 +435,7 @@ class BudgetMealPlanner {
             if (subs.length === 0) return null;
             
             const cheaperSub = subs[0];
-            const subCost = this.costTracker.getCost(cheaperSub) || 2.00;
+            const subCost = this.estimateSimpleCost(cheaperSub) || 2.00;
             const savings = item.costPerUnit - subCost;
             
             return {
@@ -620,6 +608,33 @@ class BudgetMealPlanner {
 
     notifyListeners() {
         this.listeners.forEach(cb => cb(this.getCurrentTier()));
+    }
+
+    /**
+     * Simple cost estimation based on ingredient type
+     * @param {string} ingredientName - Name of ingredient
+     * @returns {number} Estimated cost per unit
+     */
+    estimateSimpleCost(ingredientName) {
+        const name = ingredientName.toLowerCase();
+        
+        // Basic ingredients (under $2)
+        if (['rice', 'pasta', 'beans', 'potatoes', 'onions', 'carrots', 'cabbage', 'flour', 'sugar', 'salt', 'pepper', 'oil', 'water'].some(i => name.includes(i))) {
+            return 1.50;
+        }
+        
+        // Moderate ingredients ($2-4)
+        if (['chicken', 'beef', 'pork', 'fish', 'cheese', 'eggs', 'milk', 'butter', 'bread', 'tomatoes', 'lettuce', 'peppers'].some(i => name.includes(i))) {
+            return 3.00;
+        }
+        
+        // Expensive ingredients ($4+)
+        if (['salmon', 'shrimp', 'lamb', 'steak', 'saffron', 'truffle', 'vanilla'].some(i => name.includes(i))) {
+            return 6.00;
+        }
+        
+        // Default estimate
+        return 2.50;
     }
 }
 

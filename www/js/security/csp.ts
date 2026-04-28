@@ -4,13 +4,35 @@
  * Handles CSP header implementation and management
  */
 
+interface CSPConfig {
+  'default-src': string;
+  'script-src': string;
+  'style-src': string;
+  'img-src': string;
+  'connect-src': string;
+  'font-src': string;
+  'object-src': string;
+  'media-src': string;
+  'frame-src': string;
+  'form-action': string;
+  'base-uri': string;
+  'manifest-src': string;
+  'worker-src': string;
+  'child-src': string;
+  'frame-ancestors': string;
+  'upgrade-insecure-requests': string;
+}
+
 class CSPManager {
+  cspConfig: CSPConfig;
+  isProduction: boolean;
+
   constructor() {
     this.cspConfig = this.getCSPConfig();
     this.isProduction = this.detectProductionEnvironment();
   }
 
-  detectProductionEnvironment() {
+  detectProductionEnvironment(): boolean {
     return (
       window.location.hostname !== 'localhost' &&
       window.location.hostname !== '127.0.0.1' &&
@@ -21,9 +43,11 @@ class CSPManager {
     );
   }
 
-  getCSPConfig() {
-    // Get CSP configuration from environment or use defaults
-    const envConfig = window.CSP_CONFIG || {};
+  getCSPConfig(): CSPConfig {
+    /**
+     * Get all CSP configuration
+     */
+    const envConfig = (window as any).CSP_CONFIG || {};
     
     return {
       'default-src': envConfig['default-src'] || "'self'",
@@ -32,20 +56,20 @@ class CSPManager {
       'img-src': envConfig['img-src'] || "'self' data: https:",
       'connect-src': envConfig['connect-src'] || "'self'",
       'font-src': envConfig['font-src'] || "'self' https://fonts.gstatic.com",
-      'frame-src': envConfig['frame-src'] || "'none'",
       'object-src': envConfig['object-src'] || "'none'",
       'media-src': envConfig['media-src'] || "'self'",
+      'frame-src': envConfig['frame-src'] || "'none'",
+      'form-action': envConfig['form-action'] || "'self'",
+      'base-uri': envConfig['base-uri'] || "'self'",
       'manifest-src': envConfig['manifest-src'] || "'self'",
       'worker-src': envConfig['worker-src'] || "'self'",
       'child-src': envConfig['child-src'] || "'none'",
-      'form-action': envConfig['form-action'] || "'self'",
       'frame-ancestors': envConfig['frame-ancestors'] || "'none'",
-      'base-uri': envConfig['base-uri'] || "'self'",
       'upgrade-insecure-requests': envConfig['upgrade-insecure-requests'] || ''
     };
   }
 
-  generateCSPHeader() {
+  generateCSPHeader(): string {
     const directives = [];
     
     for (const [directive, value] of Object.entries(this.cspConfig)) {
@@ -57,7 +81,15 @@ class CSPManager {
     return directives.join('; ');
   }
 
-  applyCSPMetaTag() {
+  addSource(_directive: keyof CSPConfig, _source: string): void {
+    // Add source to directive
+  }
+
+  removeSource(_directive: keyof CSPConfig, _source: string): void {
+    // Remove source to directive
+  }
+
+  applyCSPMetaTag(): void {
     if (!this.isProduction) {
       console.log('CSP: Skipping CSP in development environment');
       return;
@@ -79,13 +111,13 @@ class CSPManager {
     }
   }
 
-  removeExistingCSPTags() {
+  removeExistingCSPTags(): void {
     const existingTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
     existingTags.forEach(tag => tag.remove());
   }
 
-  validateCSP() {
-    const violations = [];
+  getViolations(): string[] {
+    const violations: string[] = [];
     
     // Check for potential CSP violations
     const scripts = document.querySelectorAll('script');
@@ -97,8 +129,9 @@ class CSPManager {
     
     const styles = document.querySelectorAll('link[rel="stylesheet"]');
     styles.forEach(style => {
-      if (style.href && !this.isAllowedByCSP('style-src', style.href)) {
-        violations.push(`Stylesheet not allowed by CSP: ${style.href}`);
+      const link = style as HTMLLinkElement;
+      if (link.href && !this.isAllowedByCSP('style-src', link.href)) {
+        violations.push(`Stylesheet not allowed by CSP: ${link.href}`);
       }
     });
     
@@ -112,7 +145,7 @@ class CSPManager {
     return violations;
   }
 
-  isAllowedByCSP(directive, url) {
+  isAllowedByCSP(directive: keyof CSPConfig, url: string): boolean {
     const policy = this.cspConfig[directive];
     if (!policy) return false;
     
@@ -143,8 +176,17 @@ class CSPManager {
     return false;
   }
 
-  // Monitor for CSP violations
-  setupCSPViolationReporting() {
+  reportViolation(_violation: {
+    violatedDirective: string;
+    effectiveDirective: string;
+    originalPolicy: string;
+    blockedURI: string;
+    documentURI: string;
+    statusCode: number;
+    line: number;
+    column: number;
+    sourceFile: string;
+  }): void {
     if (!window.ReportingObserver) return;
     
     const observer = new ReportingObserver((reports) => {
@@ -157,8 +199,20 @@ class CSPManager {
     observer.observe();
   }
 
-  // Initialize CSP
-  init() {
+  setupCSPViolationReporting(): void {
+    if (!window.ReportingObserver) return;
+    
+    const observer = new ReportingObserver((reports) => {
+      reports.forEach(report => {
+        console.warn('CSP Violation:', report.body);
+        // You could send this to an error tracking service
+      });
+    }, { types: ['csp-violation'] });
+    
+    observer.observe();
+  }
+
+  init(): void {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         this.applyCSPMetaTag();
@@ -176,7 +230,6 @@ const cspManager = new CSPManager();
 
 // Export convenience functions
 export const applyCSP = () => cspManager.applyCSPMetaTag();
-export const validateCSP = () => cspManager.validateCSP();
 export const getCSPHeader = () => cspManager.generateCSPHeader();
 
 export default cspManager;

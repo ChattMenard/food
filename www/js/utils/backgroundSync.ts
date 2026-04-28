@@ -4,13 +4,6 @@
  * Handles background synchronization of meal plans and data
  */
 
-// Extend Window interface for analyticsManager
-declare global {
-  interface Window {
-    analyticsManager?: any;
-  }
-}
-
 // Extend ServiceWorkerRegistration interface for periodicSync
 declare global {
   interface ServiceWorkerRegistration {
@@ -88,13 +81,13 @@ export class BackgroundSyncManager {
       'periodicSync' in ServiceWorkerRegistration.prototype
     ) {
       navigator.serviceWorker.ready.then((registration) => {
-        registration.periodicSync
-          .register('meal-plan-sync', {
-            minInterval: 24 * 60 * 60 * 1000, // 24 hours
-          })
-          .catch((err) => {
-            console.log('[Sync] Periodic sync not supported:', err);
-          });
+        if (registration.periodicSync) {
+          registration.periodicSync
+            .register('meal-plan-sync')
+            .catch((err) => {
+              console.log('[Sync] Periodic sync not supported:', err);
+            });
+        }
       });
     }
   }

@@ -5,6 +5,7 @@
  */
 
 import { App } from '@capacitor/app';
+// @ts-ignore - Capacitor types are declared globally
 
 export class DeepLinkingManager {
   urlHandlers: Map<string, Function>;
@@ -24,7 +25,7 @@ export class DeepLinkingManager {
       });
 
       // Handle initial URL (if app was opened from a link)
-      const initialUrl = await App.getLaunchUrl();
+      const initialUrl = await (App as any).getLaunchUrl();
       if (initialUrl) {
         this.handleUrl(initialUrl);
       }

@@ -4,7 +4,85 @@
  * Provides analytics on meal patterns, preferences, and trends
  */
 
+/**
+ * @typedef {import('../../types/index').NutritionData} NutritionData
+ */
+
+/**
+ * @typedef {NutritionData & {
+ *   fiber?: number;
+ *   sugar?: number;
+ *   sodium?: number;
+ * }} NutritionTotals
+ */
+
+/**
+ * @typedef {{
+ *   id?: number;
+ *   date: string;
+ *   recipeId: number;
+ *   recipeName: string;
+ *   servings: number;
+ *   meals?: never;
+ *   totals?: never;
+ *   nutrition: NutritionTotals;
+ * }} NutritionLogEntry
+ */
+
+/**
+ * @typedef {{
+ *   date: string;
+ *   meals: NutritionLogEntry[];
+ *   totals: NutritionTotals;
+ * }} WeeklyNutritionDay
+ */
+
+/**
+ * @typedef {{
+ *   period: string;
+ *   totalMeals: number;
+ *   averagePerDay: number;
+ *   topRecipes: Array<{ name: string; count: number }>;
+ *   categoryFrequency: Record<string, number>;
+ *   cuisineFrequency: Record<string, number>;
+ * }} MealFrequencyAnalysis
+ */
+
+/**
+ * @typedef {{
+ *   trends: {
+ *     labels: string[];
+ *     calories: number[];
+ *     protein: number[];
+ *     carbs: number[];
+ *     fat: number[];
+ *     fiber: number[];
+ *   };
+ *   averages: {
+ *     calories: number;
+ *     protein: number;
+ *     carbs: number;
+ *     fat: number;
+ *     fiber: number;
+ *   };
+ *   daysWithData: number;
+ * }} NutritionTrendAnalysis
+ */
+
+/**
+ * @typedef {{
+ *   uniqueRecipes: number;
+ *   totalMeals: number;
+ *   varietyScore: number;
+ *   varietyLevel: 'low' | 'medium' | 'high';
+ *   suggestion: string;
+ * }} VarietyAnalysis
+ */
+
 export class MealHistoryAnalytics {
+    /**
+     * @param {{ getAll(store: string): Promise<unknown[]>; getWeeklyNutrition(): Promise<unknown[]> }} db
+     */
     constructor(db) {
         this.db = db;
     }
@@ -12,25 +90,25 @@ export class MealHistoryAnalytics {
     /**
      * Get meal frequency analysis
      * @param {number} days - Number of days to analyze
-     * @returns {Object} Frequency analysis
+     * @returns {Promise<MealFrequencyAnalysis>} Frequency analysis
      */
     async getMealFrequency(days = 30) {
-        const nutritionLogs = await this.db.getAll('nutritionLog');
+        const nutritionLogs = /** @type {NutritionLogEntry[]} */ (await this.db.getAll('nutritionLog'));
         
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         
-        const recentLogs = nutritionLogs.filter(log => {
+        const recentLogs = nutritionLogs.filter((log) => {
             const logDate = new Date(log.date);
             return logDate >= cutoffDate;
         });
         
         // Count meal frequency
-        const recipeFrequency = new Map();
-        const categoryFrequency = new Map();
-        const cuisineFrequency = new Map();
+        const recipeFrequency = /** @type {Map<string, number>} */ (new Map());
+        const categoryFrequency = /** @type {Map<string, number>} */ (new Map());
+        const cuisineFrequency = /** @type {Map<string, number>} */ (new Map());
         
-        recentLogs.forEach(log => {
+        recentLogs.forEach((log) => {
             // Recipe frequency
             recipeFrequency.set(log.recipeName, (recipeFrequency.get(log.recipeName) || 0) + 1);
             
@@ -56,23 +134,23 @@ export class MealHistoryAnalytics {
     
     /**
      * Get nutrition trends over time
-     * @param {number} days - Number of days to analyze
-     * @returns {Object} Nutrition trends
+     * @param {number} _days - Number of days to analyze
+     * @returns {Promise<NutritionTrendAnalysis>} Nutrition trends
      */
     async getNutritionTrends(_days = 30) {
-        const weeklyNutrition = await this.db.getWeeklyNutrition();
+        const weeklyNutrition = /** @type {WeeklyNutritionDay[]} */ (await this.db.getWeeklyNutrition());
         
         const trends = {
-            labels: weeklyNutrition.map(day => day.date),
-            calories: weeklyNutrition.map(day => day.totals.calories),
-            protein: weeklyNutrition.map(day => day.totals.protein),
-            carbs: weeklyNutrition.map(day => day.totals.carbs),
-            fat: weeklyNutrition.map(day => day.totals.fat),
-            fiber: weeklyNutrition.map(day => day.totals.fiber)
+            labels: weeklyNutrition.map((day) => day.date),
+            calories: weeklyNutrition.map((day) => day.totals.calories),
+            protein: weeklyNutrition.map((day) => day.totals.protein),
+            carbs: weeklyNutrition.map((day) => day.totals.carbs),
+            fat: weeklyNutrition.map((day) => day.totals.fat),
+            fiber: weeklyNutrition.map((day) => day.totals.fiber || 0)
         };
         
         // Calculate averages
-        const daysWithData = weeklyNutrition.filter(day => day.meals.length > 0);
+        const daysWithData = weeklyNutrition.filter((day) => day.meals.length > 0);
         
         const averages = {
             calories: 0,
@@ -83,8 +161,11 @@ export class MealHistoryAnalytics {
         };
         
         if (daysWithData.length > 0) {
-            Object.keys(averages).forEach(key => {
-                const sum = daysWithData.reduce((acc, day) => acc + day.totals[key], 0);
+            /** @type {(keyof typeof averages)[]} */ (Object.keys(averages)).forEach((key) => {
+                const sum = daysWithData.reduce((acc, day) => {
+                    const value = day.totals[key] ?? 0;
+                    return acc + value;
+                }, 0);
                 averages[key] = Math.round(sum / daysWithData.length);
             });
         }
@@ -99,7 +180,7 @@ export class MealHistoryAnalytics {
     /**
      * Get meal variety score
      * @param {number} days - Number of days to analyze
-     * @returns {Object} Variety analysis
+     * @returns {Promise<VarietyAnalysis>} Variety analysis
      */
     async getVarietyScore(days = 30) {
         const frequency = await this.getMealFrequency(days);
@@ -110,6 +191,7 @@ export class MealHistoryAnalytics {
             ? (uniqueRecipes / totalMeals) * 100 
             : 0;
         
+        /** @type {'low' | 'medium' | 'high'} */
         let varietyLevel = 'low';
         if (varietyScore > 60) varietyLevel = 'high';
         else if (varietyScore > 30) varietyLevel = 'medium';
@@ -125,34 +207,34 @@ export class MealHistoryAnalytics {
     
     /**
      * Get variety improvement suggestion
-     * @param {string} level - Variety level
+     * @param {'low' | 'medium' | 'high'} level - Variety level
      * @returns {string} Suggestion
      */
     getVarietySuggestion(level) {
-        const suggestions = {
+        const suggestions = /** @type {Record<'low' | 'medium' | 'high', string>} */ ({
             low: 'Try new recipes to increase meal variety and nutrition diversity',
             medium: 'Good variety! Consider adding a few new recipes each week',
             high: 'Excellent variety! Keep exploring new cuisines'
-        };
+        });
         
-        return suggestions[level] || suggestions.medium;
+        return suggestions[level];
     }
     
     /**
      * Get most cooked recipes
      * @param {number} limit - Number of recipes to return
-     * @returns {Array} Top recipes
+     * @returns {Promise<Array<{ id: number; name: string; count: number }>>} Top recipes
      */
     async getMostCookedRecipes(limit = 10) {
-        const nutritionLogs = await this.db.getAll('nutritionLog');
+        const nutritionLogs = /** @type {NutritionLogEntry[]} */ (await this.db.getAll('nutritionLog'));
         
-        const recipeCount = new Map();
+        const recipeCount = /** @type {Map<number, { id: number; name: string; count: number }>} */ (new Map());
         
-        nutritionLogs.forEach(log => {
+        nutritionLogs.forEach((log) => {
             recipeCount.set(log.recipeId, {
                 id: log.recipeId,
                 name: log.recipeName,
-                count: (recipeCount.get(log.recipeId)?.count || 0) + 1
+                count: ((recipeCount.get(log.recipeId)?.count) || 0) + 1
             });
         });
         
@@ -163,11 +245,11 @@ export class MealHistoryAnalytics {
     
     /**
      * Get cooking streak
-     * @returns {Object} Streak information
+     * @returns {Promise<{ currentStreak: number; longestStreak: number; daysLogged: number }>}
      */
     async getCookingStreak() {
-        const nutritionLogs = await this.db.getAll('nutritionLog');
-        const uniqueDates = new Set(nutritionLogs.map(log => log.date));
+        const nutritionLogs = /** @type {NutritionLogEntry[]} */ (await this.db.getAll('nutritionLog'));
+        const uniqueDates = new Set(nutritionLogs.map((log) => log.date));
         
         const sortedDates = Array.from(uniqueDates).sort().reverse();
         
@@ -195,7 +277,7 @@ export class MealHistoryAnalytics {
     
     /**
      * Calculate longest cooking streak
-     * @param {Array} dates - Sorted array of date strings
+     * @param {string[]} dates - Sorted array of date strings
      * @returns {number} Longest streak
      */
     calculateLongestStreak(dates) {
@@ -207,7 +289,7 @@ export class MealHistoryAnalytics {
         for (let i = 1; i < dates.length; i++) {
             const prevDate = new Date(dates[i - 1]);
             const currDate = new Date(dates[i]);
-            const diffDays = (prevDate - currDate) / (1000 * 60 * 60 * 24);
+            const diffDays = (prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24);
             
             if (diffDays === 1) {
                 currentStreak++;
@@ -222,7 +304,7 @@ export class MealHistoryAnalytics {
     
     /**
      * Get cooking time preferences
-     * @returns {Object} Time preference analysis
+     * @returns {Promise<{ averageTime: number; shortestTime: number; longestTime: number; preferredRange: string }>}
      */
     async getCookingTimePreferences() {
         // This would need recipe data to get cooking times
@@ -237,7 +319,7 @@ export class MealHistoryAnalytics {
     
     /**
      * Generate comprehensive analytics report
-     * @returns {Object} Analytics report
+     * @returns {Promise<{ generatedAt: string; period: string; frequency: MealFrequencyAnalysis; trends: NutritionTrendAnalysis; variety: VarietyAnalysis; mostCooked: Array<{ id: number; name: string; count: number }>; streak: { currentStreak: number; longestStreak: number; daysLogged: number }; timePreferences: { averageTime: number; shortestTime: number; longestTime: number; preferredRange: string }; summary: { totalMeals: number; averageDailyCalories: number; varietyScore: number; currentStreak: number; favoriteRecipe: string } }>}
      */
     async generateReport() {
         const frequency = await this.getMealFrequency(30);

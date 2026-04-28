@@ -22,6 +22,19 @@ declare global {
     dataLayer?: any[];
     errorBoundary?: any;
     Capacitor?: any;
+    SENTRY_DSN?: string;
+    Sentry?: {
+      captureException(error: unknown): void;
+    };
+  }
+
+  var Capacitor: any;
+
+  interface ImportMeta {
+    readonly env?: Record<string, string | undefined> & {
+      SENTRY_DSN?: string;
+      ANALYTICS_ID?: string;
+    };
   }
 }
 
@@ -30,6 +43,46 @@ declare module '@capacitor/filesystem' {
     readFile(options: { path: string; directory: string }): Promise<{ data: string }>;
   }
   export const Filesystem: Filesystem;
+}
+
+declare module '@capacitor/app' {
+  export interface AppListenerHandle {
+    remove: () => Promise<void> | void;
+  }
+
+  export const App: {
+    addListener: (eventName: string, listenerFunc: (event: any) => void) => Promise<AppListenerHandle>;
+    exitApp: () => void;
+  };
+}
+
+declare module '@capacitor/share' {
+  export interface ShareOptions {
+    title?: string;
+    text?: string;
+    url?: string;
+    dialogTitle?: string;
+  }
+
+  export const Share: {
+    share: (options: ShareOptions) => Promise<void>;
+  };
+}
+
+declare module '@codetrix-studio/capacitor-google-auth' {
+  export interface InitializeGoogleAuthOptions {
+    clientId: string;
+    scopes?: string[];
+    grantOfflineAccess?: boolean;
+    forceCodeForRefreshToken?: boolean;
+  }
+
+  export const GoogleAuth: {
+    initialize: (options: InitializeGoogleAuthOptions) => Promise<any>;
+    signIn: () => Promise<any>;
+    signOut: () => Promise<void>;
+    refresh: () => Promise<any>;
+  };
 }
 
 declare module '../utils/dietFilters.js' {
@@ -82,9 +135,4 @@ declare module '../data/db.js' {
   export default db;
 }
 
-declare global {
-  var Capacitor: any;
-  interface Window {
-    Capacitor: any;
-  }
-}
+export {};

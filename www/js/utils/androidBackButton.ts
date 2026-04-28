@@ -5,6 +5,7 @@
  */
 
 import { App } from '@capacitor/app';
+// @ts-ignore - Capacitor types are declared globally
 
 export class AndroidBackButtonHandler {
   history: any[];

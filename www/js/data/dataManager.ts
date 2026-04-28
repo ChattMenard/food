@@ -15,7 +15,7 @@ async function getFilesystem(): Promise<any> {
   if (!_Filesystem && typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform?.()) {
     try {
       const module = await import('@capacitor/filesystem');
-      _Filesystem = module.Filesystem;
+      _Filesystem = (module as any).Filesystem;
     } catch (_e) {
       // Filesystem plugin not installed
     }

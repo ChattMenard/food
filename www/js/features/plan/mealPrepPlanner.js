@@ -7,8 +7,31 @@
 
 import db from '../../data/db.js';
 
+/**
+ * @typedef {import('../../types/domain').RecipeSchema} RecipeSchema
+ * @typedef {import('../../types/domain').MealPrepRecipe} MealPrepRecipe
+ * @typedef {import('../../types/domain').PrepTask} PrepTask
+ * @typedef {import('../../types/domain').PrepScheduleBlock} PrepScheduleBlock
+ * @typedef {import('../../types/domain').StoragePlan} StoragePlan
+ * @typedef {import('../../types/domain').ShoppingListEntry} ShoppingListEntry
+ * @typedef {import('../../types/domain').RecipePlan} RecipePlan
+ * @typedef {import('../../types/domain').RecipeIngredient} RecipeIngredient
+ */
+
+/**
+ * @typedef {'component' | 'batch-meals' | 'hybrid'} PrepStrategyId
+ * @typedef {{
+ *   name: string;
+ *   description: string;
+ *   bestFor: string;
+ *   steps: string[];
+ *   storage: string;
+ * }} PrepStrategy
+ * @typedef {{ strategy: PrepStrategyId; prepDay: number; strategyDetails: PrepStrategy }} PlannerSettings
+ */
+
 // Storage guidelines for common meal types (days)
-const STORAGE_GUIDELINES = {
+const STORAGE_GUIDELINES = /** @type {{ refrigerator: Record<string, number>; freezer: Record<string, number>; }} */ ({
     'refrigerator': {
         'cooked-grains': 5,
         'cooked-proteins': 3,
@@ -28,10 +51,15 @@ const STORAGE_GUIDELINES = {
         'assembled-meals': 60,
         'default': 60
     }
-};
+});
 
 // Reheating methods by meal type
-const REHEATING_GUIDES = {
+const REHEATING_GUIDES = /** @type {Record<'microwave' | 'stovetop' | 'oven' | 'air-fryer', {
+    temp: string;
+    method: string;
+    timePerServing: string;
+    bestFor: string[];
+}>} */ ({
     'microwave': {
         temp: 'Medium (50% power)',
         method: 'Cover loosely, stir halfway',
@@ -56,10 +84,10 @@ const REHEATING_GUIDES = {
         timePerServing: '5-8 minutes',
         bestFor: ['crispy items', 'roasted vegetables', 'fried foods']
     }
-};
+});
 
 // Meal prep strategies
-const PREP_STRATEGIES = {
+const PREP_STRATEGIES = /** @type {Record<PrepStrategyId, PrepStrategy>} */ ({
     'component': {
         name: 'Component Prep',
         description: 'Cook ingredients separately, mix & match throughout week',
@@ -96,13 +124,16 @@ const PREP_STRATEGIES = {
         ],
         storage: 'Meals ready, components for variety'
     }
-};
+});
 
 class MealPrepPlanner {
     constructor() {
+        /** @type {PrepStrategyId} */
         this.currentStrategy = 'component';
+        /** @type {number} */
         this.prepDay = 0; // Sunday (0-6)
         this.storageKey = 'meal-prep-settings';
+        /** @type {Array<(settings: PlannerSettings) => void>} */
         this.listeners = [];
     }
 
@@ -149,6 +180,9 @@ class MealPrepPlanner {
     /**
      * Get current settings
      */
+    /**
+     * @returns {PlannerSettings}
+     */
     getSettings() {
         return {
             strategy: this.currentStrategy,
@@ -159,6 +193,9 @@ class MealPrepPlanner {
 
     /**
      * Set prep strategy
+     */
+    /**
+     * @param {PrepStrategyId} strategyId
      */
     async setStrategy(strategyId) {
         if (!PREP_STRATEGIES[strategyId]) {
@@ -173,6 +210,9 @@ class MealPrepPlanner {
     /**
      * Set prep day (0-6, Sunday to Saturday)
      */
+    /**
+     * @param {number} day
+     */
     async setPrepDay(day) {
         if (day < 0 || day > 6) {
             throw new Error('Prep day must be 0-6 (Sunday to Saturday)');
@@ -186,31 +226,34 @@ class MealPrepPlanner {
     /**
      * Get available strategies
      */
+    /**
+     * @returns {Array<{ id: PrepStrategyId } & PrepStrategy>}
+     */
     getStrategies() {
-        return Object.entries(PREP_STRATEGIES).map(([id, details]) => ({
+        return /** @type {Array<{ id: PrepStrategyId } & PrepStrategy>} */ (Object.entries(PREP_STRATEGIES).map(([id, details]) => ({
             id,
             ...details
-        }));
+        })));
     }
 
     /**
      * Generate prep plan for selected recipes
-     * @param {Array} recipes - Selected recipes for meal prep
+     * @param {RecipeSchema[]} recipes - Selected recipes for meal prep
      * @param {number} servingsPerRecipe - Servings to prep per recipe
-     * @returns {Object} Complete prep plan
+     * @returns {RecipePlan} Complete prep plan
      */
     generatePrepPlan(recipes, servingsPerRecipe = 4) {
         const strategy = PREP_STRATEGIES[this.currentStrategy];
         const prepDate = this.getNextPrepDate();
         
         // Scale recipes
-        const scaledRecipes = recipes.map(recipe => ({
+        const scaledRecipes = /** @type {MealPrepRecipe[]} */ (recipes.map(recipe => ({
             ...recipe,
             scaledServings: servingsPerRecipe,
             scalingFactor: servingsPerRecipe / (recipe.servings || 1),
             prepDate: prepDate.toISOString().split('T')[0],
             useByDate: this.calculateUseByDate(recipe, prepDate)
-        }));
+        })));
 
         // Generate prep schedule
         const schedule = this.generateSchedule(scaledRecipes, strategy);
@@ -252,6 +295,10 @@ class MealPrepPlanner {
     /**
      * Calculate use-by date based on meal type
      */
+    /**
+     * @param {RecipeSchema | MealPrepRecipe} recipe
+     * @param {Date} prepDate
+     */
     calculateUseByDate(recipe, prepDate) {
         const mealType = this.classifyMeal(recipe);
         const storageDays = STORAGE_GUIDELINES.refrigerator[mealType] || 3;
@@ -265,10 +312,14 @@ class MealPrepPlanner {
     /**
      * Classify meal for storage guidelines
      */
+    /**
+     * @param {RecipeSchema | MealPrepRecipe} recipe
+     * @returns {'soups-stews' | 'salads-dressed' | 'salads-undressed' | 'cooked-grains' | 'cooked-proteins' | 'sauces' | 'assembled-meals'}
+     */
     classifyMeal(recipe) {
         const name = (recipe.name || '').toLowerCase();
         const ingredients = (recipe.ingredients || []).map(i => 
-            (i.name || i).toLowerCase()
+            (typeof i === 'string' ? i : i.name).toLowerCase()
         ).join(' ');
         
         if (/soup|stew|chili|curry/.test(name)) return 'soups-stews';
@@ -284,13 +335,16 @@ class MealPrepPlanner {
 
     /**
      * Generate prep schedule with parallel tasks
+     * @param {MealPrepRecipe[]} recipes
+     * @param {Record<string, unknown>} _strategy
+     * @returns {PrepScheduleBlock[]}
      */
     generateSchedule(recipes, _strategy) {
-        const schedule = [];
+        const schedule = /** @type {PrepScheduleBlock[]} */ ([]);
         let currentTime = 0; // Minutes from start
 
         // Group by task type for efficiency
-        const taskGroups = {
+        const taskGroups = /** @type {Record<string, PrepTask[]>} */ ({
             'preheat': [],
             'prep-vegetables': [],
             'prep-proteins': [],
@@ -301,12 +355,12 @@ class MealPrepPlanner {
             'assemble': [],
             'cool': [],
             'portion': []
-        };
+        });
 
         // Create tasks from recipes
-        recipes.forEach((recipe, _index) => {
+        recipes.forEach(recipe => {
             // Preheating
-            if (recipe.cookTime > 15) {
+            if ((recipe.cookTime ?? 0) > 15) {
                 taskGroups['preheat'].push({
                     recipe: recipe.name,
                     task: 'Preheat oven/stove',
@@ -369,6 +423,9 @@ class MealPrepPlanner {
     /**
      * Format minutes as HH:MM
      */
+    /**
+     * @param {number} minutes
+     */
     formatTime(minutes) {
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
@@ -377,6 +434,8 @@ class MealPrepPlanner {
 
     /**
      * Calculate storage needs
+     * @param {MealPrepRecipe[]} recipes
+     * @returns {StoragePlan}
      */
     calculateStorage(recipes) {
         const totalContainers = recipes.reduce((sum, r) => sum + r.scaledServings, 0);
@@ -401,22 +460,28 @@ class MealPrepPlanner {
 
     /**
      * Generate scaled shopping list
+     * @param {MealPrepRecipe[]} recipes
+     * @returns {ShoppingListEntry[]}
      */
     generateScaledShoppingList(recipes) {
-        const ingredients = new Map();
+        const ingredients = /** @type {Map<string, ShoppingListEntry>} */ (new Map());
         
         recipes.forEach(recipe => {
             (recipe.ingredients || []).forEach(ing => {
-                const name = ing.name || ing;
-                const baseQty = ing.quantity || 1;
+                const name = typeof ing === 'string' ? ing : ing.name;
+                const rawQuantity = typeof ing === 'string' ? 1 : (ing.quantity ?? 1);
+                const baseQty = typeof rawQuantity === 'number' ? rawQuantity : parseFloat(String(rawQuantity)) || 1;
                 const scaledQty = baseQty * recipe.scalingFactor;
-                const unit = ing.unit || 'piece';
+                const unit = typeof ing === 'string' ? 'piece' : (ing.unit || 'piece');
                 
                 const key = `${name}:${unit}`;
                 
                 if (ingredients.has(key)) {
-                    ingredients.get(key).quantity += scaledQty;
-                    ingredients.get(key).forRecipes.push(recipe.name);
+                    const existing = ingredients.get(key);
+                    if (existing) {
+                        existing.quantity += Math.ceil(scaledQty);
+                        existing.forRecipes.push(recipe.name);
+                    }
                 } else {
                     ingredients.set(key, {
                         name,
@@ -433,6 +498,9 @@ class MealPrepPlanner {
 
     /**
      * Estimate total prep time
+     */
+    /**
+     * @param {MealPrepRecipe[]} recipes
      */
     estimateTotalPrepTime(recipes) {
         let total = 0;
@@ -451,22 +519,27 @@ class MealPrepPlanner {
 
     /**
      * Identify equipment needed
+     * @param {MealPrepRecipe[]} recipes
+     * @returns {string[]}
      */
     identifyEquipment(recipes) {
-        const equipment = new Set();
+        const equipment = /** @type {Set<string>} */ (new Set());
         
         recipes.forEach(recipe => {
-            if (recipe.cookTime > 15) equipment.add('Large pots/pans');
-            if (recipe.prepTime > 10) equipment.add('Cutting boards');
+            if ((recipe.cookTime ?? 0) > 15) equipment.add('Large pots/pans');
+            if ((recipe.prepTime ?? 0) > 10) equipment.add('Cutting boards');
             equipment.add('Meal prep containers');
             equipment.add('Storage bags/labels');
         });
-        
+
         return Array.from(equipment);
     }
 
     /**
      * Generate prep tips based on strategy and recipes
+     * @param {MealPrepRecipe[]} recipes
+     * @param {PrepStrategy} strategy
+     * @returns {string[]}
      */
     generateTips(recipes, strategy) {
         const tips = [];
@@ -494,10 +567,14 @@ class MealPrepPlanner {
     /**
      * Get reheating instructions for a meal
      */
+    /**
+     * @param {RecipeSchema | MealPrepRecipe} recipe
+     */
     getReheatingInstructions(recipe) {
         const mealType = this.classifyMeal(recipe);
         
         // Determine best method
+        /** @type {'microwave' | 'stovetop' | 'oven' | 'air-fryer'} */
         let recommendedMethod = 'microwave';
         const nameLower = (recipe.name || '').toLowerCase();
         if (/crispy|fried|roasted/.test(nameLower)) {
@@ -519,6 +596,9 @@ class MealPrepPlanner {
     /**
      * Get storage guidelines for a meal type
      */
+    /**
+     * @param {RecipeSchema | MealPrepRecipe} recipe
+     */
     getStorageGuidelines(recipe) {
         const mealType = this.classifyMeal(recipe);
         
@@ -528,7 +608,7 @@ class MealPrepPlanner {
                 notes: 'Store in airtight containers'
             },
             freezer: {
-                days: STORAGE_GUIDELINES.freezer[mealType] || 60,
+                days: STORAGE_GUIDELINES.freezer[mealType] || STORAGE_GUIDELINES.freezer.default,
                 notes: 'Freeze within 2 days for best quality'
             },
             thawing: 'Thaw overnight in refrigerator or use defrost setting',
@@ -538,6 +618,9 @@ class MealPrepPlanner {
 
     /**
      * Subscribe to settings changes
+     */
+    /**
+     * @param {(settings: PlannerSettings) => void} callback
      */
     subscribe(callback) {
         this.listeners.push(callback);

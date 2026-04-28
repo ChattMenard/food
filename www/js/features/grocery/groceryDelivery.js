@@ -7,6 +7,34 @@
 
 import db from '../../data/db.js';
 
+/**
+ * @typedef {{
+ *   name: string;
+ *   quantity?: number;
+ *   unit?: string;
+ *   category?: string;
+ *   price?: number;
+ *   notes?: string;
+ * }} ShoppingListItem
+ */
+
+/**
+ * @typedef {{
+ *   id: string;
+ *   name: string;
+ *   icon: string;
+ *   regions: string[];
+ *   website: string;
+ *   cartUrl: string;
+ *   features: string[];
+ *   stores: string[];
+ * }} GroceryProvider
+ */
+
+/**
+ * @typedef {keyof typeof PROVIDERS} ProviderId
+ */
+
 // Supported grocery delivery providers
 const PROVIDERS = {
     instacart: {
@@ -107,10 +135,14 @@ const SEARCH_MAPPINGS = {
 
 class GroceryDeliveryIntegration {
     constructor() {
+        /** @type {ProviderId | null} */
         this.preferredProvider = null;
+        /** @type {string | null} */
         this.preferredStore = null;
+        /** @type {string | null} */
         this.zipCode = null;
         this.storageKey = 'grocery-delivery-preferences';
+        /** @type {Array<(prefs: { provider: ProviderId | null; store: string | null; zipCode: string | null; providerDetails: GroceryProvider | null }) => void>} */
         this.listeners = [];
     }
 
@@ -170,6 +202,7 @@ class GroceryDeliveryIntegration {
 
     /**
      * Set preferred provider
+     * @param {ProviderId} providerId
      */
     async setProvider(providerId) {
         if (providerId && !PROVIDERS[providerId]) {
@@ -183,6 +216,7 @@ class GroceryDeliveryIntegration {
 
     /**
      * Set preferred store within provider
+     * @param {string} storeName
      */
     async setStore(storeName) {
         this.preferredStore = storeName;
@@ -192,6 +226,7 @@ class GroceryDeliveryIntegration {
 
     /**
      * Set ZIP code for availability check
+     * @param {string} zip
      */
     async setZipCode(zip) {
         // Basic US ZIP validation (5 digits)
@@ -225,6 +260,8 @@ class GroceryDeliveryIntegration {
     /**
      * Check which providers are available for a ZIP code
      * (In real implementation, this would call APIs)
+     * @param {string} zip
+     * @returns {Promise<GroceryProvider[]>}
      */
     async checkAvailability(zip) {
         // Simulated availability check
@@ -242,11 +279,14 @@ class GroceryDeliveryIntegration {
         
         return Object.entries(mockAvailability)
             .filter(([_, available]) => available)
-            .map(([id]) => PROVIDERS[id]);
+            .map(([id]) => PROVIDERS[/** @type {ProviderId} */ (id)]);
     }
 
     /**
      * Convert shopping list to provider-specific format
+     * @param {ShoppingListItem[]} shoppingList
+     * @param {ProviderId} [providerId]
+     * @returns {{ provider: string; items: any[]; totalItems: number; directUrl: string; manualInstructions: string[] }}
      */
     formatShoppingList(shoppingList, providerId = this.preferredProvider) {
         if (!providerId) {
@@ -266,6 +306,9 @@ class GroceryDeliveryIntegration {
 
     /**
      * Format single item for provider
+     * @param {ShoppingListItem} item
+     * @param {ProviderId} providerId
+     * @returns {{ originalName: string; searchTerm: string; quantity: number; unit: string; estimatedPrice: number; category: string }}
      */
     formatItem(item, providerId) {
         const searchTerm = this.getSearchTerm(item.name);
@@ -555,6 +598,23 @@ class GroceryDeliveryIntegration {
 
     notifyListeners() {
         this.listeners.forEach(cb => cb(this.getPreferences()));
+    }
+
+    /**
+     * Export shopping cart for external services
+     * @param {ShoppingListItem[]} shoppingList
+     * @param {ProviderId} [providerId]
+     * @returns {Object} Exported cart data
+     */
+    exportCart(shoppingList, providerId = this.preferredProvider) {
+        const formatted = this.formatShoppingList(shoppingList, providerId);
+        return {
+            provider: formatted.provider,
+            items: formatted.items,
+            totalItems: formatted.totalItems,
+            exportDate: new Date().toISOString(),
+            format: 'json'
+        };
     }
 }
 

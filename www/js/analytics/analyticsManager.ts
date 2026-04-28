@@ -4,11 +4,13 @@
  * Handles user analytics and behavior tracking
  */
 
+type AnalyticsEventParameters = Record<string, string | number | boolean | null | undefined | Record<string, unknown>>;
+
 class AnalyticsManager {
   isProduction: boolean;
   analyticsId: string;
   isEnabled: boolean;
-  eventQueue: any[];
+  eventQueue: AnalyticsEventParameters[];
   maxQueueSize: number;
   sessionStartTime: number;
   userId: string;
@@ -17,7 +19,7 @@ class AnalyticsManager {
   constructor() {
     this.isProduction = this.detectProductionEnvironment();
     this.analyticsId = this.getAnalyticsId();
-    this.isEnabled = this.analyticsId && this.isProduction;
+    this.isEnabled = Boolean(this.analyticsId && this.isProduction);
     this.eventQueue = [];
     this.maxQueueSize = 100;
     this.sessionStartTime = Date.now();
@@ -39,7 +41,7 @@ class AnalyticsManager {
   }
 
   getAnalyticsId(): string {
-    return import.meta.env?.ANALYTICS_ID || 
+    return (import.meta as any).env?.ANALYTICS_ID || 
            window?.ANALYTICS_ID || 
            '';
   }
@@ -80,7 +82,7 @@ class AnalyticsManager {
       // Initialize gtag
       window.dataLayer = window.dataLayer || [];
       window.gtag = function() {
-        window.dataLayer.push(arguments);
+        (window.dataLayer as any[]).push(arguments);
       };
       
       window.gtag('js', new Date());
@@ -92,45 +94,7 @@ class AnalyticsManager {
     }
   }
 
-  setupEventTracking(): void {
-    // Track button clicks
-    document.addEventListener('click', (event) => {
-      const target = event.target.closest('button, [role="button"], .btn, [onclick]');
-      if (target) {
-        this.trackEvent('button_click', {
-          element_id: target.id || '',
-          element_text: target.textContent?.trim() || '',
-          element_class: target.className || '',
-          page: this.getCurrentPage()
-        });
-      }
-    });
-
-    // Track form submissions
-    document.addEventListener('submit', (event) => {
-      const form = event.target;
-      this.trackEvent('form_submit', {
-        form_id: form.id || '',
-        form_class: form.className || '',
-        page: this.getCurrentPage()
-      });
-    });
-
-    // Track link clicks
-    document.addEventListener('click', (event) => {
-      const target = event.target.closest('a');
-      if (target) {
-        this.trackEvent('link_click', {
-          link_url: target.href || '',
-          link_text: target.textContent?.trim() || '',
-          external: target.hostname !== window.location.hostname,
-          page: this.getCurrentPage()
-        });
-      }
-    });
-  }
-
-  setupPageTracking() {
+  setupPageTracking(): void {
     // Track initial page view
     this.trackPageView();
     
@@ -145,14 +109,14 @@ class AnalyticsManager {
     });
   }
 
-  setupPerformanceTracking() {
+  setupPerformanceTracking(): void {
     // Track page load performance
     if ('performance' in window && 'getEntriesByType' in performance) {
       window.addEventListener('load', () => {
         setTimeout(() => {
           const navigationEntries = performance.getEntriesByType('navigation');
           if (navigationEntries.length > 0) {
-            const navEntry = navigationEntries[0];
+            const navEntry = navigationEntries[0] as PerformanceNavigationTiming;
             this.trackEvent('page_performance', {
               load_time: Math.round(navEntry.loadEventEnd - navEntry.loadEventStart),
               dom_content_loaded: Math.round(navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart),
@@ -166,12 +130,9 @@ class AnalyticsManager {
     }
   }
 
-  setupBehaviorTracking() {
+  setupBehaviorTracking(): void {
     // Track user engagement
     this.setupEngagementTracking();
-    
-    // Track feature usage
-    this.setupFeatureTracking();
     
     // Track error interactions
     this.setupErrorTracking();
@@ -180,7 +141,7 @@ class AnalyticsManager {
     this.setupSearchTracking();
   }
 
-  setupEngagementTracking() {
+  setupEngagementTracking(): void {
     let lastActivity = Date.now();
     let totalTime = 0;
     let engagementInterval;
@@ -209,79 +170,78 @@ class AnalyticsManager {
       clearInterval(engagementInterval);
       this.trackEvent('session_engagement', {
         total_time: Math.round(totalTime / 1000), // in seconds
-        session_duration: Math.round((Date.now() - this.sessionStartTime) / 1000)
+        session_duration: Math.round((Date.now() - this.sessionStartTime) / 1000),
       });
     });
   }
 
-  setupFeatureTracking() {
-    // Track ingredient additions
-    this.trackFeatureUsage('add_ingredient', () => {
-      return document.querySelector('#new-ingredient')?.value?.trim() || '';
-    });
-    
-    // Track meal planning
-    this.trackFeatureUsage('meal_planning', () => {
-      const mealCount = document.querySelectorAll('#meal-plan .list-item').length;
-      return { meal_count: mealCount };
-    });
-    
-    // Track AI suggestions
-    this.trackFeatureUsage('ai_suggestions', () => {
-      const suggestionCount = document.querySelectorAll('.ai-suggestions .list-item').length;
-      return { suggestion_count: suggestionCount };
-    });
-    
-    // Track recipe viewing
-    this.trackFeatureUsage('recipe_view', () => {
-      const modalTitle = document.querySelector('#recipe-modal-title')?.textContent?.trim() || '';
-      return { recipe_name: modalTitle };
-    });
-  }
+  setupEventTracking(): void {
+    // Track button clicks
+    document.addEventListener('click', (event) => {
+      const target = (event.target as Element | null)?.closest(
+        'button, [role="button"], .btn, [onclick]'
+      );
+      if (!target) return;
 
-  trackFeatureUsage(featureName, getData) {
-    const originalMethod = window[`track${featureName.charAt(0).toUpperCase() + featureName.slice(1)}`];
-    
-    window[`track${featureName.charAt(0).toUpperCase() + featureName.slice(1)}`] = () => {
-      const data = getData ? getData() : {};
-      this.trackEvent(`feature_${featureName}`, {
-        ...data,
-        page: this.getCurrentPage()
+      this.trackEvent('button_click', {
+        element_id: target.id || '',
+        element_text: target.textContent?.trim() || '',
+        element_class: (target as HTMLElement).className || '',
+        page: this.getCurrentPage(),
       });
-      
-      if (originalMethod) {
-        return originalMethod();
-      }
-    };
+    });
+
+    // Track form submissions
+    document.addEventListener('submit', (event) => {
+      const form = event.target as HTMLFormElement;
+      this.trackEvent('form_submit', {
+        form_id: form?.id || '',
+        form_class: form?.className || '',
+        page: this.getCurrentPage(),
+      });
+    });
+
+    // Track link clicks
+    document.addEventListener('click', (event) => {
+      const link = (event.target as Element | null)?.closest('a');
+      if (!link) return;
+
+      this.trackEvent('link_click', {
+        link_url: (link as HTMLAnchorElement).href || '',
+        link_text: link.textContent?.trim() || '',
+        external: (link as HTMLAnchorElement).hostname !== window.location.hostname,
+        page: this.getCurrentPage(),
+      });
+    });
   }
 
-  setupErrorTracking() {
-    // Track error boundary interactions
-    const originalErrorBoundary = window.errorBoundary;
-    if (originalErrorBoundary) {
+  setupErrorTracking(): void {
+    const originalErrorBoundary = (window as any).errorBoundary;
+    if (originalErrorBoundary && typeof originalErrorBoundary.handleError === 'function') {
       const originalHandleError = originalErrorBoundary.handleError;
-      originalErrorBoundary.handleError = (error, context, details) => {
+      originalErrorBoundary.handleError = (error: Error, context: string, details: AnalyticsEventParameters) => {
         this.trackEvent('error_boundary_interaction', {
           error_type: error?.name || 'unknown',
           context: context || 'unknown',
-          page: this.getCurrentPage()
+          page: this.getCurrentPage(),
         });
-        
+
         return originalHandleError.call(originalErrorBoundary, error, context, details);
       };
     }
   }
 
-  setupSearchTracking() {
+  setupSearchTracking(): void {
     // Track search/filter usage
     const searchInputs = document.querySelectorAll('input[type="search"], [placeholder*="search"], [placeholder*="filter"]');
     searchInputs.forEach(input => {
-      let searchTimeout;
+      let searchTimeout: number | undefined;
       
-      input.addEventListener('input', (event) => {
+      input.addEventListener('input', (event: Event) => {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          const searchTerm = event.target.value?.trim();
+        searchTimeout = window.setTimeout(() => {
+          const target = event.target as HTMLInputElement;
+          const searchTerm = target.value?.trim();
           if (searchTerm && searchTerm.length > 2) {
             this.trackEvent('search', {
               search_term: searchTerm,
@@ -294,19 +254,19 @@ class AnalyticsManager {
     });
   }
 
-  getFirstPaint() {
+  getFirstPaint(): number {
     const paintEntries = performance.getEntriesByType('paint');
     const firstPaint = paintEntries.find(entry => entry.name === 'first-paint');
     return firstPaint ? Math.round(firstPaint.startTime) : 0;
   }
 
-  getFirstContentfulPaint() {
+  getFirstContentfulPaint(): number {
     const paintEntries = performance.getEntriesByType('paint');
     const fcp = paintEntries.find(entry => entry.name === 'first-contentful-paint');
     return fcp ? Math.round(fcp.startTime) : 0;
   }
 
-  getCurrentPage() {
+  getCurrentPage(): string {
     // Get current page/path for SPA
     const path = window.location.pathname;
     const hash = window.location.hash;
@@ -314,17 +274,14 @@ class AnalyticsManager {
   }
 
   // Public tracking methods
-  trackEvent(eventName, parameters = {}) {
+  trackEvent(eventName: string, parameters: AnalyticsEventParameters = {}): void {
     if (!this.isEnabled) return;
     
-    const event = {
-      event_name: eventName,
-      parameters: {
-        ...parameters,
-        timestamp: Date.now(),
-        user_id: this.userId,
-        session_id: this.sessionId
-      }
+    const event: AnalyticsEventParameters = {
+      ...parameters,
+      timestamp: Date.now(),
+      user_id: this.userId,
+      session_id: this.sessionId
     };
     
     // Send to Google Analytics
@@ -336,7 +293,7 @@ class AnalyticsManager {
     this.queueEvent(event);
   }
 
-  trackPageView() {
+  trackPageView(): void {
     if (!this.isEnabled) return;
     
     const pageData = {
@@ -357,7 +314,7 @@ class AnalyticsManager {
     this.trackEvent('page_view', pageData);
   }
 
-  trackSessionStart() {
+  trackSessionStart(): void {
     this.trackEvent('session_start', {
       user_agent: navigator.userAgent,
       screen_resolution: `${screen.width}x${screen.height}`,
@@ -367,7 +324,11 @@ class AnalyticsManager {
     });
   }
 
-  trackUserInteraction(action, target, details = {}) {
+  trackUserInteraction(
+    action: string,
+    target: Element,
+    details: AnalyticsEventParameters = {}
+  ): void {
     this.trackEvent('user_interaction', {
       action,
       target_id: target.id || '',
@@ -377,14 +338,14 @@ class AnalyticsManager {
     });
   }
 
-  trackFeatureUsage(featureName, usageData = {}) {
+  trackFeatureUsage(featureName: string, usageData: AnalyticsEventParameters = {}): void {
     this.trackEvent('feature_usage', {
       feature: featureName,
       ...usageData
     });
   }
 
-  trackConversion(conversionType, value = 0, currency = 'USD') {
+  trackConversion(conversionType: string, value = 0, currency = 'USD'): void {
     this.trackEvent('conversion', {
       conversion_type: conversionType,
       value,
@@ -393,7 +354,7 @@ class AnalyticsManager {
   }
 
   // Event queue management
-  queueEvent(event) {
+  queueEvent(event: AnalyticsEventParameters): void {
     this.eventQueue.push(event);
     
     // Keep queue size manageable
@@ -405,7 +366,7 @@ class AnalyticsManager {
     this.sendBatchEvents();
   }
 
-  async sendBatchEvents() {
+  async sendBatchEvents(): Promise<void> {
     if (this.eventQueue.length === 0) return;
     
     const eventsToSend = [...this.eventQueue];
@@ -427,12 +388,13 @@ class AnalyticsManager {
     } catch (error) {
       // Re-queue events on failure
       this.eventQueue.unshift(...eventsToSend);
-      console.warn('Failed to send analytics events:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn('Failed to send analytics events:', message);
     }
   }
 
   // User management
-  getUserId() {
+  getUserId(): string {
     let userId = localStorage.getItem('analytics_user_id');
     if (!userId) {
       userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
@@ -441,7 +403,7 @@ class AnalyticsManager {
     return userId;
   }
 
-  getSessionId() {
+  getSessionId(): string {
     let sessionId = sessionStorage.getItem('analytics_session_id');
     if (!sessionId) {
       sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
@@ -451,16 +413,22 @@ class AnalyticsManager {
   }
 
   // Public API
-  enable() {
+  enable(): void {
     this.isEnabled = true;
     this.setupAnalytics();
   }
 
-  disable() {
+  disable(): void {
     this.isEnabled = false;
   }
 
-  getAnalyticsData() {
+  getAnalyticsData(): {
+    is_enabled: boolean;
+    user_id: string;
+    session_id: string;
+    session_start_time: number;
+    queued_events: number;
+  } {
     return {
       is_enabled: this.isEnabled,
       user_id: this.userId,
@@ -471,7 +439,7 @@ class AnalyticsManager {
   }
 
   // Initialize
-  init() {
+  init(): void {
     // Make globally available
     window.analyticsManager = this;
     
@@ -486,16 +454,31 @@ class AnalyticsManager {
 const analyticsManager = new AnalyticsManager();
 
 // Export convenience functions
-export const trackEvent = (eventName, parameters) => 
-  analyticsManager.trackEvent(eventName, parameters);
+export const trackEvent = (
+  eventName: string,
+  parameters: AnalyticsEventParameters = {}
+): void => analyticsManager.trackEvent(eventName, parameters);
 
-export const trackPageView = () => 
-  analyticsManager.trackPageView();
+export const trackPageView = (): void => analyticsManager.trackPageView();
 
-export const trackFeatureUsage = (featureName, data) => 
-  analyticsManager.trackFeatureUsage(featureName, data);
+export const trackFeatureUsage = (
+  featureName: string,
+  data: AnalyticsEventParameters = {}
+): void => analyticsManager.trackFeatureUsage(featureName, data);
 
-export const trackConversion = (type, value, currency) => 
-  analyticsManager.trackConversion(type, value, currency);
+export const trackConversion = (
+  type: string,
+  value: number,
+  currency: string
+): void => analyticsManager.trackConversion(type, value, currency);
+
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+    dataLayer?: any[];
+    ANALYTICS_ID?: string;
+    analyticsManager?: AnalyticsManager;
+  }
+}
 
 export default analyticsManager;

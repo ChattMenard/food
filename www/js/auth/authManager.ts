@@ -9,12 +9,23 @@ import {
   signInWithGoogle,
   signOutFromGoogle,
   refreshGoogleSession,
-} from './googleAuthProvider';
+} from './googleAuthProvider.js';
+
+interface AuthUser {
+  id: string;
+  email: string;
+  name?: string;
+  givenName?: string;
+  familyName?: string;
+  photoUrl?: string;
+  idToken?: string;
+  authentication?: Record<string, unknown>;
+}
 
 class AuthManager {
-  currentUser: any | null;
+  currentUser: AuthUser | null;
   isAuthenticated: boolean;
-  listeners: Array<(user: any) => void>;
+  listeners: Array<(user: AuthUser | null) => void>;
   initialized: boolean;
 
   constructor() {
@@ -27,7 +38,7 @@ class AuthManager {
   /**
    * Initialize Google Sign-In
    */
-  async initialize() {
+  async initialize(): Promise<void> {
     if (this.initialized) return;
 
     try {
@@ -48,9 +59,9 @@ class AuthManager {
 
   /**
    * Sign in with Google
-   * @returns {Promise<Object>} User object with id, email, name, photoUrl
+   * @returns {Promise<AuthUser>} User object with id, email, name, photoUrl
    */
-  async signIn() {
+  async signIn(): Promise<AuthUser> {
     try {
       if (!this.initialized) {
         await this.initialize();
@@ -61,7 +72,7 @@ class AuthManager {
       this.currentUser = {
         id: result.id,
         email: result.email,
-        name: result.givenName + ' ' + result.familyName,
+        name: result.name,
         givenName: result.givenName,
         familyName: result.familyName,
         photoUrl: result.imageUrl,
@@ -71,9 +82,11 @@ class AuthManager {
 
       this.isAuthenticated = true;
       await this.saveSession();
-      this.notifyListeners('signIn', this.currentUser);
 
-      console.log('[AuthManager] Signed in:', this.currentUser.email);
+      console.log('[AuthManager] Signed in:', this.currentUser?.email);
+      if (this.currentUser) {
+        this.notifyListeners('signIn', this.currentUser);
+      }
       return this.currentUser;
     } catch (error) {
       console.error('[AuthManager] Sign in failed:', error);
@@ -91,9 +104,10 @@ class AuthManager {
       this.currentUser = null;
       this.isAuthenticated = false;
       await this.clearSession();
-      this.notifyListeners('signOut', null);
 
       console.log('[AuthManager] Signed out');
+      this.notifyListeners('signOut', null);
+
     } catch (error) {
       console.error('[AuthManager] Sign out failed:', error);
       throw error;
@@ -103,16 +117,18 @@ class AuthManager {
   /**
    * Refresh the current session
    */
-  async refresh() {
+  async refresh(): Promise<AuthUser> {
     try {
       const result = await refreshGoogleSession();
 
-      this.currentUser.idToken = result.idToken;
-      this.currentUser.authentication = result.authentication;
-      await this.saveSession();
+      if (this.currentUser) {
+        this.currentUser.idToken = result.idToken || '';
+        this.currentUser.authentication = result.authentication;
+        await this.saveSession();
+      }
 
       console.log('[AuthManager] Session refreshed');
-      return this.currentUser;
+      return this.currentUser as AuthUser;
     } catch (error) {
       console.error('[AuthManager] Refresh failed:', error);
       // If refresh fails, sign out
@@ -123,9 +139,9 @@ class AuthManager {
 
   /**
    * Get the current user
-   * @returns {Object|null} Current user object or null
+   * @returns {AuthUser|null} Current user object or null
    */
-  getCurrentUser() {
+  getCurrentUser(): AuthUser | null {
     return this.currentUser;
   }
 
@@ -150,16 +166,16 @@ class AuthManager {
   /**
    * Load session from storage
    */
-  async loadSession() {
+  async loadSession(): Promise<AuthUser | null> {
     try {
       const userJson = localStorage.getItem('auth_user');
       const timestamp = localStorage.getItem('auth_timestamp');
 
       if (userJson && timestamp) {
         // Check if session is less than 1 hour old
-        const sessionAge = Date.now() - parseInt(timestamp);
+        const sessionAge = Date.now() - parseInt(timestamp, 10);
         if (sessionAge < 3600000) {
-          this.currentUser = JSON.parse(userJson);
+          this.currentUser = JSON.parse(userJson) as AuthUser;
           this.isAuthenticated = true;
           console.log('[AuthManager] Session loaded');
           return this.currentUser;
