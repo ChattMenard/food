@@ -36,6 +36,19 @@ export class CacheManager {
     return this.storageKey;
   }
 
+  // Test-specific property names
+  get ttlData(): number {
+    return this.ttl;
+  }
+
+  get maxSizeData(): number {
+    return this.maxSize;
+  }
+
+  get storageKeyData(): string {
+    return this.storageKey;
+  }
+
   /**
    * Get item from cache
    * @param {string} key - Cache key
@@ -120,6 +133,38 @@ export class CacheManager {
     }
 
     return expiredCount;
+  }
+
+  /**
+   * Check if key exists in cache (not expired)
+   * @param {string} key - Cache key
+   * @returns {boolean} True if key exists and is not expired
+   */
+  has(key: string): boolean {
+    const entry = this.cache.get(key);
+    if (!entry) return false;
+
+    // Check if expired
+    if (Date.now() - entry.timestamp > this.ttl) {
+      this.cache.delete(key);
+      this.saveToStorage();
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Delete specific key from cache
+   * @param {string} key - Cache key to delete
+   * @returns {boolean} True if key was deleted
+   */
+  delete(key: string): boolean {
+    const deleted = this.cache.delete(key);
+    if (deleted) {
+      this.saveToStorage();
+    }
+    return deleted;
   }
 
   /**

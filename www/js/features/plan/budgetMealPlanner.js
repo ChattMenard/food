@@ -321,7 +321,7 @@ class BudgetMealPlanner {
     /**
      * Estimate recipe cost per serving
      * @param {Object} recipe - Recipe object with ingredients
-     * @returns {Object} Cost estimate with confidence
+     * @returns {{perServing: number, total: number, confidence: string, breakdown: Array}} Cost estimate with confidence
      */
     estimateRecipeCost(recipe) {
         if (!recipe || !recipe.ingredients) {
