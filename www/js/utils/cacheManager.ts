@@ -6,12 +6,34 @@
  */
 
 export class CacheManager {
-  constructor(options = {}) {
+  private ttl: number;
+  private maxSize: number;
+  private cache: Map<string, any>;
+  private storageKey: string;
+
+  constructor(options: any = {}) {
     this.ttl = options.ttl || 30 * 60 * 1000; // 30 minutes default
     this.maxSize = options.maxSize || 50;
     this.cache = new Map(); // key -> { value, timestamp, accessCount }
     this.storageKey = options.storageKey || 'app-cache';
     this.loadFromStorage();
+  }
+
+  // Expose properties for testing
+  get cacheData(): Map<string, any> {
+    return this.cache;
+  }
+
+  get cacheTTL(): number {
+    return this.ttl;
+  }
+
+  get cacheMaxSize(): number {
+    return this.maxSize;
+  }
+
+  get cacheStorageKey(): string {
+    return this.storageKey;
   }
 
   /**

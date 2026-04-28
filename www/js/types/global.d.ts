@@ -16,6 +16,7 @@ declare global {
     renderNutritionGoals?: any;
     isAIQuery?: boolean;
     IS_DEVELOPMENT?: boolean;
+    analytics?: any;
   }
 }
 

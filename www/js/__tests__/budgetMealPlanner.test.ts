@@ -7,7 +7,7 @@
 import {
   BudgetMealPlanner,
   BUDGET_SUBSTITUTIONS,
-} from '../features/plan/budgetMealPlanner.js;
+} from '../features/plan/budgetMealPlanner';
 
 describe('BudgetMealPlanner', () => {
   let planner;

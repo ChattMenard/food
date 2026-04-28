@@ -1,7 +1,7 @@
 // @ts-check
-import { DataManager } from '../data/dataManager.js;
+import { DataManager } from '../data/dataManager';
 
-jest.mock('../advanced/recipeImages.ts, () => ({
+jest.mock('../advanced/recipeImages', () => ({
   addImagesToRecipes: (recipes) =>
     recipes.map((recipe) => ({
       ...recipe,
@@ -9,11 +9,11 @@ jest.mock('../advanced/recipeImages.ts, () => ({
     })),
 }));
 
-jest.mock('../utils/dietFilters.ts, () => ({
+jest.mock('../utils/dietFilters', () => ({
   normalizeCuisine: (cuisine) => cuisine?.toLowerCase() || 'other',
 }));
 
-jest.mock('../logic/searchIndex.ts, () => ({
+jest.mock('../logic/searchIndex', () => ({
   SearchIndex: jest.fn().mockImplementation(() => ({
     search: jest.fn().mockReturnValue([]),
   })),
@@ -42,14 +42,14 @@ describe('DataManager', () => {
 
   it('validates nutrition objects correctly', () => {
     expect(
-      manager.validateNutrition({ calories: 10, protein: 1, carbs: 2, fat: 3 })
+      manager.validateNutrition({ calories: 10, protein: 1, carbs: 2, fat: 3 }),
     ).toBe(true);
     expect(manager.validateNutrition({ calories: 10 })).toBe(false);
     expect(manager.validateNutrition(null)).toBe(false);
     expect(manager.validateNutrition(undefined)).toBe(false);
     expect(manager.validateNutrition('not an object')).toBe(false);
     expect(
-      manager.validateNutrition({ calories: 10, protein: 1, carbs: 2 })
+      manager.validateNutrition({ calories: 10, protein: 1, carbs: 2 }),
     ).toBe(false);
   });
 
@@ -83,7 +83,7 @@ describe('DataManager', () => {
       .fn()
       .mockResolvedValueOnce(ingredientsResponse)
       .mockRejectedValueOnce(new Error('Gzip not supported'))
-      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(recipes) });
+      .mockResolvedValueOnce({ json: jest.fn().mockImplementation(() => Promise.resolve(recipes)) });
 
     await manager.loadData();
 
@@ -92,7 +92,7 @@ describe('DataManager', () => {
   });
 
   it('filters out recipes with invalid schema', async () => {
-    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
+    const ingredientsResponse = { json: jest.fn().mockImplementation(() => Promise.resolve(['salt'])) };
     const invalidRecipes = [
       {
         name: 'Valid Recipe',
@@ -130,7 +130,7 @@ describe('DataManager', () => {
   });
 
   it('removes invalid nutrition data from recipes', async () => {
-    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
+    const ingredientsResponse = { json: jest.fn().mockImplementation(() => Promise.resolve(['salt'])) };
     const recipes = [
       {
         name: 'Valid Recipe',
@@ -148,7 +148,7 @@ describe('DataManager', () => {
       .fn()
       .mockResolvedValueOnce(ingredientsResponse)
       .mockRejectedValueOnce(new Error('Gzip error'))
-      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(recipes) });
+      .mockResolvedValueOnce({ json: jest.fn().mockImplementation(() => Promise.resolve(recipes)) });
 
     await manager.loadData();
 
@@ -160,7 +160,7 @@ describe('DataManager', () => {
   });
 
   it('normalizes cuisine values for recipes with category', async () => {
-    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
+    const ingredientsResponse = { json: jest.fn().mockImplementation(() => Promise.resolve(['salt'])) };
     const recipes = [
       {
         name: 'Italian Recipe',
@@ -174,7 +174,7 @@ describe('DataManager', () => {
       .fn()
       .mockResolvedValueOnce(ingredientsResponse)
       .mockRejectedValueOnce(new Error('Gzip error'))
-      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(recipes) });
+      .mockResolvedValueOnce({ json: jest.fn().mockImplementation(() => Promise.resolve(recipes)) });
 
     await manager.loadData();
 
@@ -183,7 +183,7 @@ describe('DataManager', () => {
   });
 
   it('loads first 500 recipes immediately', async () => {
-    const ingredientsResponse = { json: jest.fn().mockResolvedValue(['salt']) };
+    const ingredientsResponse = { json: jest.fn().mockImplementation(() => Promise.resolve(['salt'])) };
     const recipes = Array.from({ length: 600 }, (_, i) => ({
       name: `Recipe ${i}`,
       ingredients: ['test'],
@@ -194,7 +194,7 @@ describe('DataManager', () => {
       .fn()
       .mockResolvedValueOnce(ingredientsResponse)
       .mockRejectedValueOnce(new Error('Gzip error'))
-      .mockResolvedValueOnce({ json: jest.fn().mockResolvedValue(recipes) });
+      .mockResolvedValueOnce({ json: jest.fn().mockImplementation(() => Promise.resolve(recipes)) });
 
     await manager.loadData();
 

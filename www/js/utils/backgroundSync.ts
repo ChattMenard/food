@@ -4,15 +4,36 @@
  * Handles background synchronization of meal plans and data
  */
 
-export class BackgroundSyncManager {
-  constructor() {
-    this.syncQueue = [];
-    this.isSyncing = false;
-    this.storageKey = 'main-sync-queue';
-    this.syncInterval = null;
+// Extend Window interface for analyticsManager
+declare global {
+  interface Window {
+    analyticsManager?: any;
+  }
+}
 
+// Extend ServiceWorkerRegistration interface for periodicSync
+declare global {
+  interface ServiceWorkerRegistration {
+    periodicSync?: {
+      register(tag: string): Promise<void>;
+    };
+  }
+}
+
+export class BackgroundSyncManager {
+  private syncQueue: any[] = [];
+  private isSyncing: boolean = false;
+  private storageKey: string = 'main-sync-queue';
+  private syncInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
     this.loadSyncQueue();
     this.setupSyncListeners();
+  }
+
+  // Expose syncQueue for testing purposes
+  get syncQueueData(): any[] {
+    return this.syncQueue;
   }
 
   /**

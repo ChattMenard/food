@@ -5,7 +5,7 @@
  * All write operations go through here for offline sync support
  */
 
-import db from './db.js';
+import db from './db';
 
 /**
  * Enqueue a mutation for durable storage and eventual sync

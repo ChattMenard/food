@@ -9,7 +9,7 @@ import type {
   UserPreferences, 
   NutritionData,
   DatabaseOperation 
-} from '../types/index.js';
+} from '../types/index';
 
 const DB_NAME = 'main-pro';
 const DB_VERSION = 4;

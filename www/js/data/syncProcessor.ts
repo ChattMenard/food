@@ -10,7 +10,7 @@ import {
   markSynced,
   markFailed,
   incrementRetry,
-} from './mutationQueue.js';
+} from './mutationQueue';
 
 // Sync configuration
 const MAX_RETRIES = 5;

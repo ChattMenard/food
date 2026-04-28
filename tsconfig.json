@@ -7,11 +7,11 @@
     "esModuleInterop": true,
     "allowJs": true,
     "checkJs": false,
-    "strict": false,
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "strictFunctionTypes": false,
-    "noImplicitReturns": false,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": false,
     "noImplicitOverride": true,
@@ -25,7 +25,8 @@
     "rootDir": "./www/js",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "types": ["jest", "node"]
   },
   "include": [
     "www/js/**/*.ts",

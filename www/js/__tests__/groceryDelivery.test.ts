@@ -7,7 +7,7 @@
 import {
   GroceryDeliveryIntegration,
   SEARCH_MAPPINGS,
-} from '../features/grocery/groceryDelivery.js;
+} from '../features/grocery/groceryDelivery';
 
 describe('GroceryDeliveryIntegration', () => {
   let groceryDelivery;

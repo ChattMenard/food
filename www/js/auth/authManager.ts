@@ -9,9 +9,14 @@ import {
   signInWithGoogle,
   signOutFromGoogle,
   refreshGoogleSession,
-} from './googleAuthProvider.js';
+} from './googleAuthProvider';
 
 class AuthManager {
+  currentUser: any | null;
+  isAuthenticated: boolean;
+  listeners: Array<(user: any) => void>;
+  initialized: boolean;
+
   constructor() {
     this.currentUser = null;
     this.isAuthenticated = false;

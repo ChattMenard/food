@@ -1,6 +1,6 @@
 // @ts-check
 import 'fake-indexeddb/auto';
-import * as storageManager from '../data/storageManager.js;
+import * as storageManager from '../data/storageManager';
 
 const {
   checkStorageQuota,

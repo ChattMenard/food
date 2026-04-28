@@ -1,6 +1,6 @@
 // @ts-check
-import { passesDiet, passesAllergy, passesCuisine } from '../../utils/dietFilters.js';
-import type { Recipe, PantryItem, UserPreferences, MealPlan } from '../../types/index.js';
+import { passesDiet, passesAllergy, passesCuisine } from '../../utils/dietFilters';
+import type { Recipe, PantryItem, UserPreferences, MealPlan } from '../../types/index';
 
 const INITIAL_RENDER_COUNT = 20;
 const LOAD_BATCH_SIZE = 10;

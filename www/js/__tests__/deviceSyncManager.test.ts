@@ -8,7 +8,7 @@ import {
   DeviceSyncManager,
   CONFLICT_STRATEGIES,
   DATA_TYPE_CONFIG,
-} from '../data/deviceSyncManager.js;
+} from '../data/deviceSyncManager';
 
 describe('DeviceSyncManager', () => {
   let syncManager;

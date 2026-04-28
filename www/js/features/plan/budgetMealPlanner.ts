@@ -4,9 +4,9 @@
  * Integrates with CostTracker and NutritionDashboard
  */
 
-import { CostTracker, type ShoppingListItem } from '../../logic/costTracker.js';
-import db from '../../data/db.js';
-import type { Recipe, MealPlan, UserPreferences } from '../../types/index.js';
+import { CostTracker, type ShoppingListItem } from '../../logic/costTracker';
+import db from '../../data/db';
+import type { Recipe, MealPlan, UserPreferences } from '../../types/index';
 
 interface BudgetTier {
     id: string;
@@ -46,7 +46,7 @@ const BUDGET_TIERS: Record<string, BudgetTier> = {
 };
 
 // Budget-friendly ingredient substitutions
-const BUDGET_SUBSTITUTIONS: Record<string, string[]> = {
+export const BUDGET_SUBSTITUTIONS: Record<string, string[]> = {
     // Proteins (expensive → cheaper)
     'beef': ['chicken', 'pork', 'beans', 'lentils', 'eggs'],
     'steak': ['chicken thigh', 'pork chop', 'tofu', 'mushrooms'],

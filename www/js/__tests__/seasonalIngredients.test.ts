@@ -3,7 +3,7 @@ import {
   getCurrentSeasonalIngredients,
   getSeasonalIngredientSuggestion,
   getSeasonalRecipes,
-} from '../features/pantry/seasonalIngredients.js;
+} from '../features/pantry/seasonalIngredients';
 
 describe('seasonalIngredients', () => {
   describe('getCurrentSeasonalIngredients', () => {

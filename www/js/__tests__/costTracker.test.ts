@@ -1,5 +1,5 @@
 // @ts-check
-import { CostTracker } from '../logic/costTracker.js;
+import { CostTracker } from '../logic/costTracker';
 
 describe('CostTracker', () => {
   let costTracker;

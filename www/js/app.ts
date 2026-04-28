@@ -1,31 +1,31 @@
 // @ts-check
-import { log } from './utils/logger.js';
-import { sanitize } from './utils/sanitizer.js';
-import environmentConfig from './config/environment.js';
-import cspManager from './security/csp.js';
-import errorTracker from './monitoring/errorTracker.js';
-import errorBoundary from './ui/errorBoundary.js';
-import offlineManager from './utils/offlineManager.js';
-import accessibilityManager from './accessibility/accessibilityManager.js';
-import analyticsManager from './analytics/analyticsManager.js';
+import { log } from './utils/logger';
+import { sanitize } from './utils/sanitizer';
+import environmentConfig from './config/environment';
+import cspManager from './security/csp';
+import errorTracker from './monitoring/errorTracker';
+import errorBoundary from './ui/errorBoundary';
+import offlineManager from './utils/offlineManager';
+import accessibilityManager from './accessibility/accessibilityManager';
+import analyticsManager from './analytics/analyticsManager';
 
 log('=== MODULE START ===');
-import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState, signInUser } from './core/appState.js';
-import { PantryManager } from './features/pantry/pantryManager.js';
-import { MealPlanner } from './features/meals/mealPlanner.js';
-import { RecipeEngine } from './logic/recipeEngine.js';
-import { DataManager } from './data/dataManager.js';
-import { UIManager } from './ui/uiManager.js';
-import { PreferencesManager } from './features/preferencesManager.js';
-import { getSeasonalIngredientSuggestion } from './features/pantry/seasonalIngredients.js';
-import { MealPlanSharing } from './features/plan/mealPlanSharing.js';
-import { MealPlanTemplates } from './features/plan/mealPlanTemplates.js';
-import { LeftoverTracker } from './features/pantry/leftoverTracker.js';
-import { MealPrep } from './features/mealPrep.js';
-import syncProcessor from './data/syncProcessor.js';
-import { registerAllHandlers } from './data/mutationHandlers.js';
-import db from './data/db.js';
-import { performanceMonitor } from './utils/performanceMonitor.js';
+import { loadState, savePantryState, saveMealPlanState, savePreferencesState, saveRecipeRatingsState, signInUser } from './core/appState';
+import { PantryManager } from './features/pantry/pantryManager';
+import { MealPlanner } from './features/meals/mealPlanner';
+import { RecipeEngine } from './logic/recipeEngine';
+import { DataManager } from './data/dataManager';
+import { UIManager } from './ui/uiManager';
+import { PreferencesManager } from './features/preferencesManager';
+import { getSeasonalIngredientSuggestion } from './features/pantry/seasonalIngredients';
+import { MealPlanSharing } from './features/plan/mealPlanSharing';
+import { MealPlanTemplates } from './features/plan/mealPlanTemplates';
+import { LeftoverTracker } from './features/pantry/leftoverTracker';
+import { MealPrep } from './features/mealPrep';
+import syncProcessor from './data/syncProcessor';
+import { registerAllHandlers } from './data/mutationHandlers';
+import db from './data/db';
+import { performanceMonitor } from './utils/performanceMonitor';
 
 // Lazy-loaded modules
 let geminiAI: any = null;

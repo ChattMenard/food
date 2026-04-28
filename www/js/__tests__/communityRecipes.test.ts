@@ -1,5 +1,5 @@
 // @ts-check
-import { CommunityRecipes } from '../advanced/communityRecipes.js;
+import { CommunityRecipes } from '../advanced/communityRecipes';
 
 describe('CommunityRecipes', () => {
   let manager;
@@ -229,7 +229,7 @@ describe('CommunityRecipes', () => {
       expect(result.saves).toBe(0);
       expect(mockDb.put).toHaveBeenCalledWith(
         'communitySubmissions',
-        expect.objectContaining({ name: 'Test Recipe' })
+        expect.objectContaining({ name: 'Test Recipe' }),
       );
     });
 
@@ -322,7 +322,7 @@ describe('CommunityRecipes', () => {
       expect(result.likes).toBe(6);
       expect(mockDb.put).toHaveBeenCalledWith(
         'communitySubmissions',
-        expect.objectContaining({ likes: 6 })
+        expect.objectContaining({ likes: 6 }),
       );
       expect(window.analytics.track).toHaveBeenCalledWith('recipe_liked', {
         recipeId: '1',
@@ -416,7 +416,7 @@ describe('CommunityRecipes', () => {
       mockDb.get.mockResolvedValue(null);
 
       await expect(
-        manager.addReview('nonexistent', { rating: 5 })
+        manager.addReview('nonexistent', { rating: 5 }),
       ).rejects.toThrow('Recipe not found');
     });
   });

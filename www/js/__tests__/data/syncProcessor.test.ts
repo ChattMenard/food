@@ -1,14 +1,14 @@
 // @ts-check
-import { SyncProcessor } from '../../data/syncProcessor.js;
+import { SyncProcessor } from '../../data/syncProcessor';
 
-jest.mock('../../data/mutationQueue.ts, () => ({
+jest.mock('../../data/mutationQueue', () => ({
   getPending: jest.fn().mockResolvedValue([]),
   markSynced: jest.fn().mockResolvedValue(),
   markFailed: jest.fn().mockResolvedValue(),
-  incrementRetry: jest.fn().mockResolvedValue(1)
+  incrementRetry: jest.fn().mockImplementation(() => Promise.resolve(1))
 }));
 
-import { getPending, markSynced, markFailed, incrementRetry } from '../../data/mutationQueue.js;
+import { getPending, markSynced, markFailed, incrementRetry } from '../../data/mutationQueue';
 
 describe('SyncProcessor', () => {
   let processor;
@@ -56,7 +56,7 @@ describe('SyncProcessor', () => {
     });
 
     it('registers a handler for mutation type', () => {
-      const handler = jest.fn().mockResolvedValue({ success: true });
+      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
       processor.registerHandler('ADD_ITEM', handler);
       expect(processor.handlers.get('ADD_ITEM')).toBe(handler);
     });
@@ -116,7 +116,7 @@ describe('SyncProcessor', () => {
 
     it('processes pending mutations when online and not processing', async () => {
       getPending.mockResolvedValue([{ id: '1', type: 'ADD_ITEM', payload: {} }]);
-      const handler = jest.fn().mockResolvedValue({ success: true });
+      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
       processor.registerHandler('ADD_ITEM', handler);
       
       await processor.processPending();
@@ -154,7 +154,7 @@ describe('SyncProcessor', () => {
     });
 
     it('executes handler and marks synced on success', async () => {
-      const handler = jest.fn().mockResolvedValue({ success: true });
+      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
       processor.registerHandler('ADD_ITEM', handler);
       const mutation = { id: '1', type: 'ADD_ITEM', payload: { name: 'test' }, entityId: 'pantry:test' };
       
@@ -164,7 +164,7 @@ describe('SyncProcessor', () => {
     });
 
     it('increments retry count on handler failure', async () => {
-      const handler = jest.fn().mockResolvedValue({ success: false, error: 'Handler error' });
+      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: false, error: 'Handler error' }));
       processor.registerHandler('ADD_ITEM', handler);
       const mutation = { id: '1', type: 'ADD_ITEM', payload: {} };
       
@@ -174,7 +174,7 @@ describe('SyncProcessor', () => {
 
     it('marks failed after increment if max retries reached', async () => {
       incrementRetry.mockResolvedValue(5);
-      const handler = jest.fn().mockResolvedValue({ success: false, error: 'Handler error' });
+      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: false, error: 'Handler error' }));
       processor.registerHandler('ADD_ITEM', handler);
       const mutation = { id: '1', type: 'ADD_ITEM', payload: {} };
       
@@ -183,7 +183,7 @@ describe('SyncProcessor', () => {
     });
 
     it('sleeps before retry if retryCount > 0', async () => {
-      const handler = jest.fn().mockResolvedValue({ success: true });
+      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
       processor.registerHandler('ADD_ITEM', handler);
       const mutation = { id: '1', type: 'ADD_ITEM', payload: {}, retryCount: 1 };
       
@@ -251,7 +251,7 @@ describe('SyncProcessor', () => {
     });
 
     it('triggers processPending on interval when online', async () => {
-      const handler = jest.fn().mockResolvedValue({ success: true });
+      const handler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
       processor.registerHandler('ADD_ITEM', handler);
       getPending.mockResolvedValue([{ id: '1', type: 'ADD_ITEM', payload: {} }]);
       

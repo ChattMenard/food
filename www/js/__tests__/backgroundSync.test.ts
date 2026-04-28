@@ -2,7 +2,7 @@
 import {
   BackgroundSyncManager,
   getBackgroundSyncManager,
-} from '../utils/backgroundSync.js;
+} from '../utils/backgroundSync';
 
 // Mock navigator and window for testing
 global.navigator = {
@@ -10,26 +10,41 @@ global.navigator = {
   serviceWorker: {
     ready: Promise.resolve({
       periodicSync: {
-        register: jest.fn().mockResolvedValue(),
+        register: jest.fn().mockResolvedValue(undefined),
       },
     }),
   },
-};
+} as any;
 
 global.window = {
   addEventListener: jest.fn(),
-};
+  // Add minimal window properties to satisfy TypeScript
+  location: { pathname: '/', href: 'http://localhost' },
+  document: {} as any,
+} as any;
 
 global.document = {
   addEventListener: jest.fn(),
   hidden: false,
-};
+  // Add minimal document properties to satisfy TypeScript
+  title: '',
+  URL: '',
+  readyState: 'complete',
+} as any;
 
-global.Notification = jest.fn(function (title, options) {
+interface MockNotificationType extends jest.Mock {
+  permission: NotificationPermission;
+  requestPermission: jest.Mock<Promise<NotificationPermission>, []>;
+}
+
+const MockNotification = jest.fn(function (this: any, title: string, options: any) {
   this.title = title;
   this.options = options;
-});
-global.Notification.permission = 'granted';
+}) as MockNotificationType;
+MockNotification.permission = 'granted';
+MockNotification.requestPermission = jest.fn().mockResolvedValue('granted');
+
+global.Notification = MockNotification as any;
 
 describe('BackgroundSyncManager', () => {
   let syncManager;
@@ -72,7 +87,7 @@ describe('BackgroundSyncManager', () => {
       localStorage.setItem('main-sync-queue', JSON.stringify(queue));
 
       const newManager = new BackgroundSyncManager();
-      expect(newManager.syncQueue).toEqual(queue);
+      expect(newManager.syncQueueData).toEqual(queue);
     });
 
     it('handles corrupted data gracefully', () => {

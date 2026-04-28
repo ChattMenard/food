@@ -1,13 +1,13 @@
 // @ts-check
-import migrationManager, { MigrationManager } from '../../data/migrationManager.js;
+import migrationManager, { MigrationManager } from '../../data/migrationManager';
 
-jest.mock('../../data/db.ts, () => ({
+jest.mock('../../data/db', () => ({
   ready: Promise.resolve(),
-  get: jest.fn(),
-  put: jest.fn().mockResolvedValue()
+  get: jest.fn().mockImplementation(() => Promise.resolve()),
+  put: jest.fn().mockImplementation(() => Promise.resolve())
 }));
 
-import db from '../../data/db.js;
+import db from '../../data/db';
 
 describe('MigrationManager', () => {
   let versionStore = {};
@@ -15,13 +15,13 @@ describe('MigrationManager', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     versionStore = {};
-    db.get.mockImplementation((store, key) => {
+    (db.get as jest.Mock).mockImplementation((store, key) => {
       if (key === 'db-schema-version') {
         return versionStore[key] ? Promise.resolve({ value: versionStore[key] }) : Promise.resolve(null);
       }
       return Promise.resolve(null);
     });
-    db.put.mockImplementation((store, data) => {
+    (db.put as jest.Mock).mockImplementation((store, data) => {
       if (data.key === 'db-schema-version') {
         versionStore[data.key] = data.value;
       }
@@ -32,12 +32,12 @@ describe('MigrationManager', () => {
   describe('constructor', () => {
     it('should register migrations on construction', () => {
       const manager = new MigrationManager();
-      expect(manager.migrations.size).toBeGreaterThan(0);
+      expect(manager.migrationsData.size).toBeGreaterThan(0);
     });
 
     it('should have migration for version 4', () => {
       const manager = new MigrationManager();
-      expect(manager.migrations.has(4)).toBe(true);
+      expect(manager.migrationsData.has(4)).toBe(true);
     });
   });
 
@@ -90,7 +90,7 @@ describe('MigrationManager', () => {
 
     it('should stop on migration failure', async () => {
       const manager = new MigrationManager();
-      manager.migrations.set(5, async () => ({ success: false, error: 'Test error' }));
+      manager.migrationsData.set(5, async () => ({ success: false, error: 'Test error' }));
       
       versionStore['db-schema-version'] = '3';
       const result = await manager.migrate();
@@ -102,7 +102,7 @@ describe('MigrationManager', () => {
 
     it('should handle migration errors', async () => {
       const manager = new MigrationManager();
-      manager.migrations.set(5, async () => { throw new Error('Migration error'); });
+      manager.migrationsData.set(5, async () => { throw new Error('Migration error'); });
       
       versionStore['db-schema-version'] = '3';
       const result = await manager.migrate();

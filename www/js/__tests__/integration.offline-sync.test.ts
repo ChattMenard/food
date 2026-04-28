@@ -13,12 +13,12 @@ import {
   markSynced,
   markFailed,
   incrementRetry,
-} from '../data/mutationQueue.js;
-import { SyncProcessor } from '../data/syncProcessor.js;
-import db from '../data/db.js;
+} from '../data/mutationQueue';
+import { SyncProcessor } from '../data/syncProcessor';
+import db from '../data/db';
 
 // Mock the db module
-jest.mock('../data/db.ts);
+jest.mock('../data/db');
 
 // Mock navigator.onLine
 Object.defineProperty(navigator, 'onLine', {
@@ -177,7 +177,7 @@ describe('Offline → Sync Integration', () => {
 
   describe('Sync Processor', () => {
     it('should register handler for mutation type', () => {
-      const mockHandler = jest.fn().mockResolvedValue({ success: true });
+      const mockHandler = jest.fn().mockImplementation(() => Promise.resolve({ success: true }));
       syncProcessor.registerHandler('ADD_ITEM', mockHandler);
 
       const status = syncProcessor.getStatus();

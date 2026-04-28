@@ -1,5 +1,5 @@
 // @ts-check
-import { IngredientVectors } from '../logic/ingredientVectors.js;
+import { IngredientVectors } from '../logic/ingredientVectors';
 
 describe('IngredientVectors', () => {
   let recipes;

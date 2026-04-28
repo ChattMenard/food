@@ -5,10 +5,27 @@
  */
 
 export class AutoRefreshManager {
+  private listeners: Map<string, Set<Function>>;
+  private refreshInterval: number;
+  private pendingRefresh: boolean;
+
   constructor() {
     this.listeners = new Map();
     this.refreshInterval = 1000; // 1 second debounce
     this.pendingRefresh = false;
+  }
+
+  // Expose properties for testing
+  get listenersData(): Map<string, Set<Function>> {
+    return this.listeners;
+  }
+
+  get refreshIntervalValue(): number {
+    return this.refreshInterval;
+  }
+
+  get pendingRefreshValue(): boolean {
+    return this.pendingRefresh;
   }
 
   /**

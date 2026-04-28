@@ -7,7 +7,7 @@ import {
   checkOnlineStatus,
   OfflineRequestQueue,
   getOfflineQueue,
-} from '../utils/networkRetry.js;
+} from '../utils/networkRetry';
 
 // Mock fetch and navigator
 global.fetch = jest.fn();
@@ -34,7 +34,7 @@ describe('networkRetry', () => {
 
   describe('retryWithBackoff', () => {
     it('returns result on first success', async () => {
-      const fn = jest.fn().mockResolvedValue('success');
+      const fn = jest.fn().mockImplementation(() => Promise.resolve('success'));
       const result = await retryWithBackoff(fn);
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(1);
@@ -68,7 +68,7 @@ describe('networkRetry', () => {
       expect(result.ok).toBe(true);
       expect(fetch).toHaveBeenCalledWith(
         'https://example.com',
-        expect.objectContaining({ signal: expect.any(AbortSignal) })
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
 

@@ -7,7 +7,7 @@
 import {
   NutritionGoalsManager,
   DEFAULT_GOALS,
-} from '../features/nutrition/nutritionGoals.js;
+} from '../features/nutrition/nutritionGoals';
 
 describe('NutritionGoalsManager', () => {
   let manager;

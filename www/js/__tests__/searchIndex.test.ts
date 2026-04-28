@@ -1,5 +1,5 @@
 // @ts-check
-import { SearchIndex } from '../logic/searchIndex.js;
+import { SearchIndex } from '../logic/searchIndex';
 
 describe('SearchIndex', () => {
   let recipes;

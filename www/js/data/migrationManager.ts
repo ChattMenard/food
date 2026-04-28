@@ -5,14 +5,21 @@
  * Provides rollback capabilities for failed migrations
  */
 
-import db from './db.js';
+import db from './db';
 
 const MIGRATION_KEY = 'db-schema-version';
 
 class MigrationManager {
+  private migrations: Map<number, () => Promise<{ success: boolean; error?: string }>>;
+
   constructor() {
     this.migrations = new Map();
     this.registerMigrations();
+  }
+
+  // Expose migrations for testing
+  get migrationsData(): Map<number, () => Promise<{ success: boolean; error?: string }>> {
+    return this.migrations;
   }
 
   /**
@@ -36,7 +43,7 @@ class MigrationManager {
   async getCurrentVersion() {
     await db.ready;
     const record = await db.get('preferences', MIGRATION_KEY);
-    return record ? parseInt(record.value, 10) : 3; // Default to v3 (pre-mutation)
+    return record ? parseInt((record as any).value, 10) : 3; // Default to v3 (pre-mutation)
   }
 
   /**

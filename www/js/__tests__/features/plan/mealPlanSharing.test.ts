@@ -1,5 +1,5 @@
 // @ts-check
-import { MealPlanSharing } from '../../../features/plan/mealPlanSharing.js;
+import { MealPlanSharing } from '../../../features/plan/mealPlanSharing';
 
 describe('MealPlanSharing', () => {
   let sharing;
@@ -12,7 +12,7 @@ describe('MealPlanSharing', () => {
     jest.clearAllMocks();
     mockGetMealPlan = jest.fn();
     mockSetMealPlan = jest.fn();
-    mockPersistMealPlan = jest.fn().mockResolvedValue();
+    mockPersistMealPlan = jest.fn().mockImplementation(() => Promise.resolve());
     mockAnnounce = jest.fn();
 
     // Mock DOM APIs
@@ -29,7 +29,7 @@ describe('MealPlanSharing', () => {
     jest.spyOn(document.body, 'removeChild').mockImplementation(() => {});
 
     global.navigator.clipboard = {
-      writeText: jest.fn().mockResolvedValue()
+      writeText: jest.fn().mockImplementation(() => Promise.resolve())
     };
 
     sharing = new MealPlanSharing({

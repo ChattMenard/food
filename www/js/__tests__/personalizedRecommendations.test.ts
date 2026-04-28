@@ -1,5 +1,5 @@
 // @ts-check
-import { PersonalizedRecommendations } from '../features/meals/personalizedRecommendations.js;
+import { PersonalizedRecommendations } from '../features/meals/personalizedRecommendations';
 
 describe('PersonalizedRecommendations', () => {
   let recommendations;

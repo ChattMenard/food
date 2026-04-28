@@ -1,4 +1,4 @@
-import type { Recipe } from '../types/index.js';
+import type { Recipe } from '../types/index';
 
 export class SearchIndex {
   private recipes: Recipe[];

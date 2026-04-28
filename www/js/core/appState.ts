@@ -1,5 +1,5 @@
-import db from '../data/db.js';
-import authManager from '../auth/authManager.js';
+import db from '../data/db';
+import authManager from '../auth/authManager';
 import type { 
   AppState, 
   UserPreferences, 
@@ -7,7 +7,7 @@ import type {
   MealPlan, 
   StateListener,
   RecipeRatings 
-} from '../types/index.js';
+} from '../types/index';
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   people: 1,

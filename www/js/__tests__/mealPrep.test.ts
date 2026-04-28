@@ -1,5 +1,5 @@
 // @ts-check
-import { MealPrep } from '../features/mealPrep.js;
+import { MealPrep } from '../features/mealPrep';
 
 describe('MealPrep', () => {
   let mealPrep;

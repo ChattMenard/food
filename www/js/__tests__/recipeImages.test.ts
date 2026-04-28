@@ -5,7 +5,7 @@ import {
   preloadImage,
   generateImageOptions,
   addImagesToRecipes,
-} from '../advanced/recipeImages.js;
+} from '../advanced/recipeImages';
 
 describe('recipeImages', () => {
   describe('generateRecipeImageUrl', () => {

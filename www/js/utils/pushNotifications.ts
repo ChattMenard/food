@@ -5,7 +5,7 @@
  * Integrates with Service Worker for background notifications
  */
 
-import db from '../data/db.js';
+import db from '../data/db';
 
 // Notification permission states
 const PERMISSION = {
@@ -54,6 +54,14 @@ const NOTIFICATION_TYPES = {
 };
 
 class PushNotificationManager {
+  permission: string;
+  subscriptions: Map<string, any>;
+  scheduledNotifications: Map<string, any>;
+  typeSettings: Record<string, any>;
+  storageKey: string;
+  listeners: Array<(callback: any) => void>;
+  swRegistration: any;
+
   constructor() {
     this.permission = PERMISSION.DEFAULT;
     this.subscriptions = new Map();

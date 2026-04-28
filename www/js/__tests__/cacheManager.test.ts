@@ -1,5 +1,5 @@
 // @ts-check
-import { CacheManager, aiCache, apiCache } from '../utils/cacheManager.js;
+import { CacheManager, aiCache, apiCache } from '../utils/cacheManager';
 
 describe('CacheManager', () => {
   let cache;
@@ -17,15 +17,15 @@ describe('CacheManager', () => {
   describe('constructor', () => {
     it('initializes with default options', () => {
       const defaultCache = new CacheManager();
-      expect(defaultCache.ttl).toBe(30 * 60 * 1000);
-      expect(defaultCache.maxSize).toBe(50);
-      expect(defaultCache.storageKey).toBe('app-cache');
+      expect(defaultCache.cacheTTL).toBe(30 * 60 * 1000);
+      expect(defaultCache.cacheMaxSize).toBe(50);
+      expect(defaultCache.cacheStorageKey).toBe('app-cache');
     });
 
     it('initializes with custom options', () => {
-      expect(cache.ttl).toBe(1000);
-      expect(cache.maxSize).toBe(3);
-      expect(cache.storageKey).toBe('app-cache');
+      expect(cache.cacheTTL).toBe(1000);
+      expect(cache.cacheMaxSize).toBe(3);
+      expect(cache.cacheStorageKey).toBe('app-cache');
     });
 
     it('initializes empty cache', () => {
@@ -259,7 +259,7 @@ describe('CacheManager', () => {
       };
       localStorage.setItem('app-cache', JSON.stringify(data));
       const newCache = new CacheManager({ ttl: 1000, maxSize: 3 });
-      expect(newCache.cache.size).toBe(1);
+      expect(newCache.cacheData.size).toBe(1);
       expect(newCache.get('key1')).toBe('value1');
     });
 
@@ -278,7 +278,7 @@ describe('CacheManager', () => {
       };
       localStorage.setItem('app-cache', JSON.stringify(data));
       const newCache = new CacheManager({ ttl: 1000, maxSize: 3 });
-      expect(newCache.cache.size).toBe(0);
+      expect(newCache.cacheData.size).toBe(0);
     });
 
     it('handles corrupted data gracefully', () => {
@@ -295,16 +295,16 @@ describe('CacheManager', () => {
   describe('singleton instances', () => {
     it('creates aiCache instance', () => {
       expect(aiCache).toBeInstanceOf(CacheManager);
-      expect(aiCache.ttl).toBe(30 * 60 * 1000);
-      expect(aiCache.maxSize).toBe(50);
-      expect(aiCache.storageKey).toBe('main-ai-cache');
+      expect(aiCache.cacheTTL).toBe(30 * 60 * 1000);
+      expect(aiCache.cacheMaxSize).toBe(50);
+      expect(aiCache.cacheStorageKey).toBe('main-ai-cache');
     });
 
     it('creates apiCache instance', () => {
       expect(apiCache).toBeInstanceOf(CacheManager);
-      expect(apiCache.ttl).toBe(5 * 60 * 1000);
-      expect(apiCache.maxSize).toBe(100);
-      expect(apiCache.storageKey).toBe('main-api-cache');
+      expect(apiCache.cacheTTL).toBe(5 * 60 * 1000);
+      expect(apiCache.cacheMaxSize).toBe(100);
+      expect(apiCache.cacheStorageKey).toBe('main-api-cache');
     });
   });
 });

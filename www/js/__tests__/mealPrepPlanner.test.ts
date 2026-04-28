@@ -8,7 +8,7 @@ import {
   MealPrepPlanner,
   PREP_STRATEGIES,
   STORAGE_GUIDELINES,
-} from '../features/plan/mealPrepPlanner.js;
+} from '../features/plan/mealPrepPlanner';
 
 describe('MealPrepPlanner', () => {
   let planner;

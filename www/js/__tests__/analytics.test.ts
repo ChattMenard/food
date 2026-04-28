@@ -1,20 +1,66 @@
 // @ts-check
-import { Analytics, getAnalytics, initAnalytics } from '../utils/analytics.js;
+import { Analytics, getAnalytics, initAnalytics } from '../utils/analytics';
 
-// Mock window and document
+// Mock window and document with proper types
 global.window = {
   location: {
     pathname: '/test',
     href: 'https://example.com/test',
+    ancestorOrigins: '',
+    hash: '',
+    host: 'example.com',
+    hostname: 'example.com',
+    port: '',
+    protocol: 'https:',
+    search: '',
+    assign: jest.fn(),
+    reload: jest.fn(),
+    replace: jest.fn(),
   },
-};
+} as any;
 
 global.document = {
   title: 'Test Page',
-};
+  URL: '',
+  activeViewTransition: null,
+  alinkColor: '',
+  all: [],
+  anchors: [],
+  applets: [],
+  body: null,
+  cookie: '',
+  charset: '',
+  characterSet: '',
+  compatMode: '',
+  contentType: '',
+  designMode: '',
+  dir: '',
+  doctype: null,
+  documentElement: null,
+  documentURI: '',
+  domain: '',
+  embeds: [],
+  forms: [],
+  fullscreenElement: null,
+  head: null,
+  hidden: false,
+  images: [],
+  implementation: null,
+  imports: [],
+  inputEncoding: '',
+  links: [],
+  plugins: [],
+  readyState: 'complete',
+  referrer: '',
+  scripts: [],
+  scrollingElement: null,
+  styleSheets: [],
+  visibilityState: 'visible',
+  vlinkColor: '',
+} as any;
 
 describe('Analytics', () => {
-  let analytics;
+  let analytics: Analytics;
 
   beforeEach(() => {
     analytics = new Analytics();
@@ -31,35 +77,35 @@ describe('Analytics', () => {
 
   describe('constructor', () => {
     it('initializes with default values', () => {
-      expect(analytics.enabled).toBe(false);
-      expect(analytics.apiKey).toBe('');
-      expect(analytics.apiHost).toBe('');
-      expect(analytics.userId).toBe(null);
-      expect(analytics.userProperties).toEqual({});
+      expect(analytics.isEnabled).toBe(false);
+      expect(analytics.apiKeyValue).toBe('');
+      expect(analytics.apiHostValue).toBe('');
+      expect(analytics.userIdValue).toBe(null);
+      expect(analytics.userPropertiesValue).toEqual({});
     });
   });
 
   describe('init', () => {
     it('initializes with API key', () => {
       analytics.init({ apiKey: 'test-key', apiHost: 'https://test.com' });
-      expect(analytics.enabled).toBe(true);
-      expect(analytics.apiKey).toBe('test-key');
-      expect(analytics.apiHost).toBe('https://test.com');
+      expect(analytics.isEnabled).toBe(true);
+      expect(analytics.apiKeyValue).toBe('test-key');
+      expect(analytics.apiHostValue).toBe('https://test.com');
     });
 
     it('remains disabled without API key', () => {
       analytics.init({});
-      expect(analytics.enabled).toBe(false);
+      expect(analytics.isEnabled).toBe(false);
     });
 
     it('loads user ID when enabled', () => {
       analytics.init({ apiKey: 'test-key' });
-      expect(analytics.userId).toBeTruthy();
+      expect(analytics.userIdValue).toBeTruthy();
     });
 
     it('does not load user ID when disabled', () => {
       analytics.init({});
-      expect(analytics.userId).toBe(null);
+      expect(analytics.userIdValue).toBe(null);
     });
   });
 
@@ -67,14 +113,14 @@ describe('Analytics', () => {
     it('loads existing user ID from localStorage', () => {
       localStorage.setItem('analytics-user-id', 'user_123');
       analytics.loadUserId();
-      expect(analytics.userId).toBe('user_123');
+      expect(analytics.userIdValue).toBe('user_123');
     });
 
     it('generates new user ID if none exists', () => {
       analytics.loadUserId();
-      expect(analytics.userId).toBeTruthy();
-      expect(analytics.userId).toMatch(/^user_/);
-      expect(localStorage.getItem('analytics-user-id')).toBe(analytics.userId);
+      expect(analytics.userIdValue).toBeTruthy();
+      expect(analytics.userIdValue).toMatch(/^user_/);
+      expect(localStorage.getItem('analytics-user-id')).toBe(analytics.userIdValue);
     });
   });
 
@@ -94,23 +140,23 @@ describe('Analytics', () => {
   describe('identify', () => {
     it('sets user ID and properties', () => {
       analytics.identify('user_123', { name: 'Test User' });
-      expect(analytics.userId).toBe('user_123');
-      expect(analytics.userProperties).toEqual({ name: 'Test User' });
+      expect(analytics.userIdValue).toBe('user_123');
+      expect(analytics.userPropertiesValue).toEqual({ name: 'Test User' });
     });
 
     it('merges properties with existing', () => {
       analytics.identify('user_123', { name: 'Test' });
       analytics.identify('user_123', { email: 'test@example.com' });
-      expect(analytics.userProperties).toEqual({
+      expect(analytics.userPropertiesValue).toEqual({
         name: 'Test',
         email: 'test@example.com',
       });
     });
 
     it('uses existing user ID if none provided', () => {
-      analytics.userId = 'user_456';
-      analytics.identify(null, { name: 'Test' });
-      expect(analytics.userId).toBe('user_456');
+      analytics.identify('user_456', { name: 'Test' });
+      analytics.identify('', { name: 'Test' });
+      expect(analytics.userIdValue).toBe('user_456');
     });
   });
 
@@ -248,41 +294,40 @@ describe('Analytics', () => {
   describe('setUserProperty', () => {
     it('sets user property', () => {
       analytics.setUserProperty('name', 'Test User');
-      expect(analytics.userProperties.name).toBe('Test User');
+      expect(analytics.userPropertiesValue.name).toBe('Test User');
     });
 
     it('overwrites existing property', () => {
       analytics.setUserProperty('name', 'Test');
       analytics.setUserProperty('name', 'Updated');
-      expect(analytics.userProperties.name).toBe('Updated');
+      expect(analytics.userPropertiesValue.name).toBe('Updated');
     });
   });
 
   describe('incrementUserProperty', () => {
     it('increments property from zero', () => {
       analytics.incrementUserProperty('count');
-      expect(analytics.userProperties.count).toBe(1);
+      expect(analytics.userPropertiesValue.count).toBe(1);
     });
 
     it('increments existing property', () => {
-      analytics.userProperties.count = 5;
+      analytics.userPropertiesValue.count = 5;
       analytics.incrementUserProperty('count');
-      expect(analytics.userProperties.count).toBe(6);
+      expect(analytics.userPropertiesValue.count).toBe(6);
     });
 
     it('increments by custom value', () => {
       analytics.incrementUserProperty('count', 5);
-      expect(analytics.userProperties.count).toBe(5);
+      expect(analytics.userPropertiesValue.count).toBe(5);
     });
   });
 
   describe('reset', () => {
     it('resets user ID and properties', () => {
-      analytics.userId = 'user_123';
-      analytics.userProperties = { name: 'Test' };
+      analytics.identify('user_123', { name: 'Test' });
       analytics.reset();
-      expect(analytics.userId).toBe(null);
-      expect(analytics.userProperties).toEqual({});
+      expect(analytics.userIdValue).toBe(null);
+      expect(analytics.userPropertiesValue).toEqual({});
     });
 
     it('removes user ID from localStorage', () => {
@@ -310,8 +355,8 @@ describe('Analytics', () => {
     it('initializes global analytics instance', () => {
       initAnalytics({ apiKey: 'test-key' });
       const analytics = getAnalytics();
-      expect(analytics.enabled).toBe(true);
-      expect(analytics.apiKey).toBe('test-key');
+      expect(analytics.isEnabled).toBe(true);
+      expect(analytics.apiKeyValue).toBe('test-key');
     });
   });
 });

@@ -1,5 +1,5 @@
 // @ts-check
-import { LeftoverTracker } from '../features/pantry/leftoverTracker.js;
+import { LeftoverTracker } from '../features/pantry/leftoverTracker';
 
 describe('LeftoverTracker', () => {
   let tracker;

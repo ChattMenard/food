@@ -1,6 +1,6 @@
 // @ts-check
-import { IngredientVectors } from './ingredientVectors.js';
-import type { Recipe, RecipeRatings } from '../types/index.js';
+import { IngredientVectors } from './ingredientVectors';
+import type { Recipe, RecipeRatings } from '../types/index';
 
 export class RecipeEngine {
   private getRecipes: () => Recipe[];

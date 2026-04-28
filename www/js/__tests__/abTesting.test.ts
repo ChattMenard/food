@@ -3,10 +3,19 @@ import {
   ABTesting,
   getABTesting,
   isFeatureEnabled,
-} from '../utils/abTesting.js';
+} from '../utils/abTesting';
+
+// Extend Window interface for analytics
+declare global {
+  interface Window {
+    analytics?: {
+      track: jest.Mock;
+    };
+  }
+}
 
 describe('abTesting', () => {
-  let abTesting;
+  let abTesting: ABTesting;
 
   beforeEach(() => {
     window.analytics = { track: jest.fn() };
@@ -20,18 +29,18 @@ describe('abTesting', () => {
 
   describe('constructor', () => {
     it('initializes with empty experiments', () => {
-      expect(abTesting.experiments).toBeInstanceOf(Map);
-      expect(abTesting.experiments.size).toBe(0);
+      expect(abTesting.experimentsData).toBeInstanceOf(Map);
+      expect(abTesting.experimentsData.size).toBe(0);
     });
 
     it('initializes with empty user variants', () => {
-      expect(abTesting.userVariants).toBeInstanceOf(Map);
-      expect(abTesting.userVariants.size).toBe(0);
+      expect(abTesting.userVariantsData).toBeInstanceOf(Map);
+      expect(abTesting.userVariantsData.size).toBe(0);
     });
 
     it('generates user ID', () => {
-      expect(abTesting.userId).toBeTruthy();
-      expect(typeof abTesting.userId).toBe('string');
+      expect(abTesting.userIdData).toBeTruthy();
+      expect(typeof abTesting.userIdData).toBe('string');
     });
   });
 
@@ -46,32 +55,32 @@ describe('abTesting', () => {
   describe('registerExperiment', () => {
     it('registers experiment with variants', () => {
       abTesting.registerExperiment('test-exp', ['A', 'B']);
-      expect(abTesting.experiments.has('test-exp')).toBe(true);
-      const experiment = abTesting.experiments.get('test-exp');
+      expect(abTesting.experimentsData.has('test-exp')).toBe(true);
+      const experiment = abTesting.experimentsData.get('test-exp');
       expect(experiment.variants).toEqual(['A', 'B']);
     });
 
     it('sets default weights', () => {
       abTesting.registerExperiment('test-exp', ['A', 'B']);
-      const experiment = abTesting.experiments.get('test-exp');
+      const experiment = abTesting.experimentsData.get('test-exp');
       expect(experiment.weights).toEqual([1, 1]);
     });
 
     it('sets custom weights', () => {
       abTesting.registerExperiment('test-exp', ['A', 'B'], { weights: [2, 1] });
-      const experiment = abTesting.experiments.get('test-exp');
+      const experiment = abTesting.experimentsData.get('test-exp');
       expect(experiment.weights).toEqual([2, 1]);
     });
 
     it('sets enabled by default', () => {
       abTesting.registerExperiment('test-exp', ['A', 'B']);
-      const experiment = abTesting.experiments.get('test-exp');
+      const experiment = abTesting.experimentsData.get('test-exp');
       expect(experiment.enabled).toBe(true);
     });
 
     it('can be disabled', () => {
       abTesting.registerExperiment('test-exp', ['A', 'B'], { enabled: false });
-      const experiment = abTesting.experiments.get('test-exp');
+      const experiment = abTesting.experimentsData.get('test-exp');
       expect(experiment.enabled).toBe(false);
     });
 
@@ -82,7 +91,7 @@ describe('abTesting', () => {
         startDate,
         endDate,
       });
-      const experiment = abTesting.experiments.get('test-exp');
+      const experiment = abTesting.experimentsData.get('test-exp');
       expect(experiment.startDate).toBe(startDate);
       expect(experiment.endDate).toBe(endDate);
     });
@@ -139,7 +148,7 @@ describe('abTesting', () => {
   describe('assignVariant', () => {
     it('assigns variant based on user ID', () => {
       abTesting.registerExperiment('test-exp', ['A', 'B']);
-      const experiment = abTesting.experiments.get('test-exp');
+      const experiment = abTesting.experimentsData.get('test-exp');
       const variant = abTesting.assignVariant('test-exp', experiment);
       expect(['A', 'B']).toContain(variant);
     });
@@ -148,7 +157,7 @@ describe('abTesting', () => {
       abTesting.registerExperiment('test-exp', ['A', 'B'], {
         weights: [10, 0],
       });
-      const experiment = abTesting.experiments.get('test-exp');
+      const experiment = abTesting.experimentsData.get('test-exp');
       const variant = abTesting.assignVariant('test-exp', experiment);
       expect(variant).toBe('A');
     });
@@ -192,7 +201,7 @@ describe('abTesting', () => {
   describe('trackExposure', () => {
     it('tracks exposure to analytics', () => {
       abTesting.trackExposure('test-exp', 'A');
-      expect(window.analytics.track).toHaveBeenCalledWith(
+      expect(window.analytics?.track).toHaveBeenCalledWith(
         'experiment_exposure',
         {
           experiment: 'test-exp',
@@ -211,7 +220,7 @@ describe('abTesting', () => {
   describe('trackConversion', () => {
     it('tracks conversion to analytics', () => {
       abTesting.trackConversion('test-exp', 'A', 'signup');
-      expect(window.analytics.track).toHaveBeenCalledWith(
+      expect(window.analytics?.track).toHaveBeenCalledWith(
         'experiment_conversion',
         {
           experiment: 'test-exp',
@@ -227,7 +236,7 @@ describe('abTesting', () => {
       abTesting.registerExperiment('test-exp', ['A', 'B']);
       abTesting.getVariant('test-exp');
       abTesting.resetVariants();
-      expect(abTesting.userVariants.size).toBe(0);
+      expect(abTesting.userVariantsData.size).toBe(0);
     });
   });
 
@@ -240,9 +249,9 @@ describe('abTesting', () => {
 
     it('registers common experiments', () => {
       const instance = getABTesting();
-      expect(instance.experiments.has('recipe-sorting')).toBe(true);
-      expect(instance.experiments.has('meal-suggestions')).toBe(true);
-      expect(instance.experiments.has('ui-density')).toBe(true);
+      expect(instance.experimentsData.has('recipe-sorting')).toBe(true);
+      expect(instance.experimentsData.has('meal-suggestions')).toBe(true);
+      expect(instance.experimentsData.has('ui-density')).toBe(true);
     });
   });
 

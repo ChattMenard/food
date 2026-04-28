@@ -6,10 +6,10 @@ import {
   triggerMealPlanUpdate,
   triggerPreferencesUpdate,
   triggerMealLogged,
-} from '../utils/autoRefresh.js;
+} from '../utils/autoRefresh';
 
 describe('AutoRefreshManager', () => {
-  let manager;
+  let manager: AutoRefreshManager;
 
   beforeEach(() => {
     manager = new AutoRefreshManager();
@@ -219,7 +219,7 @@ describe('AutoRefreshManager', () => {
       manager.setupCustomEvents();
 
       window.dispatchEvent(
-        new CustomEvent('pantry-updated', { detail: { data: 'test' } })
+        new CustomEvent('pantry-updated', { detail: { data: 'test' } }),
       );
       expect(callback).toHaveBeenCalledWith({ data: 'test' });
     });
@@ -235,7 +235,7 @@ describe('AutoRefreshManager', () => {
     });
 
     it('sets up interval to fetch and trigger', async () => {
-      const fetchFn = jest.fn().mockResolvedValue({ data: 'fresh' });
+      const fetchFn = jest.fn().mockImplementation(() => Promise.resolve({ data: 'fresh' }));
       const callback = jest.fn();
       manager.on('test', callback);
 

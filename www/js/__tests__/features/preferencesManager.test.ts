@@ -1,5 +1,5 @@
 // @ts-check
-import { PreferencesManager } from '../../features/preferencesManager.js;
+import { PreferencesManager } from '../../features/preferencesManager';
 
 describe('PreferencesManager', () => {
   let prefs;
@@ -50,7 +50,7 @@ describe('PreferencesManager', () => {
       expect(mockSavePreferencesState).toHaveBeenCalledWith(
         expect.objectContaining({
           diets: expect.arrayContaining(['vegetarian', 'keto'])
-        })
+        }),
       );
     });
 
@@ -63,7 +63,7 @@ describe('PreferencesManager', () => {
       expect(mockSavePreferencesState).toHaveBeenCalledWith(
         expect.objectContaining({
           diets: expect.arrayContaining(['vegetarian', 'keto', 'paleo'])
-        })
+        }),
       );
     });
 
@@ -71,7 +71,7 @@ describe('PreferencesManager', () => {
       document.getElementById('people-count').value = '6';
       prefs.updatePreferences();
       expect(mockSavePreferencesState).toHaveBeenCalledWith(
-        expect.objectContaining({ people: 6 })
+        expect.objectContaining({ people: 6 }),
       );
     });
 
@@ -79,14 +79,14 @@ describe('PreferencesManager', () => {
       document.getElementById('max-time').value = '45';
       prefs.updatePreferences();
       expect(mockSavePreferencesState).toHaveBeenCalledWith(
-        expect.objectContaining({ maxTime: 45 })
+        expect.objectContaining({ maxTime: 45 }),
       );
     });
 
     it('should set primary diet from first checked', () => {
       prefs.updatePreferences();
       expect(mockSavePreferencesState).toHaveBeenCalledWith(
-        expect.objectContaining({ diet: 'vegetarian' })
+        expect.objectContaining({ diet: 'vegetarian' }),
       );
     });
 
@@ -95,7 +95,7 @@ describe('PreferencesManager', () => {
       document.getElementById('diet-keto').checked = false;
       prefs.updatePreferences();
       expect(mockSavePreferencesState).toHaveBeenCalledWith(
-        expect.objectContaining({ diet: 'none' })
+        expect.objectContaining({ diet: 'none' }),
       );
     });
 

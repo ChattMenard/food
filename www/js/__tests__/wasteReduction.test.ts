@@ -2,7 +2,7 @@
 import {
   WasteReductionManager,
   getWasteReductionManager,
-} from '../features/pantry/wasteReduction.js;
+} from '../features/pantry/wasteReduction';
 
 describe('WasteReductionManager', () => {
   let manager;

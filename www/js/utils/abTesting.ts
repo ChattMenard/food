@@ -5,10 +5,27 @@
  */
 
 export class ABTesting {
+  private experiments: Map<string, any>;
+  private userVariants: Map<string, any>;
+  private userId: string;
+
   constructor() {
     this.experiments = new Map();
     this.userVariants = new Map();
     this.userId = this.getUserId();
+  }
+
+  // Expose properties for testing
+  get experimentsData(): Map<string, any> {
+    return this.experiments;
+  }
+
+  get userVariantsData(): Map<string, any> {
+    return this.userVariants;
+  }
+
+  get userIdData(): string {
+    return this.userId;
   }
 
   /**
@@ -32,7 +49,7 @@ export class ABTesting {
    * @param {Array} variants - Variant options
    * @param {Object} config - Experiment configuration
    */
-  registerExperiment(name, variants, config = {}) {
+  registerExperiment(name: string, variants: any[], config: any = {}) {
     this.experiments.set(name, {
       variants,
       weights: config.weights || variants.map(() => 1),
@@ -47,7 +64,7 @@ export class ABTesting {
    * @param {string} experimentName - Experiment name
    * @returns {string|null} Variant name
    */
-  getVariant(experimentName) {
+  getVariant(experimentName: string) {
     const experiment = this.experiments.get(experimentName);
 
     if (!experiment || !experiment.enabled) {
@@ -117,7 +134,17 @@ export class ABTesting {
    * @param {string} variant - Variant name
    * @returns {boolean}
    */
-  isInVariant(experimentName, variant) {
+  isInVariant(experimentName: string, variant: string): boolean {
+    return this.getVariant(experimentName) === variant;
+  }
+
+  /**
+   * Set variant for user
+   * @param {string} experimentName - Experiment name
+   * @param {string} variant - Variant name
+   * @returns {boolean}
+   */
+  setVariant(experimentName: string, variant: string): boolean {
     return this.getVariant(experimentName) === variant;
   }
 
@@ -126,7 +153,7 @@ export class ABTesting {
    * @param {string} experimentName - Experiment name
    * @param {string} variant - Variant name
    */
-  trackExposure(experimentName, variant) {
+  trackExposure(experimentName: string, variant: string) {
     // Send to analytics
     if (window.analytics) {
       window.analytics.track('experiment_exposure', {
@@ -142,7 +169,7 @@ export class ABTesting {
    * @param {string} variant - Variant name
    * @param {string} goal - Conversion goal
    */
-  trackConversion(experimentName, variant, goal) {
+  trackConversion(experimentName: string, variant: string, goal: string) {
     if (window.analytics) {
       window.analytics.track('experiment_conversion', {
         experiment: experimentName,
@@ -161,13 +188,13 @@ export class ABTesting {
 }
 
 // Global A/B testing instance
-let globalABTesting = null;
+let globalABTesting: ABTesting | null = null;
 
 /**
  * Get or create the global A/B testing instance
  * @returns {ABTesting}
  */
-export function getABTesting() {
+export function getABTesting(): ABTesting {
   if (!globalABTesting) {
     globalABTesting = new ABTesting();
 
@@ -205,7 +232,7 @@ export function getABTesting() {
  * @param {string} featureName - Feature name
  * @returns {boolean}
  */
-export function isFeatureEnabled(featureName) {
+export function isFeatureEnabled(featureName: string): boolean {
   const abTesting = getABTesting();
   const variant = abTesting.getVariant(featureName);
   return variant !== null && variant !== 'control';

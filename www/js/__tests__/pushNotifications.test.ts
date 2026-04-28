@@ -4,12 +4,12 @@
  * Tests for notification scheduling and permission handling
  */
 
-import db from '../data/db.js;
+import db from '../data/db';
 import {
   PushNotificationManager,
   NOTIFICATION_TYPES,
   PERMISSION,
-} from '../utils/pushNotifications.js;
+} from '../utils/pushNotifications';
 
 describe('PushNotificationManager', () => {
   let notificationManager;

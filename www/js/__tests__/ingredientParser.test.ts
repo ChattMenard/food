@@ -1,6 +1,6 @@
 // @ts-check
 // Test for the ingredient parser utility
-import { parseIngredients } from '../utils/ingredientParser.js';
+import { parseIngredients } from '../utils/ingredientParser';
 
 describe('Ingredient Parser', () => {
   describe('parseIngredients', () => {

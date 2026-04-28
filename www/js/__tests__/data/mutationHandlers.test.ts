@@ -1,21 +1,32 @@
 // @ts-check
-import { handleAddItem, handleUpdateItem, handleDeleteItem, registerAllHandlers } from '../../data/mutationHandlers.js;
+import { handleAddItem, handleUpdateItem, handleDeleteItem, registerAllHandlers } from '../../data/mutationHandlers';
 
-jest.mock('../../data/db.ts, () => ({
+jest.mock('../../data/db', () => ({
   ready: Promise.resolve(),
-  add: jest.fn().mockResolvedValue(),
+  put: jest.fn().mockResolvedValue(undefined),
   get: jest.fn().mockResolvedValue(null),
-  put: jest.fn().mockResolvedValue(),
-  delete: jest.fn().mockResolvedValue(),
-  getPantry: jest.fn().mockResolvedValue([])
+  delete: jest.fn().mockResolvedValue(undefined),
+  setPantry: jest.fn().mockResolvedValue(undefined),
+  getPantry: jest.fn().mockImplementation(() => Promise.resolve([]))
 }));
 
-jest.mock('../../core/appState.ts, () => ({
-  savePantryState: jest.fn().mockResolvedValue()
+jest.mock('../../core/appState', () => ({
+  savePantryState: jest.fn().mockImplementation(() => Promise.resolve(undefined))
 }));
 
-import db from '../../data/db.js;
-import { savePantryState } from '../../core/appState.js;
+const mockDb = {
+  ready: Promise.resolve(),
+  put: jest.fn().mockResolvedValue(undefined),
+  get: jest.fn().mockResolvedValue(null),
+  delete: jest.fn().mockResolvedValue(undefined),
+  setPantry: jest.fn().mockResolvedValue(undefined),
+  getPantry: jest.fn().mockImplementation(() => Promise.resolve([]))
+};
+
+jest.mock('../../data/db', () => mockDb);
+
+import db from '../../data/db';
+import { savePantryState } from '../../core/appState';
 
 describe('MutationHandlers', () => {
   beforeEach(() => {

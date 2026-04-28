@@ -7,6 +7,12 @@
 // Placeholder for analytics integration
 // In production, replace with actual PostHog or Plausible SDK
 export class Analytics {
+  private enabled: boolean;
+  private apiKey: string;
+  private apiHost: string;
+  private userId: string | null;
+  private userProperties: Record<string, any>;
+
   constructor() {
     this.enabled = false;
     this.apiKey = '';
@@ -15,11 +21,32 @@ export class Analytics {
     this.userProperties = {};
   }
 
+  // Expose properties for testing
+  get isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  get apiKeyValue(): string {
+    return this.apiKey;
+  }
+
+  get apiHostValue(): string {
+    return this.apiHost;
+  }
+
+  get userIdValue(): string | null {
+    return this.userId;
+  }
+
+  get userPropertiesValue(): Record<string, any> {
+    return this.userProperties;
+  }
+
   /**
    * Initialize analytics
    * @param {Object} config - Configuration object
    */
-  init(config = {}) {
+  init(config: any = {}) {
     this.apiKey = config.apiKey || '';
     this.apiHost = config.apiHost || '';
     this.enabled = !!this.apiKey;
@@ -54,7 +81,7 @@ export class Analytics {
    * Generate a random user ID
    * @returns {string} User ID
    */
-  generateUserId() {
+  generateUserId(): string {
     return 'user_' + Math.random().toString(36).substr(2, 9);
   }
 
@@ -63,7 +90,7 @@ export class Analytics {
    * @param {string} userId - User ID
    * @param {Object} properties - User properties
    */
-  identify(userId, properties = {}) {
+  identify(userId: string, properties: Record<string, any> = {}) {
     this.userId = userId || this.userId;
     this.userProperties = { ...this.userProperties, ...properties };
 
@@ -79,7 +106,7 @@ export class Analytics {
    * @param {string} eventName - Event name
    * @param {Object} properties - Event properties
    */
-  track(eventName, properties = {}) {
+  track(eventName: string, properties: Record<string, any> = {}) {
     if (!this.enabled) {
       console.log('[Analytics] Track:', eventName, properties);
       return;
@@ -97,7 +124,7 @@ export class Analytics {
    * Track page view
    * @param {string} path - Page path
    */
-  pageView(path = window.location.pathname) {
+  pageView(path: string = window.location.pathname) {
     this.track('page_view', {
       path,
       url: window.location.href,
@@ -109,7 +136,7 @@ export class Analytics {
    * Track pantry item added
    * @param {Object} item - Pantry item
    */
-  trackPantryItemAdded(item) {
+  trackPantryItemAdded(item: { name: string; category: string; quantity: number }) {
     this.track('pantry_item_added', {
       item_name: item.name,
       category: item.category,
@@ -121,7 +148,7 @@ export class Analytics {
    * Track meal planned
    * @param {Object} meal - Meal object
    */
-  trackMealPlanned(meal) {
+  trackMealPlanned(meal: { recipeId: number; recipeName: string; date: string; mealType: string }) {
     this.track('meal_planned', {
       recipe_id: meal.recipeId,
       recipe_name: meal.recipeName,
@@ -135,7 +162,7 @@ export class Analytics {
    * @param {number} recipeId - Recipe ID
    * @param {string} recipeName - Recipe name
    */
-  trackRecipeViewed(recipeId, recipeName) {
+  trackRecipeViewed(recipeId: number, recipeName: string) {
     this.track('recipe_viewed', {
       recipe_id: recipeId,
       recipe_name: recipeName,
@@ -147,7 +174,7 @@ export class Analytics {
    * @param {number} recipeId - Recipe ID
    * @param {string} recipeName - Recipe name
    */
-  trackRecipeCooked(recipeId, recipeName) {
+  trackRecipeCooked(recipeId: number, recipeName: string) {
     this.track('recipe_cooked', {
       recipe_id: recipeId,
       recipe_name: recipeName,
@@ -158,7 +185,7 @@ export class Analytics {
    * Track shopping list created
    * @param {number} itemCount - Number of items
    */
-  trackShoppingListCreated(itemCount) {
+  trackShoppingListCreated(itemCount: number) {
     this.track('shopping_list_created', {
       item_count: itemCount,
     });
@@ -168,7 +195,7 @@ export class Analytics {
    * Track AI suggestion used
    * @param {string} suggestionType - Type of suggestion
    */
-  trackAISuggestionUsed(suggestionType) {
+  trackAISuggestionUsed(suggestionType: string) {
     this.track('ai_suggestion_used', {
       suggestion_type: suggestionType,
     });
@@ -179,7 +206,7 @@ export class Analytics {
    * @param {string} query - Search query
    * @param {number} resultCount - Number of results
    */
-  trackSearch(query, resultCount) {
+  trackSearch(query: string, resultCount: number) {
     this.track('search_performed', {
       query,
       result_count: resultCount,
@@ -191,7 +218,7 @@ export class Analytics {
    * @param {string} filterType - Filter type
    * @param {string} filterValue - Filter value
    */
-  trackFilterApplied(filterType, filterValue) {
+  trackFilterApplied(filterType: string, filterValue: string) {
     this.track('filter_applied', {
       filter_type: filterType,
       filter_value: filterValue,
@@ -203,7 +230,7 @@ export class Analytics {
    * @param {string} key - Property key
    * @param {*} value - Property value
    */
-  setUserProperty(key, value) {
+  setUserProperty(key: string, value: any) {
     this.userProperties[key] = value;
 
     if (this.enabled) {
@@ -251,7 +278,7 @@ export class Analytics {
 }
 
 // Global analytics instance
-let globalAnalytics = null;
+let globalAnalytics: Analytics | null = null;
 
 /**
  * Get or create the global analytics instance
@@ -268,7 +295,7 @@ export function getAnalytics() {
  * Initialize analytics
  * @param {Object} config - Configuration
  */
-export function initAnalytics(config) {
+export function initAnalytics(config: any) {
   const analytics = getAnalytics();
   analytics.init(config);
 }

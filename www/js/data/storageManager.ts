@@ -4,7 +4,7 @@
  * Handles IndexedDB quota management and graceful error handling
  */
 
-import { log } from '../utils/logger.js';
+import { log } from '../utils/logger';
 
 /**
  * Check available storage space

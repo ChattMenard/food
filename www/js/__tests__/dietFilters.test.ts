@@ -6,7 +6,7 @@ import {
   getAllergensInRecipe,
   passesCuisine,
   normalizeCuisine,
-} from '../utils/dietFilters.js;
+} from '../utils/dietFilters';
 
 describe('dietFilters', () => {
   const mockRecipe = {

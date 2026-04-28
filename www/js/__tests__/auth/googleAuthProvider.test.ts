@@ -1,12 +1,12 @@
 // @ts-check
-import { initializeGoogleAuth, signInWithGoogle, signOutFromGoogle, refreshGoogleSession } from '../../auth/googleAuthProvider.js;
+import { initializeGoogleAuth, signInWithGoogle, signOutFromGoogle, refreshGoogleSession } from '../../auth/googleAuthProvider';
 
 jest.mock('@codetrix-studio/capacitor-google-auth', () => ({
   GoogleAuth: {
     initialize: jest.fn().mockResolvedValue({ success: true }),
     signIn: jest.fn().mockResolvedValue({ name: 'Test User', email: 'test@example.com', id: 'google-123' }),
-    signOut: jest.fn().mockResolvedValue(),
-    refresh: jest.fn().mockResolvedValue({ token: 'new-token' })
+    signOut: jest.fn().mockResolvedValue(undefined),
+    refresh: jest.fn().mockImplementation(() => Promise.resolve({ token: 'new-token' }))
   }
 }));
 

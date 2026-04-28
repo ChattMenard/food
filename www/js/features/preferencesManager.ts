@@ -1,5 +1,5 @@
 // @ts-check
-import type { UserPreferences } from '../types/index.js';
+import type { UserPreferences } from '../types/index';
 
 export class PreferencesManager {
   private getPreferences: () => UserPreferences;

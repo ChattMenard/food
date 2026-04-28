@@ -1,9 +1,9 @@
-import { normalizeCuisine } from '../utils/dietFilters.js';
-import { addImagesToRecipes } from '../advanced/recipeImages.js';
-import { RecipeEngine } from '../logic/recipeEngine.js';
-import log from '../utils/logger.js';
-import { SearchIndex } from '../logic/searchIndex.js';
-import type { Recipe, Ingredient, NutritionData } from '../types/index.js';
+import { normalizeCuisine } from '../utils/dietFilters';
+import { addImagesToRecipes } from '../advanced/recipeImages';
+import { RecipeEngine } from '../logic/recipeEngine';
+import log from '../utils/logger';
+import { SearchIndex } from '../logic/searchIndex';
+import type { Recipe, Ingredient, NutritionData } from '../types/index';
 
 // @ts-ignore
 const Capacitor = (globalThis as any).Capacitor;

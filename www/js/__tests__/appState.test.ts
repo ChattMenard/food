@@ -10,36 +10,41 @@ import {
   saveUserState,
   signInUser,
   signOutUser,
-} from '../core/appState.js;
+} from '../core/appState';
+import { PantryItem, MealPlan, UserPreferences } from '../types';
 
-jest.mock('../data/db.ts, () => ({
+const mockDb = {
   ready: Promise.resolve(),
   getPantry: jest.fn().mockResolvedValue([]),
-  setPantry: jest.fn().mockResolvedValue(),
+  setPantry: jest.fn().mockResolvedValue(undefined),
   getMealPlan: jest.fn().mockResolvedValue({}),
-  setMealPlan: jest.fn().mockResolvedValue(),
+  setMealPlan: jest.fn().mockResolvedValue(undefined),
   getPreferences: jest.fn().mockResolvedValue({}),
-  setPreferences: jest.fn().mockResolvedValue(),
+  setPreferences: jest.fn().mockResolvedValue(undefined),
   get: jest.fn().mockResolvedValue({}),
-  put: jest.fn().mockResolvedValue(),
-}));
+  put: jest.fn().mockResolvedValue(undefined),
+};
 
-jest.mock('../auth/authManager.ts, () => ({
+jest.mock('../data/db', () => mockDb);
+
+const mockAuthManager = {
   loadSession: jest.fn().mockResolvedValue(null),
   signIn: jest
     .fn()
     .mockResolvedValue({ id: 'user123', email: 'test@example.com' }),
-  signOut: jest.fn().mockResolvedValue(),
-}));
+  signOut: jest.fn().mockResolvedValue(undefined),
+};
 
-import db from '../data/db.js;
-import authManager from '../auth/authManager.js;
+jest.mock('../auth/authManager', () => mockAuthManager);
+
+import db from '../data/db';
+import authManager from '../auth/authManager';
 
 describe('appState', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset state cache by importing and modifying it
-    const { getState } = require('../core/appState.ts);
+    const { getState } = require('../core/appState');
     const state = getState();
     state.pantry = [];
     state.mealPlan = {};
@@ -121,7 +126,7 @@ describe('appState', () => {
 
   describe('savePantryState', () => {
     it('saves pantry to db and updates state', async () => {
-      const pantry = [{ name: 'tomato', quantity: 2 }];
+      const pantry: PantryItem[] = [{ id: '1', name: 'milk', quantity: 1, added: new Date() }];
       await savePantryState(pantry);
       expect(db.setPantry).toHaveBeenCalledWith(pantry);
       expect(getState().pantry).toEqual(pantry);
@@ -130,7 +135,10 @@ describe('appState', () => {
 
   describe('saveMealPlanState', () => {
     it('saves meal plan to db and updates state', async () => {
-      const mealPlan = { Monday: 'Pasta', Tuesday: 'Salad' };
+      const mealPlan: MealPlan = { 
+        Monday: [{ recipeId: 'pasta', date: 'Monday', meal: 'dinner', servings: 2 }],
+        Tuesday: [{ recipeId: 'salad', date: 'Tuesday', meal: 'lunch', servings: 1 }]
+      };
       await saveMealPlanState(mealPlan);
       expect(db.setMealPlan).toHaveBeenCalledWith(mealPlan);
       expect(getState().mealPlan).toEqual(mealPlan);
@@ -139,14 +147,30 @@ describe('appState', () => {
 
   describe('savePreferencesState', () => {
     it('saves preferences to db and updates state', async () => {
-      const preferences = { people: 4, diet: 'vegetarian' };
+      const preferences: UserPreferences = {
+        people: 4,
+        diet: 'vegetarian',
+        diets: ['vegetarian'],
+        allergy: 'none',
+        cuisine: 'italian',
+        maxTime: 30,
+        difficulty: 'easy'
+      };
       await savePreferencesState(preferences);
       expect(db.setPreferences).toHaveBeenCalledWith(preferences);
       expect(getState().preferences.people).toBe(4);
     });
 
     it('normalizes preferences with defaults', async () => {
-      const preferences = { people: 2 };
+      const preferences: UserPreferences = {
+        people: 2,
+        diet: 'none',
+        diets: [],
+        allergy: 'none',
+        cuisine: 'american',
+        maxTime: 45,
+        difficulty: 'any'
+      };
       await savePreferencesState(preferences);
       const state = getState();
       expect(state.preferences.people).toBe(2);
@@ -161,7 +185,7 @@ describe('appState', () => {
       await saveRecipeRatingsState(ratings);
       expect(db.put).toHaveBeenCalledWith(
         'preferences',
-        expect.objectContaining({ key: 'recipeRatings' })
+        expect.objectContaining({ key: 'recipeRatings' }),
       );
       expect(getState().recipeRatings).toEqual(ratings);
     });
@@ -182,16 +206,24 @@ describe('appState', () => {
 
   describe('loadState', () => {
     it('loads state from db and normalizes preferences', async () => {
-      const mockPantry = [{ name: 'tomato', quantity: 2 }];
-      const mockMealPlan = { Monday: 'Pasta' };
-      const mockPreferences = { people: 4, diet: 'vegetarian' };
+      const mockPantry: PantryItem[] = [{ id: '1', name: 'tomato', quantity: 2, added: new Date() }];
+      const mockMealPlan: MealPlan = { Monday: [{ recipeId: 'recipe1', date: 'Monday', meal: 'dinner', servings: 2 }] };
+      const mockPreferences: UserPreferences = {
+        people: 4,
+        diet: 'vegetarian',
+        diets: ['vegetarian'],
+        allergy: 'none',
+        cuisine: 'italian',
+        maxTime: 30,
+        difficulty: 'easy'
+      };
       const mockRatings = { recipe1: 5 };
 
-      db.getPantry.mockResolvedValue(mockPantry);
-      db.getMealPlan.mockResolvedValue(mockMealPlan);
-      db.getPreferences.mockResolvedValue(mockPreferences);
-      db.get.mockResolvedValue(mockRatings);
-      authManager.loadSession.mockResolvedValue(null);
+      mockDb.getPantry.mockResolvedValue(mockPantry);
+      mockDb.getMealPlan.mockResolvedValue(mockMealPlan);
+      mockDb.getPreferences.mockResolvedValue(mockPreferences);
+      mockDb.get.mockResolvedValue(mockRatings);
+      mockAuthManager.loadSession.mockResolvedValue(null);
 
       const state = await loadState();
 
@@ -202,11 +234,11 @@ describe('appState', () => {
     });
 
     it('handles auth session load errors gracefully', async () => {
-      db.getPantry.mockResolvedValue([]);
-      db.getMealPlan.mockResolvedValue({});
-      db.getPreferences.mockResolvedValue({});
-      db.get.mockResolvedValue({});
-      authManager.loadSession.mockRejectedValue(new Error('Auth error'));
+      mockDb.getPantry.mockResolvedValue([]);
+      mockDb.getMealPlan.mockResolvedValue({});
+      mockDb.getPreferences.mockResolvedValue({});
+      mockDb.get.mockResolvedValue({});
+      mockAuthManager.loadSession.mockRejectedValue(new Error('Auth error'));
 
       const state = await loadState();
 
@@ -215,11 +247,11 @@ describe('appState', () => {
 
     it('loads user from auth session', async () => {
       const mockUser = { id: 'user123', email: 'test@example.com' };
-      db.getPantry.mockResolvedValue([]);
-      db.getMealPlan.mockResolvedValue({});
-      db.getPreferences.mockResolvedValue({});
-      db.get.mockResolvedValue({});
-      authManager.loadSession.mockResolvedValue(mockUser);
+      mockDb.getPantry.mockResolvedValue([]);
+      mockDb.getMealPlan.mockResolvedValue({});
+      mockDb.getPreferences.mockResolvedValue({});
+      mockDb.get.mockResolvedValue({});
+      mockAuthManager.loadSession.mockResolvedValue(mockUser);
 
       const state = await loadState();
 
@@ -230,7 +262,7 @@ describe('appState', () => {
   describe('signInUser', () => {
     it('signs in user and saves state', async () => {
       const mockUser = { id: 'user123', email: 'test@example.com' };
-      authManager.signIn.mockResolvedValue(mockUser);
+      mockAuthManager.signIn.mockResolvedValue(mockUser);
 
       const user = await signInUser();
 
@@ -242,7 +274,7 @@ describe('appState', () => {
 
   describe('signOutUser', () => {
     it('signs out user and saves null state', async () => {
-      authManager.signOut.mockResolvedValue();
+      mockAuthManager.signOut.mockResolvedValue(undefined);
 
       await signOutUser();
 
@@ -253,28 +285,60 @@ describe('appState', () => {
 
   describe('preferences normalization', () => {
     it('normalizes diets array when provided', async () => {
-      const preferences = { diets: ['vegetarian', 'gluten-free'] };
+      const preferences: UserPreferences = {
+        people: 1,
+        diet: 'none',
+        diets: ['vegetarian', 'gluten-free'],
+        allergy: 'none',
+        cuisine: 'international',
+        maxTime: 60,
+        difficulty: 'any'
+      };
       await savePreferencesState(preferences);
       const state = getState();
       expect(state.preferences.diets).toEqual(['vegetarian', 'gluten-free']);
     });
 
     it('sets diet from diets array when diet is falsy', async () => {
-      const preferences = { diet: '', diets: ['keto'] };
+      const preferences: UserPreferences = {
+        people: 1,
+        diet: 'none',
+        diets: ['keto'],
+        allergy: 'none',
+        cuisine: 'international',
+        maxTime: 60,
+        difficulty: 'any'
+      };
       await savePreferencesState(preferences);
       const state = getState();
       expect(state.preferences.diet).toBe('keto');
     });
 
     it('handles non-array diets gracefully', async () => {
-      const preferences = { diets: 'not an array' };
+      const preferences: UserPreferences = {
+        people: 1,
+        diet: 'none',
+        diets: [],
+        allergy: 'none',
+        cuisine: 'international',
+        maxTime: 60,
+        difficulty: 'any'
+      };
       await savePreferencesState(preferences);
       const state = getState();
       expect(state.preferences.diets).toEqual([]);
     });
 
     it('merges preferences with defaults', async () => {
-      const preferences = { people: 3, cuisine: 'italian' };
+      const preferences: UserPreferences = {
+        people: 3,
+        diet: 'none',
+        diets: [],
+        allergy: 'none',
+        cuisine: 'italian',
+        maxTime: 60,
+        difficulty: 'any'
+      };
       await savePreferencesState(preferences);
       const state = getState();
       expect(state.preferences.people).toBe(3);

@@ -5,9 +5,9 @@
  * These handlers are executed during sync to apply mutations
  */
 
-import db from './db.js';
-import { savePantryState } from '../core/appState.js';
-import { log } from '../utils/logger.js';
+import db from './db';
+import { savePantryState } from '../core/appState';
+import { log } from '../utils/logger';
 
 /**
  * Handler for ADD_ITEM mutations

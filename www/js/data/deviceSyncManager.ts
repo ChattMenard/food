@@ -4,8 +4,8 @@
  * Last-write-wins strategy with vector clock tracking
  */
 
-import { log } from '../utils/logger.js';
-import db from './db.js';
+import { log } from '../utils/logger';
+import db from './db';
 
 type ConflictStrategy = 'last-write-wins' | 'merge-arrays' | 'max-value' | 'min-value' | 'manual';
 

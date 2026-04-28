@@ -1,13 +1,13 @@
 // @ts-check
-import { MealPlanTemplates } from '../../../features/plan/mealPlanTemplates.js;
+import { MealPlanTemplates } from '../../../features/plan/mealPlanTemplates';
 
-jest.mock('../../../data/db.ts, () => ({
+jest.mock('../../../data/db', () => ({
   ready: Promise.resolve(),
   get: jest.fn(),
-  put: jest.fn().mockResolvedValue()
+  put: jest.fn().mockImplementation(() => Promise.resolve())
 }));
 
-import db from '../../../data/db.js;
+import db from '../../../data/db';
 
 describe('MealPlanTemplates', () => {
   let templates;
@@ -21,7 +21,7 @@ describe('MealPlanTemplates', () => {
     jest.clearAllMocks();
     mockGetMealPlan = jest.fn();
     mockSetMealPlan = jest.fn();
-    mockPersistMealPlan = jest.fn().mockResolvedValue();
+    mockPersistMealPlan = jest.fn().mockImplementation(() => Promise.resolve());
     mockGetRecipes = jest.fn();
     mockAnnounce = jest.fn();
 

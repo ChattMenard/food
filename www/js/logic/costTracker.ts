@@ -3,8 +3,8 @@
  * Tracks ingredient costs and provides budget optimization suggestions
  */
 
-import db from '../data/db.js';
-import type { Ingredient } from '../types/index.js';
+import db from '../data/db';
+import type { Ingredient } from '../types/index';
 
 export interface CostData {
   cost: number;

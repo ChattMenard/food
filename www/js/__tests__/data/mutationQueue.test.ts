@@ -1,16 +1,16 @@
 // @ts-check
-import { enqueue, getPending, markSynced, markFailed, incrementRetry } from '../../data/mutationQueue.js;
+import { enqueue, getPending, markSynced, markFailed, incrementRetry } from '../../data/mutationQueue';
 
-jest.mock('../../data/db.ts, () => ({
+jest.mock('../../data/db', () => ({
   ready: Promise.resolve(),
   addMutation: jest.fn().mockResolvedValue(),
   getPendingMutations: jest.fn().mockResolvedValue([]),
   markMutationSynced: jest.fn().mockResolvedValue(),
   markMutationFailed: jest.fn().mockResolvedValue(),
-  incrementMutationRetry: jest.fn().mockResolvedValue(1)
+  incrementMutationRetry: jest.fn().mockImplementation(() => Promise.resolve(1))
 }));
 
-import db from '../../data/db.js;
+import db from '../../data/db';
 
 describe('MutationQueue', () => {
   let mockUUID;

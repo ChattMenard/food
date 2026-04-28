@@ -1,5 +1,5 @@
 // @ts-check
-import { RecipeEngine } from '../logic/recipeEngine.js;
+import { RecipeEngine } from '../logic/recipeEngine';
 
 describe('RecipeEngine', () => {
   let engine;

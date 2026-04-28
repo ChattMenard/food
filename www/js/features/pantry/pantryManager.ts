@@ -1,6 +1,6 @@
 // @ts-check
-import { parseIngredients } from '../../utils/ingredientParser.js';
-import type { PantryItem } from '../../types/index.js';
+import { parseIngredients } from '../../utils/ingredientParser';
+import type { PantryItem } from '../../types/index';
 
 const INGREDIENT_CATEGORIES: Record<string, string[]> = {
     'Produce': ['lettuce', 'spinach', 'kale', 'cabbage', 'broccoli', 'carrots', 'potatoes', 'onions', 'garlic', 'tomatoes', 'peppers', 'cucumber', 'zucchini', 'bananas', 'apples', 'oranges', 'berries', 'mushrooms', 'avocado', 'lemon', 'lime', 'herbs', 'parsley', 'cilantro', 'basil', 'thyme', 'rosemary'],

@@ -1,5 +1,5 @@
 // @ts-check
-import db from '../data/db.js;
+import db from '../data/db';
 
 describe('PantryDB', () => {
   beforeAll(async () => {

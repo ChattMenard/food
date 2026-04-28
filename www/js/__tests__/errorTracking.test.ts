@@ -3,7 +3,7 @@ import {
   ErrorTracking,
   getErrorTracking,
   initErrorTracking,
-} from '../utils/errorTracking.js;
+} from '../utils/errorTracking';
 
 describe('ErrorTracking', () => {
   let tracker;
