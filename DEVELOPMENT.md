@@ -45,6 +45,33 @@ export JAVA_HOME=/custom/path/to/jdk
 
 The deploy script (`scripts/deploy-android.sh`) uses these variables with fallback defaults.
 
+## AI Features & Secure API Integration
+
+All AI features (suggestions, meal planning, chat) communicate through a **secure backend proxy** that you deploy. The Gemini API key is **never exposed to the client**.
+
+**Quick Start:**
+
+```bash
+# 1. Deploy the proxy to Google Cloud
+gcloud functions deploy aiProxy \
+  --runtime nodejs20 \
+  --trigger-http \
+  --allow-unauthenticated \
+  --set-env-vars GEMINI_API_KEY=$YOUR_ACTUAL_KEY \
+  --source=backend/ \
+  --entry-point=aiProxy
+
+# 2. Copy the function URL and add to .env.local
+VITE_AI_PROXY_URL=https://us-central1-your-project.cloudfunctions.net/aiProxy
+
+# 3. Restart the dev server - AI features are now available
+npm start
+```
+
+**Without AI Proxy:** The app still works fully with offline recipe matching. AI features gracefully degrade.
+
+**Security Details:** See [SECURITY.md](SECURITY.md) for architecture, best practices, and testing.
+
 ## Testing Strategy
 
 This project uses **Jest for unit/integration testing** and **Playwright for end-to-end testing**.

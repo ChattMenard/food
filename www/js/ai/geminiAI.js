@@ -1,10 +1,15 @@
-import { GEMINI_API_KEY } from '../utils/config.js';
 import { RecipeEngine } from '../logic/recipeEngine.js';
 import { IngredientVectors } from '../logic/ingredientVectors.js';
 import { aiCache } from '../utils/cacheManager.js';
 
-const GEMINI_API_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+// Backend proxy endpoint - set this via environment variable or config
+// Example: https://your-cloud-function-url/aiProxy
+const AI_PROXY_URL = import.meta.env.VITE_AI_PROXY_URL || 
+  (typeof window !== 'undefined' && window.AI_PROXY_URL) || 
+  'http://localhost:3001/ai';
+
+// Fallback: If no proxy is configured, AI features will be disabled
+const AI_ENABLED = !!AI_PROXY_URL && AI_PROXY_URL !== 'http://localhost:3001/ai';
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -166,6 +171,12 @@ export class GeminiAI {
   async generateAISuggestions() {
     if (this.isLoading) return null;
 
+    if (!AI_ENABLED) {
+      this.announce('AI features not configured. Using offline suggestions.');
+      const pantry = this.getPantry();
+      return this.getOfflineSuggestions(pantry);
+    }
+
     const pantry = this.getPantry();
     if (pantry.length === 0) {
       this.announce('Add ingredients to your pantry first for AI suggestions');
@@ -242,33 +253,17 @@ Return ONLY the JSON, no other text.`;
       }
 
       this.recordRequest();
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(AI_PROXY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          },
-        }),
+        body: JSON.stringify({ prompt }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || 'Failed to get AI suggestions');
+        throw new Error(error.error || 'Failed to get AI suggestions');
       }
 
       const data = await response.json();
@@ -311,6 +306,11 @@ Return ONLY the JSON, no other text.`;
 
   async getSmartMealPlan() {
     if (this.isLoading) return null;
+
+    if (!AI_ENABLED) {
+      this.announce('AI features not configured. Cannot generate meal plan.');
+      return null;
+    }
 
     const pantry = this.getPantry();
     if (pantry.length === 0) {
@@ -385,33 +385,17 @@ Return ONLY the JSON, no other text.`;
       }
 
       this.recordRequest();
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(AI_PROXY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.8,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 2048,
-          },
-        }),
+        body: JSON.stringify({ prompt }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || 'Failed to generate meal plan');
+        throw new Error(error.error || 'Failed to generate meal plan');
       }
 
       const data = await response.json();
@@ -448,6 +432,11 @@ Return ONLY the JSON, no other text.`;
 
   async askAI(userMessage) {
     if (this.isLoading || !userMessage.trim()) return null;
+
+    if (!AI_ENABLED) {
+      this.announce('AI features not configured. Chat is not available.');
+      return null;
+    }
 
     // Check rate limit
     if (this.isRateLimited()) {
@@ -496,27 +485,17 @@ Return ONLY the JSON, no other text.`;
       }
 
       this.recordRequest();
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(AI_PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: `${systemContext}\n\nUser: ${userMessage}` }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          },
+          prompt: `${systemContext}\n\nUser: ${userMessage}`,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || 'Request failed');
+        throw new Error(error.error || 'Request failed');
       }
 
       const data = await response.json();

@@ -1,0 +1,21 @@
+{
+  "name": "pantry-ai-backend",
+  "version": "1.0.0",
+  "description": "Secure AI proxy backend for Pantry AI",
+  "main": "cloud-function-ai-proxy.js",
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.7.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.2.1",
+    "prettier": "^3.8.3"
+  },
+  "scripts": {
+    "start": "functions-framework --target=aiProxy --debug",
+    "lint": "eslint *.js",
+    "format": "prettier --write *.js"
+  }
+}
