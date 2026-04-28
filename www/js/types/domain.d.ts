@@ -120,4 +120,6 @@ export interface RecipePlan {
   totalPrepTime: number;
   equipmentNeeded: string[];
   tips: string[];
+  componentPrep?: (recipes: MealPrepRecipe[]) => PrepTask[];
+  batchMeals?: (recipes: MealPrepRecipe[], batchSize: number) => MealPrepRecipe[];
 }

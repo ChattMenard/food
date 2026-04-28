@@ -201,6 +201,19 @@ class PantryDB {
   }
 
   /**
+   * Generic add operation (alias for put)
+   * @param store - Object store name
+   * @param data - Data to add
+   * @returns Promise that resolves when operation is complete
+   */
+  async add<T>(store: string, data: T): Promise<void> {
+    await this.ready;
+    const transaction = this.db!.transaction(store, 'readwrite');
+    transaction.objectStore(store).add(data);
+    return this.transactionDone(transaction);
+  }
+
+  /**
    * Generic delete operation
    * @param store - Object store name
    * @param key - Record key
@@ -299,6 +312,20 @@ class PantryDB {
     return this.transactionDone(transaction);
   }
 
+  /**
+   * Add mutation to mutation queue
+   * @param mutation - Mutation object to add
+   * @returns Promise that resolves when operation is complete
+   */
+  async addMutation(mutation: any): Promise<void> {
+    await this.ready;
+    const transaction = this.db!.transaction('mutations', 'readwrite');
+    const store = transaction.objectStore('mutations');
+    store.add(mutation);
+    return this.transactionDone(transaction);
+  }
+
+  
   /**
    * Get meal plan
    * @returns Promise that resolves to meal plan object

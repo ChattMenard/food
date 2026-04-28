@@ -244,6 +244,106 @@ class NutritionGoalsManager {
     }
 
     /**
+     * Calculate weekly progress against goals
+     * @param {Array} dailyData - Array of daily nutrition data
+     * @returns {Object} Weekly progress summary
+     */
+    calculateWeeklyProgress(dailyData) {
+        if (!Array.isArray(dailyData) || dailyData.length === 0) {
+            return this.calculateProgress({});
+        }
+
+        // Sum up weekly totals
+        const weeklyTotals = dailyData.reduce((acc, day) => {
+            Object.keys(this.currentGoals).forEach(key => {
+                acc[key] = (acc[key] || 0) + (day[key] || 0);
+            });
+            return acc;
+        }, {});
+
+        // Calculate daily averages
+        const dailyAverages = {};
+        const days = dailyData.length;
+        Object.keys(weeklyTotals).forEach(key => {
+            dailyAverages[key] = weeklyTotals[key] / days;
+        });
+
+        return this.calculateProgress(dailyAverages);
+    }
+
+    /**
+     * Get nutrition recommendations based on current progress
+     * @param {Object} actual - Current nutrition values
+     * @returns {Array} Array of recommendations
+     */
+    getRecommendations(actual) {
+        const progress = this.calculateProgress(actual);
+        const recommendations = [];
+
+        // Check each nutrient and provide recommendations
+        if (progress.calories.status === 'under') {
+            recommendations.push({
+                type: 'increase_calories',
+                message: 'Consider increasing calorie intake with nutrient-dense foods',
+                priority: 'medium'
+            });
+        } else if (progress.calories.status === 'over') {
+            recommendations.push({
+                type: 'decrease_calories',
+                message: 'Consider reducing calorie intake to meet your goals',
+                priority: 'high'
+            });
+        }
+
+        if (progress.protein.status === 'under') {
+            recommendations.push({
+                type: 'increase_protein',
+                message: 'Add more protein sources like lean meats, fish, or legumes',
+                priority: 'medium'
+            });
+        }
+
+        if (progress.fiber.status === 'under') {
+            recommendations.push({
+                type: 'increase_fiber',
+                message: 'Include more fruits, vegetables, and whole grains',
+                priority: 'medium'
+            });
+        }
+
+        if (progress.sugar.status === 'over') {
+            recommendations.push({
+                type: 'reduce_sugar',
+                message: 'Reduce added sugars by choosing whole foods over processed options',
+                priority: 'high'
+            });
+        }
+
+        if (progress.sodium.status === 'over') {
+            recommendations.push({
+                type: 'reduce_sodium',
+                message: 'Reduce sodium by avoiding processed foods and using less salt',
+                priority: 'high'
+            });
+        }
+
+        // General recommendations based on overall progress
+        const goodNutrients = Object.entries(progress)
+            .filter(([_, data]) => data.status === 'good')
+            .length;
+
+        if (goodNutrients >= 4) {
+            recommendations.push({
+                type: 'maintain',
+                message: 'Great job! Keep maintaining your current nutrition habits',
+                priority: 'low'
+            });
+        }
+
+        return recommendations;
+    }
+
+    /**
      * Notify all listeners
      */
     notifyListeners() {

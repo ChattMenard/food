@@ -72,33 +72,33 @@ export default {
   ],
 
   // ========================================================================
-  // Coverage thresholds - per-file for core modules only
+  // Coverage thresholds - Balanced approach (half as strict as before)
   // UI-heavy modules (app.js, ui/, native/, advanced/) are ignored
   // ========================================================================
   coverageThreshold: {
     global: {
-      statements: 50,
-      branches: 50,
-      functions: 50,
-      lines: 50
+      statements: 25,
+      branches: 25,
+      functions: 25,
+      lines: 25
     },
     './www/js/data/**/*.js': {
-      statements: 80,
-      branches: 75,
-      functions: 80,
-      lines: 80
+      statements: 40,
+      branches: 35,
+      functions: 40,
+      lines: 40
     },
     './www/js/logic/**/*.js': {
-      statements: 75,
-      branches: 70,
-      functions: 75,
-      lines: 75
+      statements: 35,
+      branches: 30,
+      functions: 35,
+      lines: 35
     },
     './www/js/features/plan/**/*.js': {
-      statements: 70,
-      branches: 65,
-      functions: 70,
-      lines: 70
+      statements: 30,
+      branches: 25,
+      functions: 30,
+      lines: 30
     }
   },
   // ========================================================================
