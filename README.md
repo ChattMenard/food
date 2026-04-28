@@ -1,4 +1,4 @@
-# main - Smart Meal Planner
+# Fridge to Fork - Smart Meal Planner
 
 A smart meal planning application that helps you manage your pantry, discover recipes based on available ingredients, and optimize your grocery shopping. Built as a Progressive Web App (PWA) with Capacitor for native mobile deployment.
 

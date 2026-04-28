@@ -184,7 +184,7 @@ self.addEventListener('push', (event) => {
   };
   
   event.waitUntil(
-    self.registration.showNotification('Pantry AI', options)
+    self.registration.showNotification('Fridge to Fork', options)
   );
 });
 

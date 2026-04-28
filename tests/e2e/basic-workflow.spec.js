@@ -5,7 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 
-test.describe('Pantry AI Basic Workflow', () => {
+test.describe('Fridge to Fork Basic Workflow', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the application
     await page.goto('http://localhost:8080');
@@ -196,7 +196,7 @@ test.describe('Pantry AI Basic Workflow', () => {
   });
 });
 
-test.describe('Pantry AI Responsive Design', () => {
+test.describe('Fridge to Fork Responsive Design', () => {
   test('should work on mobile viewport', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
@@ -226,7 +226,7 @@ test.describe('Pantry AI Responsive Design', () => {
   });
 });
 
-test.describe('Pantry AI Performance', () => {
+test.describe('Fridge to Fork Performance', () => {
   test('should load quickly', async ({ page }) => {
     const startTime = Date.now();
     

@@ -23,8 +23,8 @@ This project is designed to work across machines without hardcoded paths. All de
 ### Standard Locations (Auto-Detected)
 
 **Linux/macOS:**
-- Android SDK: `~/Android/Sdk`
-- Android Studio JDK: `~/Android/Studio/jdk` or `~/Downloads/android-studio/jbr`
+- Android SDK: `$HOME/Android/Sdk`
+- Android Studio JDK: `$HOME/Android/Studio/jdk` or `$HOME/Downloads/android-studio/jbr`
 
 **Windows:**
 - Android SDK: `%LOCALAPPDATA%\Android\Sdk`
@@ -143,7 +143,7 @@ npm run format:check         # Check formatting without changes
 
 ### Prerequisites
 
-- Android SDK installed at `~/Android/Sdk` (or set `ANDROID_HOME`)
+- Android SDK installed at `$HOME/Android/Sdk` (or set `ANDROID_HOME`)
 - Android Studio installed with a compatible JDK
 - An Android device or emulator running
 
