@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Main IndexedDB Database Layer
  * Provides persistent storage for recipes, pantry items, meal plans, preferences, and nutrition logs

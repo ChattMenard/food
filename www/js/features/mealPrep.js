@@ -1,3 +1,4 @@
+// @ts-check
 export class MealPrep {
   constructor({ getMealPlan, getRecipes, getPreferences, announce }) {
     this.getMealPlan = getMealPlan;

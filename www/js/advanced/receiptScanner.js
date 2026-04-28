@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Receipt Scanner Module
  * Handles photo receipt scanning with OCR to extract ingredients

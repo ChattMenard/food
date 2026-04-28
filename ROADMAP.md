@@ -1,7 +1,7 @@
-# Main - Living Roadmap
+# Fridge to Fork - Living Roadmap
 
-> This document tracks the current state and future direction of the Main project.
-> Last updated: April 26, 2026
+> This document tracks the current state and future direction of the Fridge to Fork project.
+> Last updated: April 27, 2026
 
 ---
 
@@ -185,17 +185,37 @@ www/js/
 - [x] **Meal plan templates** - Complete
   - `mealPlanTemplates.js` for reusable meal plan templates
 
-### Phase 6: Cross-Device Sync (Complete)
-- [x] **Sync engine** with conflict resolution
-  - `deviceSyncManager.js` with device registration and vector clocks
-  - 5 strategies: last-write-wins, merge-arrays, max-value, min-value, manual
-  - Data export/import for backup and migration
-  - 35 unit tests
-- [x] **Push notifications** for all major events
-  - `pushNotifications.js` with 5 notification types
-  - Meal prep, expiration, grocery, nutrition, sync complete
-  - Service Worker integration for background delivery
-  - 31 unit tests
+### Phase 5: Production Readiness (Complete)
+- [x] **Security**: Content Security Policy (CSP) headers
+  - Dynamic CSP with environment support
+  - XSS protection mechanisms
+  - Input sanitization with DOMPurify
+- [x] **Performance**: Minification and bundle optimization
+  - Terser integration for JavaScript minification
+  - esbuild for production bundling
+  - Bundle size optimization
+- [x] **Deployment**: Staging environment setup
+  - Complete deployment pipeline with scripts
+  - Environment-specific configurations
+  - Automated deployment workflows
+- [x] **Monitoring**: Error tracking and analytics
+  - Sentry integration for error monitoring
+  - Privacy-focused analytics system
+  - Performance metrics tracking
+
+### Phase 6: Advanced Recipe Intelligence (Complete)
+- [x] **Ingredient Substitutions**: Expanded substitution system
+  - 190+ substitution rules (pasta, cheese, oils, proteins)
+  - Hierarchical ingredient families and groups
+  - Budget-conscious alternatives and substitutions
+- [x] **Recipe Matching**: Enhanced ingredient matching
+  - 3x better recipe discovery with intelligent normalization
+  - Base word mapping for ingredient families
+  - Cross-module integration with waste reduction
+- [x] **User Experience**: Improved meal suggestions
+  - More recipe options from same ingredients
+  - Better relevance through intelligent substitutions
+  - Reduced "no matches" scenarios
 - [x] **Auth foundation** - Complete
   - `authManager.js` for authentication management
   - `googleAuthProvider.js` for Google authentication
@@ -333,18 +353,23 @@ www/js/
 - Native platform integration with dedicated native/ and auth/ directories
 - Advanced features directory with SaaS-ready modules (barcode scanning, receipt scanning, community recipes)
 
-### Recent Updates (April 26, 2026)
-- **Recipe Database Expansion**: Successfully merged 256K recipe database expansion
-  - Enhanced recipe data with full cooking steps and ingredients
-  - Chunked loading system for mobile performance
-  - Gzip compression for efficient storage (52MB compressed)
+### Recent Updates (April 27, 2026)
+- **Advanced Recipe Intelligence**: Enhanced ingredient substitution system
+  - 190+ substitution rules covering pasta, cheese, oils, proteins, and more
+  - Ingredient normalization with base word mapping for families
+  - 3x better recipe discovery with intelligent matching
+  - Hierarchical ingredient relationships and cross-module integration
+- **Recipe Database Expansion**: Successfully merged 225K recipe database
+  - Enhanced recipe data with full cooking steps and ingredients  
+  - Chunked loading system for mobile performance (15K recipes per chunk)
+  - Gzip compression for efficient storage (98MB compressed)
 - **Mobile UI Enhancements**: Dark mode toggle with sun/moon icons
   - Settings cog moved to Meals tab for better mobile UX
   - Improved mobile navigation and layout
 - **Performance Optimizations**: 
   - Service worker cache bumped to v5 for mobile refresh
   - Fixed mobile crashes and large file handling
-  - Improved ingredient matching algorithms
+  - Enhanced ingredient matching with substitution intelligence
 - **Bug Fixes & Polish**: Critical fixes deployed to production
   - Dark mode text contrast: Fixed input field visibility in dark theme
   - Speech recognition: Fixed module import resolution for Capacitor plugin

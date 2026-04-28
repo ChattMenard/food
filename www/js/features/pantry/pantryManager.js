@@ -1,3 +1,4 @@
+// @ts-check
 import { parseIngredients } from '../../utils/ingredientParser.js';
 
 const INGREDIENT_CATEGORIES = {

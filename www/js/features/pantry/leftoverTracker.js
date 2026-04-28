@@ -1,3 +1,4 @@
+// @ts-check
 export class LeftoverTracker {
     constructor({ getPantry, setPantry, persistPantry, announce }) {
         this.getPantry = getPantry;

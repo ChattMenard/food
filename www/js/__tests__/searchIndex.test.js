@@ -1,3 +1,4 @@
+// @ts-check
 import { SearchIndex } from '../logic/searchIndex.js';
 
 describe('SearchIndex', () => {

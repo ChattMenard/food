@@ -12,8 +12,11 @@ export default {
   rootDir: '.',
   
   testMatch: [
+    '**/__tests__/**/*.test.ts',
     '**/__tests__/**/*.test.js',
+    '**/tests/**/*.test.ts',
     '**/tests/**/*.test.js',  // Your actual path
+    '**/?(*.)+(spec|test).ts',
     '**/?(*.)+(spec|test).js'
   ],
   
@@ -45,12 +48,14 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   
   transform: {
-    '^.+\\.jsx?$': 'babel-jest'
+    '^.+\\.(js|jsx)$': 'babel-jest'
   },
   
   collectCoverageFrom: [
     'www/js/**/*.js',
+    'www/js/**/*.ts',
     '!www/js/**/*.test.js',
+    '!www/js/**/*.test.ts',
     '!www/js/**/__tests__/**',
     '!www/js/**/tests/**',
     '!www/js/config.js',

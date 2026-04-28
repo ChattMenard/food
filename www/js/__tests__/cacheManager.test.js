@@ -1,3 +1,4 @@
+// @ts-check
 import { CacheManager, aiCache, apiCache } from '../utils/cacheManager.js';
 
 describe('CacheManager', () => {

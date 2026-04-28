@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Device Sync Manager Tests
  * Tests for cross-device synchronization with conflict resolution

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Environment Configuration
  * Centralized environment variable management for development and production

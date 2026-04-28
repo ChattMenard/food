@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Push Notifications Module
  * Handles push notifications for low stock alerts and meal prep reminders

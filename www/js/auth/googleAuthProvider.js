@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Google Auth provider
  * Isolates the native/web plugin behind a lazy-loaded adapter.

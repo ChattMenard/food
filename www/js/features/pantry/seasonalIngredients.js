@@ -1,3 +1,4 @@
+// @ts-check
 const SEASONAL_INGREDIENTS = {
     january: ['citrus', 'kale', 'brussels sprouts', 'squash', 'root vegetables', 'cabbage', 'leeks'],
     february: ['citrus', 'kale', 'brussels sprouts', 'squash', 'root vegetables', 'cabbage', 'leeks'],

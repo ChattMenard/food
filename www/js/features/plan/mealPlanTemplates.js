@@ -1,3 +1,4 @@
+// @ts-check
 import db from '../../data/db.js';
 
 const DEFAULT_TEMPLATES = {

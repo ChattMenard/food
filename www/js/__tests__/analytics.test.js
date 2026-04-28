@@ -1,3 +1,4 @@
+// @ts-check
 import { Analytics, getAnalytics, initAnalytics } from '../utils/analytics.js';
 
 // Mock window and document

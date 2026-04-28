@@ -1,3 +1,4 @@
+// @ts-check
 import {
   retryWithBackoff,
   fetchWithRetry,

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Budget Meal Planner
  * Multi-tier budget meal planning with cost-aware recipe selection
@@ -35,54 +36,159 @@ const BUDGET_TIERS = {
     }
 };
 
+// Ingredient normalization groups - base words for families
+const INGREDIENT_GROUPS = {
+    // Pasta/Noodles family
+    'pasta': ['pasta', 'noodles', 'macaroni', 'spaghetti', 'linguini', 'penne', 'fettuccine', 'rotini', 'orzo', 'elbows', 'shells', 'farfalle', 'rigatoni', 'ziti', 'cavatappi', 'campanelle', 'gemelli'],
+    'rice': ['rice', 'white rice', 'brown rice', 'jasmine rice', 'basmati rice', 'arborio rice', 'sushi rice', 'wild rice', 'black rice', 'red rice'],
+    
+    // Cheese family
+    'cheese': ['cheese', 'cheddar', 'mozzarella', 'provolone', 'swiss', 'gouda', 'brie', 'feta', 'goat cheese', 'cream cheese', 'parmesan', 'romano', 'asiago', 'colby', 'monterey jack', 'havarti', 'muenster', 'blue cheese', 'gorgonzola', 'ricotta', 'cottage cheese'],
+    'hard cheese': ['parmesan', 'romano', 'asiago', 'pecorino', 'grana padano'],
+    'soft cheese': ['cream cheese', 'ricotta', 'cottage cheese', 'mascarpone', 'neufchatel', 'farmer cheese'],
+    'melting cheese': ['mozzarella', 'provolone', 'monterey jack', 'cheddar', 'colby', 'muenster', 'havarti'],
+    
+    // Oil family
+    'oil': ['oil', 'olive oil', 'vegetable oil', 'canola oil', 'coconut oil', 'avocado oil', 'sesame oil', 'sunflower oil', 'grapeseed oil', 'peanut oil', 'walnut oil', 'corn oil', 'safflower oil'],
+    'cooking oil': ['olive oil', 'vegetable oil', 'canola oil', 'coconut oil', 'avocado oil', 'sunflower oil', 'grapeseed oil'],
+    'specialty oil': ['sesame oil', 'peanut oil', 'walnut oil', 'truffle oil', 'chili oil'],
+    
+    // Onion family
+    'onion': ['onion', 'yellow onion', 'white onion', 'red onion', 'sweet onion', 'vidalia', 'shallot', 'leek', 'scallion', 'green onion', 'chive', 'pearl onion', 'cippolini'],
+    'allium': ['onion', 'garlic', 'shallot', 'leek', 'scallion', 'chive'],
+    
+    // Pepper family
+    'pepper': ['pepper', 'bell pepper', 'green pepper', 'red pepper', 'yellow pepper', 'orange pepper', 'jalapeno', 'habanero', 'serrano', 'poblano', 'anaheim', 'cayenne', 'chili pepper', 'paprika'],
+    'sweet pepper': ['bell pepper', 'green pepper', 'red pepper', 'yellow pepper', 'orange pepper', 'pimento'],
+    'hot pepper': ['jalapeno', 'habanero', 'serrano', 'poblano', 'anaheim', 'cayenne', 'chili pepper'],
+    
+    // Squash family
+    'squash': ['squash', 'zucchini', 'yellow squash', 'butternut squash', 'acorn squash', 'spaghetti squash', 'delicata squash', 'kabocha', 'pumpkin'],
+    'summer squash': ['zucchini', 'yellow squash', 'pattypan squash'],
+    'winter squash': ['butternut squash', 'acorn squash', 'spaghetti squash', 'delicata squash', 'kabocha', 'pumpkin', 'hubbard'],
+    
+    // Tomato family
+    'tomato': ['tomato', 'roma tomato', 'cherry tomato', 'grape tomato', 'plum tomato', 'heirloom tomato', 'campari tomato', 'beefsteak tomato'],
+    
+    // Protein cuts
+    'chicken': ['chicken', 'chicken breast', 'chicken thigh', 'chicken leg', 'chicken wing', 'whole chicken'],
+    'beef': ['beef', 'ground beef', 'steak', 'roast beef', 'brisket', 'chuck', 'sirloin', 'ribeye'],
+    'pork': ['pork', 'pork chop', 'pork shoulder', 'pork loin', 'pork belly', 'bacon', 'ham'],
+    'fish': ['fish', 'salmon', 'tuna', 'cod', 'tilapia', 'halibut', 'snapper', 'mahi mahi', 'swordfish'],
+    
+    // Flour family
+    'flour': ['flour', 'all-purpose flour', 'bread flour', 'cake flour', 'whole wheat flour', 'pastry flour', 'self-rising flour'],
+    'gluten-free flour': ['almond flour', 'coconut flour', 'rice flour', 'oat flour', 'buckwheat flour'],
+    
+    // Sugar family
+    'sugar': ['sugar', 'white sugar', 'brown sugar', 'powdered sugar', 'raw sugar', 'turbinado', 'demerara', 'cane sugar'],
+    'liquid sweetener': ['honey', 'maple syrup', 'agave', 'corn syrup', 'molasses'],
+    
+    // Vinegar family
+    'vinegar': ['vinegar', 'white vinegar', 'apple cider vinegar', 'red wine vinegar', 'balsamic vinegar', 'rice vinegar', 'malt vinegar'],
+    
+    // Milk family
+    'milk': ['milk', 'whole milk', '2% milk', 'skim milk', 'buttermilk', 'evaporated milk', 'sweetened condensed milk'],
+    'plant milk': ['almond milk', 'soy milk', 'oat milk', 'coconut milk', 'rice milk']
+};
+
 // Budget-friendly ingredient substitutions
 const BUDGET_SUBSTITUTIONS = {
     // Proteins (expensive → cheaper)
-    'beef': ['chicken', 'pork', 'beans', 'lentils', 'eggs'],
-    'steak': ['chicken thigh', 'pork chop', 'tofu', 'mushrooms'],
-    'salmon': ['canned tuna', 'mackerel', 'sardines', 'chicken'],
-    'shrimp': ['chicken', 'tofu', 'white fish', 'eggs'],
-    'lamb': ['pork', 'chicken', 'turkey', 'mushrooms'],
+    'beef': ['chicken', 'pork', 'beans', 'lentils', 'eggs', 'turkey', 'tofu'],
+    'steak': ['chicken thigh', 'pork chop', 'tofu', 'mushrooms', 'portobello', 'seitan'],
+    'salmon': ['canned tuna', 'mackerel', 'sardines', 'chicken', 'trout', 'cod'],
+    'shrimp': ['chicken', 'tofu', 'white fish', 'eggs', 'scallops', 'calamari'],
+    'lamb': ['pork', 'chicken', 'turkey', 'mushrooms', 'beef', 'seitan'],
+    'veal': ['chicken', 'pork', 'turkey', 'mushrooms', 'beef'],
     
     // Dairy
-    'heavy cream': ['milk', 'evaporated milk', 'coconut milk', 'greek yogurt'],
-    'butter': ['oil', 'margarine', 'shortening'],
-    'cheese': ['nutritional yeast', 'eggs', 'beans'],
-    'parmesan': ['nutritional yeast', 'romano', 'asiago'],
+    'heavy cream': ['milk', 'evaporated milk', 'coconut milk', 'greek yogurt', 'cashew cream', 'silken tofu'],
+    'butter': ['oil', 'margarine', 'shortening', 'ghee', 'coconut oil', 'applesauce'],
+    'cheese': ['nutritional yeast', 'eggs', 'beans', 'cashew cheese', 'nut cheese'],
+    'parmesan': ['nutritional yeast', 'romano', 'asiago', 'pecorino', 'grana padano'],
+    'mozzarella': ['provolone', 'monterey jack', 'cheddar', 'havarti', 'cashew cheese'],
+    'cheddar': ['provolone', 'swiss', 'gouda', 'colby', 'monterey jack', 'cheddar alternative'],
+    'cream cheese': ['neufchatel', 'mascarpone', 'ricotta', 'greek yogurt', 'cashew cream'],
+    'sour cream': ['greek yogurt', 'creme fraiche', 'buttermilk', 'cashew cream'],
+    
+    // Pasta/Grains
+    'pasta': ['noodles', 'rice', 'quinoa', 'barley', 'couscous', 'orzo', 'potatoes'],
+    'quinoa': ['rice', 'bulgur', 'barley', 'oats', 'farro', 'millet'],
+    'couscous': ['rice', 'orzo', 'quinoa', 'barley', 'bulgur'],
+    'arborio rice': ['sushi rice', 'short grain rice', 'risotto rice', 'pearl barley'],
+    'wild rice': ['brown rice', 'mixed rice', 'black rice', 'barley'],
+    'bread': ['tortillas', 'pita', 'naan', 'rolls', 'crackers'],
+    
+    // Oils
+    'olive oil': ['vegetable oil', 'canola oil', 'butter', 'coconut oil', 'avocado oil'],
+    'coconut oil': ['butter', 'vegetable oil', 'avocado oil', 'olive oil'],
+    'avocado oil': ['olive oil', 'grapeseed oil', 'canola oil', 'vegetable oil'],
+    'sesame oil': ['peanut oil', 'walnut oil', 'toasted sesame seeds', 'chili oil'],
+    'truffle oil': ['mushroom oil', 'olive oil + mushrooms', 'truffle seasoning'],
     
     // Produce
-    'fresh herbs': ['dried herbs', 'frozen herbs', 'herb paste'],
+    'fresh herbs': ['dried herbs', 'frozen herbs', 'herb paste', 'herb oil'],
+    'basil': ['oregano', 'thyme', 'marjoram', 'italian seasoning'],
+    'rosemary': ['thyme', 'oregano', 'marjoram', 'sage'],
+    'cilantro': ['parsley', 'culantro', 'coriander seeds', 'mint'],
+    'mint': ['basil', 'oregano', 'marjoram'],
     'out-of-season': ['frozen', 'canned', 'seasonal alternative'],
-    'pine nuts': ['sunflower seeds', 'peanuts', 'pumpkin seeds'],
-    'avocado': ['hummus', 'peanut butter', 'mashed beans'],
+    'pine nuts': ['sunflower seeds', 'peanuts', 'pumpkin seeds', 'walnuts', 'almonds'],
+    'avocado': ['hummus', 'peanut butter', 'mashed beans', 'guacamole mix'],
+    'zucchini': ['yellow squash', 'cucumber', 'eggplant', 'carrots'],
+    'bell pepper': ['poblano', 'anaheim', 'cubanelle', 'banana pepper'],
+    
+    // Onions/Alliums
+    'shallot': ['onion', 'garlic', 'leek', 'scallion', 'chive'],
+    'leek': ['onion', 'shallot', 'scallion', 'green onion'],
+    'scallion': ['green onion', 'chive', 'shallot', 'leek'],
     
     // Pantry
-    'pine nuts': ['walnuts', 'sunflower seeds', 'pumpkin seeds'],
-    'saffron': ['turmeric', 'paprika'],
-    'vanilla bean': ['vanilla extract', 'maple syrup'],
-    'maple syrup': ['honey', 'brown sugar + water', 'molasses'],
-    'olive oil': ['vegetable oil', 'canola oil', 'butter'],
-    'balsamic vinegar': ['red wine vinegar + sugar', 'apple cider vinegar'],
-    'worcestershire': ['soy sauce + vinegar', 'tamari'],
-    'fish sauce': ['soy sauce', 'miso', 'salt'],
-    
-    // Grains/Carbs
-    'quinoa': ['rice', 'bulgur', 'barley', 'oats'],
-    'couscous': ['rice', 'orzo', 'quinoa'],
-    'arborio rice': ['sushi rice', 'short grain rice'],
-    'wild rice': ['brown rice', 'mixed rice'],
+    'saffron': ['turmeric', 'paprika', 'safflower', 'annatto'],
+    'vanilla bean': ['vanilla extract', 'maple syrup', 'almond extract'],
+    'maple syrup': ['honey', 'brown sugar + water', 'molasses', 'agave'],
+    'balsamic vinegar': ['red wine vinegar + sugar', 'apple cider vinegar', 'red wine vinegar'],
+    'worcestershire': ['soy sauce + vinegar', 'tamari', 'mushroom sauce'],
+    'fish sauce': ['soy sauce', 'miso', 'salt', 'anchovy paste'],
+    'sriracha': ['sambal oelek', 'chili garlic sauce', 'hot sauce + garlic'],
     
     // Specialty items
-    'truffle oil': ['mushroom oil', 'olive oil + mushrooms'],
-    'gochujang': ['sriracha + miso', 'chili paste'],
-    'miso': ['soy sauce', 'salt + umami seasoning'],
-    'tahini': ['peanut butter', 'sunflower seed butter'],
+    'gochujang': ['sriracha + miso', 'chili paste', 'gochugaru + miso'],
+    'miso': ['soy sauce', 'salt + umami seasoning', 'tamari', 'fish sauce'],
+    'tahini': ['peanut butter', 'sunflower seed butter', 'almond butter', 'sesame paste'],
+    'hummus': ['bean dip', 'white bean puree', 'baba ganoush'],
+    'pesto': ['herb oil', 'green sauce', 'arugula pesto', 'walnut pesto'],
     
     // Canned/Convenience
-    'coconut milk': ['milk + coconut extract', 'evaporated milk'],
-    'curry paste': ['curry powder + yogurt', 'spice blend'],
-    'harissa': ['hot sauce + spices', 'sambal oelek'],
-    'sambal oelek': ['sriracha', 'chili flakes + vinegar']
+    'coconut milk': ['milk + coconut extract', 'evaporated milk', 'cream + coconut'],
+    'curry paste': ['curry powder + yogurt', 'spice blend', 'curry sauce'],
+    'harissa': ['hot sauce + spices', 'sambal oelek', 'chili garlic paste'],
+    'sambal oelek': ['sriracha', 'chili flakes + vinegar', 'red pepper paste'],
+    'dashi': ['chicken broth', 'vegetable broth', 'mushroom broth'],
+    
+    // Baking
+    'cake flour': ['all-purpose flour + cornstarch', 'pastry flour'],
+    'pastry flour': ['all-purpose flour + cake flour', 'low-gluten flour'],
+    'self-rising flour': ['all-purpose flour + baking powder + salt'],
+    'cornstarch': ['arrowroot', 'tapioca starch', 'potato starch'],
+    'gelatin': ['agar-agar', 'pectin', 'carrageenan'],
+    
+    // Sweeteners
+    'brown sugar': ['white sugar + molasses', 'maple sugar', 'coconut sugar'],
+    'powdered sugar': ['white sugar + cornstarch', 'blended sugar'],
+    'honey': ['maple syrup', 'agave', 'brown sugar + water'],
+    'molasses': ['brown sugar', 'maple syrup', 'treacle'],
+    
+    // Legumes
+    'lentils': ['beans', 'split peas', 'chickpeas', 'edamame'],
+    'chickpeas': ['garbanzo beans', 'white beans', 'cannellini beans', 'great northern beans'],
+    'black beans': ['kidney beans', 'pinto beans', 'navy beans'],
+    
+    // Nuts/Seeds
+    'almonds': ['walnuts', 'pecans', 'cashews', 'sunflower seeds'],
+    'walnuts': ['pecans', 'almonds', 'cashews', 'pumpkin seeds'],
+    'cashews': ['almonds', 'macadamia nuts', 'sunflower seeds', 'peanuts']
 };
 
 // Cheap base ingredients by category
@@ -92,6 +198,65 @@ const BUDGET_BASES = {
     vegetables: ['carrots', 'onions', 'cabbage', 'potatoes', 'seasonal greens'],
     flavor: ['garlic', 'ginger', 'spices', 'soy sauce', 'vinegar', 'lemon']
 };
+
+/**
+ * Normalize ingredient to base form using ingredient groups
+ * @param {string} ingredient - Ingredient name to normalize
+ * @returns {string} - Base ingredient name
+ */
+function normalizeIngredient(ingredient) {
+    const normalized = ingredient.toLowerCase().trim();
+    
+    // Check if ingredient matches any group
+    for (const [baseName, variants] of Object.entries(INGREDIENT_GROUPS)) {
+        if (variants.some(variant => 
+            normalized === variant || 
+            normalized.includes(variant) || 
+            variant.includes(normalized)
+        )) {
+            return baseName;
+        }
+    }
+    
+    return normalized;
+}
+
+/**
+ * Get all related ingredients for a given ingredient (including substitutions)
+ * @param {string} ingredient - Base ingredient
+ * @returns {Array} - Array of related ingredients
+ */
+export function getRelatedIngredients(ingredient) {
+    const normalized = normalizeIngredient(ingredient);
+    const related = new Set([ingredient, normalized]);
+    
+    // Add group members
+    if (INGREDIENT_GROUPS[normalized]) {
+        INGREDIENT_GROUPS[normalized].forEach(ing => related.add(ing));
+    }
+    
+    // Add substitutions
+    if (BUDGET_SUBSTITUTIONS[normalized]) {
+        BUDGET_SUBSTITUTIONS[normalized].forEach(sub => related.add(sub));
+    }
+    
+    // Check if ingredient is a substitution for something else
+    for (const [key, subs] of Object.entries(BUDGET_SUBSTITUTIONS)) {
+        if (subs.some(sub => sub === normalized || sub === ingredient)) {
+            related.add(key);
+            if (INGREDIENT_GROUPS[key]) {
+                INGREDIENT_GROUPS[key].forEach(ing => related.add(ing));
+            }
+        }
+    }
+    
+    return Array.from(related);
+}
+
+/**
+ * Export normalization function for use in other modules
+ */
+export { normalizeIngredient, INGREDIENT_GROUPS };
 
 class BudgetMealPlanner {
     constructor() {

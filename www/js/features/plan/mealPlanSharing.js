@@ -1,3 +1,4 @@
+// @ts-check
 export class MealPlanSharing {
     constructor({ getMealPlan, setMealPlan, persistMealPlan, announce }) {
         this.getMealPlan = getMealPlan;

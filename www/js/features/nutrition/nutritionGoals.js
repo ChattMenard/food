@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Nutrition Goals Manager
  * Persistent nutrition goal setting and tracking

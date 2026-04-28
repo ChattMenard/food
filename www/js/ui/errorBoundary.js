@@ -1,3 +1,5 @@
+// @ts-check
+// @ts-check
 /**
  * Error Boundary Component
  * Provides global error handling and graceful error recovery

@@ -1,3 +1,4 @@
+// @ts-check
 import { CommunityRecipes } from '../advanced/communityRecipes.js';
 
 describe('CommunityRecipes', () => {

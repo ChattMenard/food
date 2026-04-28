@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Recipe Image Generator
  * Generates relevant recipe images using Unsplash Source API

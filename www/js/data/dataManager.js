@@ -1,3 +1,4 @@
+// @ts-check
 import { normalizeCuisine } from '../utils/dietFilters.js';
 import { addImagesToRecipes } from '../advanced/recipeImages.js';
 import { SearchIndex } from '../logic/searchIndex.js';

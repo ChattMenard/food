@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Barcode Scanner Module
  * Handles native camera access for barcode scanning via Capacitor

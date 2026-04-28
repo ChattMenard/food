@@ -1,3 +1,4 @@
+// @ts-check
 export class PreferencesManager {
   constructor({ getPreferences, savePreferencesState, updateMeals }) {
     this.getPreferences = getPreferences;

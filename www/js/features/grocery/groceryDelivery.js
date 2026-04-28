@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Grocery Delivery Integration
  * Multi-provider grocery delivery with cart export and price comparison

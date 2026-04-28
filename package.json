@@ -54,7 +54,10 @@
     "@jest/globals": "^30.3.0",
     "@playwright/test": "^1.50.0",
     "@tailwindcss/cli": "^4.2.2",
+    "@types/babel__core": "^7.20.5",
+    "@types/babel__preset-env": "^7.10.0",
     "@types/dompurify": "^3.0.5",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
@@ -70,6 +73,7 @@
     "serve": "^14.2.4",
     "tailwindcss": "^4.2.2",
     "terser": "^5.46.2",
+    "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }

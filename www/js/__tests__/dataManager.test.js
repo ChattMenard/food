@@ -1,3 +1,4 @@
+// @ts-check
 import { DataManager } from '../data/dataManager.js';
 
 jest.mock('../advanced/recipeImages.js', () => ({

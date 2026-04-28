@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Meal Prep Planner Tests
  * Tests for batch cooking, portion planning, and prep schedules

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Error Tracking and Monitoring System
  * Handles error collection, reporting, and monitoring

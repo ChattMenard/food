@@ -1,3 +1,4 @@
+// @ts-check
 export class PersonalizedRecommendations {
     constructor({ getMealPlan, getRecipes, getPreferences, getRecipeRatings }) {
         this.getMealPlan = getMealPlan;

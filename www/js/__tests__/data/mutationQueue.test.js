@@ -1,3 +1,4 @@
+// @ts-check
 import { enqueue, getPending, markSynced, markFailed, incrementRetry } from '../../data/mutationQueue.js';
 
 jest.mock('../../data/db.js', () => ({

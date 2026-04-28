@@ -1,3 +1,4 @@
+// @ts-check
 import { MealPlanSharing } from '../../../features/plan/mealPlanSharing.js';
 
 describe('MealPlanSharing', () => {

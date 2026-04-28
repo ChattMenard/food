@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Nutrition Dashboard Module
  * Handles nutrition tracking, visualization, and export functionality

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Cost Tracker Module
  * Tracks ingredient costs and provides budget optimization suggestions

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Logger utility for environment-based logging
  * Provides different log levels based on environment

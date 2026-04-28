@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Cross-Device Sync Module
  * Handles synchronization of data across multiple devices

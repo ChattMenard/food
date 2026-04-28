@@ -1,3 +1,4 @@
+// @ts-check
 import { RecipeEngine } from '../logic/recipeEngine.js';
 import { IngredientVectors } from '../logic/ingredientVectors.js';
 import { aiCache } from '../utils/cacheManager.js';

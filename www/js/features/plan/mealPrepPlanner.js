@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Meal Prep Planner
  * Batch cooking, portion planning, and prep schedule management

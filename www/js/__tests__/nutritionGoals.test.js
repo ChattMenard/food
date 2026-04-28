@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Nutrition Goals Manager Tests
  * Tests for persistent nutrition goal setting and progress calculation

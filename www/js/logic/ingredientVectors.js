@@ -1,3 +1,4 @@
+// @ts-check
 export class IngredientVectors {
   constructor(recipes) {
     this.recipes = recipes;

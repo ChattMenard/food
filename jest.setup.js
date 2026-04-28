@@ -3,7 +3,7 @@
  * Global setup for test environment
  */
 
-import 'fake-indexeddb/auto';
+require('fake-indexeddb/auto');
 
 // Polyfill structuredClone for Node.js environment
 if (!global.structuredClone) {

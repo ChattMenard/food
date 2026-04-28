@@ -1,3 +1,6 @@
+// @ts-check
+// @ts-check
+// @ts-check
 import { log } from './utils/logger.js';
 import { sanitize } from './utils/sanitizer.js';
 import environmentConfig from './config/environment.js';

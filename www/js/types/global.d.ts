@@ -1,18 +1,21 @@
 declare module '*.js' {
   const value: any;
   export default value;
-  export function normalizeCuisine(cuisine: string): string;
-  export function addImagesToRecipes(recipes: any[]): any[];
-  export class SearchIndex {
-    constructor(recipes: any[]);
-    search(query: string, filters?: any): any[];
-    getRecipeById(id: string): any;
-    getAllRecipes(): any[];
-    addRecipe(recipe: any): void;
-    removeRecipe(id: string): void;
-    getRecipesByCuisine(cuisine: string): any[];
-    getRecipesByIngredient(ingredient: string): any[];
-    getRandomRecipes(count: number, filters?: any): any[];
+}
+
+declare global {
+  interface Window {
+    dataManager?: any;
+    offlineManager?: any;
+    _recipesLoaded?: boolean;
+    _appInitialized?: boolean;
+    renderMealPlan?: any;
+    updateMeals?: any;
+    updateShoppingList?: any;
+    updateTodayNutrition?: any;
+    renderNutritionGoals?: any;
+    isAIQuery?: boolean;
+    IS_DEVELOPMENT?: boolean;
   }
 }
 

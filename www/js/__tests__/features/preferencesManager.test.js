@@ -1,3 +1,4 @@
+// @ts-check
 import { PreferencesManager } from '../../features/preferencesManager.js';
 
 describe('PreferencesManager', () => {

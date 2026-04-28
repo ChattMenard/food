@@ -1,3 +1,4 @@
+// @ts-check
 import { MealPlanTemplates } from '../../../features/plan/mealPlanTemplates.js';
 
 jest.mock('../../../data/db.js', () => ({

@@ -1,3 +1,5 @@
+// @ts-check
+// @ts-check
 export class UIManager {
   constructor({ updateMeals, updateShoppingList }) {
     this.updateMeals = updateMeals;

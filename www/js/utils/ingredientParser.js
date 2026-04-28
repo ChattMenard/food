@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Ingredient Parser Utility
  * Parses ingredient names from speech/text input

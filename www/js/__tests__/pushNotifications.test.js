@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Push Notification Manager Tests
  * Tests for notification scheduling and permission handling

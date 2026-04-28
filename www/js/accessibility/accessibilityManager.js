@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Accessibility Manager
  * Handles ARIA labels, keyboard navigation, and accessibility compliance

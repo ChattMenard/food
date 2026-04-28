@@ -1,3 +1,5 @@
+// @ts-check
+// @ts-check
 /**
  * Device Sync Manager
  * Cross-device synchronization with conflict resolution

@@ -1,3 +1,5 @@
+// @ts-check
+// @ts-check
 import db from '../db.js';
 
 class NutritionDashboard {

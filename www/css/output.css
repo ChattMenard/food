@@ -331,6 +331,9 @@
   .hidden {
     display: none;
   }
+  .inline {
+    display: inline;
+  }
   .inline-block {
     display: inline-block;
   }
@@ -372,9 +375,6 @@
   }
   .flex-shrink-0 {
     flex-shrink: 0;
-  }
-  .shrink {
-    flex-shrink: 1;
   }
   .transform {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
@@ -691,8 +691,8 @@
     outline-style: var(--tw-outline-style);
     outline-width: 1px;
   }
-  .invert {
-    --tw-invert: invert(100%);
+  .blur {
+    --tw-blur: blur(8px);
     filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
   }
   .filter {

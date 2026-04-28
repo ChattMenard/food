@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Grocery Delivery Integration Module
  * Integrates with grocery delivery APIs for ordering

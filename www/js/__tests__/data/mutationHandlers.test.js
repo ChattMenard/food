@@ -1,3 +1,4 @@
+// @ts-check
 import { handleAddItem, handleUpdateItem, handleDeleteItem, registerAllHandlers } from '../../data/mutationHandlers.js';
 
 jest.mock('../../data/db.js', () => ({

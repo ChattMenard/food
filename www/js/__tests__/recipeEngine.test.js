@@ -1,3 +1,4 @@
+// @ts-check
 import { RecipeEngine } from '../logic/recipeEngine.js';
 
 describe('RecipeEngine', () => {

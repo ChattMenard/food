@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Community Recipes Module
  * Handles recipe submission and community features

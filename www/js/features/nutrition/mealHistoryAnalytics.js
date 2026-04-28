@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Meal History Analytics Module
  * Provides analytics on meal patterns, preferences, and trends

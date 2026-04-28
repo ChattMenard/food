@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Budget Meal Planner Tests
  * Tests for multi-tier budget meal planning

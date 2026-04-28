@@ -1,3 +1,4 @@
+// @ts-check
 import { CostTracker } from '../logic/costTracker.js';
 
 describe('CostTracker', () => {

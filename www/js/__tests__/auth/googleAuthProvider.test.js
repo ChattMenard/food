@@ -1,3 +1,4 @@
+// @ts-check
 import { initializeGoogleAuth, signInWithGoogle, signOutFromGoogle, refreshGoogleSession } from '../../auth/googleAuthProvider.js';
 
 jest.mock('@codetrix-studio/capacitor-google-auth', () => ({

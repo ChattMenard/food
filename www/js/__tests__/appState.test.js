@@ -1,3 +1,4 @@
+// @ts-check
 import {
   subscribe,
   getState,

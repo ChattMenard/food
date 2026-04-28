@@ -1,3 +1,4 @@
+// @ts-check
 import { passesDiet, passesAllergy, passesCuisine } from '../../utils/dietFilters.js';
 
 const INITIAL_RENDER_COUNT = 20;

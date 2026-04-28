@@ -1,3 +1,4 @@
+// @ts-check
 import migrationManager, { MigrationManager } from '../../data/migrationManager.js';
 
 jest.mock('../../data/db.js', () => ({

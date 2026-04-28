@@ -1,3 +1,4 @@
+// @ts-check
 import { IngredientVectors } from '../logic/ingredientVectors.js';
 
 describe('IngredientVectors', () => {

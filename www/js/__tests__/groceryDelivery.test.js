@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Grocery Delivery Integration Tests
  * Tests for multi-provider grocery delivery and cart export

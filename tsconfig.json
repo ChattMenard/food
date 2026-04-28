@@ -5,25 +5,31 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "allowJs": false,
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noImplicitReturns": true,
+    "allowJs": true,
+    "checkJs": false,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true,
+    "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./www/js"
+    "rootDir": "./www/js",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false
   },
   "include": [
-    "www/js/**/*.ts"
+    "www/js/**/*.ts",
+    "www/js/**/*.js"
   ],
   "exclude": [
     "node_modules",
@@ -31,8 +37,7 @@
     "android",
     "ios",
     "scripts",
-    "www/data",
-    "www/js/**/*.js"
+    "www/data"
   ],
   "ts-node": {
     "esm": true

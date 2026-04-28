@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Waste Reduction Module
  * Provides suggestions to reduce food waste based on pantry items and expiry dates
@@ -100,34 +101,106 @@ export class WasteReductionManager {
     }
     
     /**
-     * Get recipes using specific ingredients
+     * Get recipes using specific ingredients with enhanced matching
      * @param {Array} ingredients - Ingredient names
      * @param {Array} recipes - Available recipes
      * @returns {Array} Matching recipes sorted by ingredient match ratio
      */
     findRecipesForIngredients(ingredients, recipes) {
-        const ingredientSet = new Set(ingredients.map(i => i.toLowerCase()));
+        // Build enhanced ingredient set with substitutions and groups
+        const enhancedIngredientSet = new Set();
+        
+        ingredients.forEach(ingredient => {
+            const normalized = ingredient.toLowerCase().trim();
+            enhancedIngredientSet.add(normalized);
+            
+            // Add related ingredients (groups, substitutions, etc.)
+            const related = this.getRelatedIngredients ? 
+                this.getRelatedIngredients(normalized) : 
+                [normalized];
+            
+            related.forEach(rel => enhancedIngredientSet.add(rel.toLowerCase()));
+        });
         
         const scored = recipes.map(recipe => {
             const recipeIngredients = (recipe.ingredients || [])
-                .map(i => i.toLowerCase());
+                .map(i => i.toLowerCase().trim());
             
-            const matches = recipeIngredients.filter(ing => 
-                ingredientSet.has(ing) || ingredientSet.some(setIng => ing.includes(setIng))
-            );
+            // Enhanced matching with partial includes and normalization
+            const matches = recipeIngredients.filter(ing => {
+                // Direct match
+                if (enhancedIngredientSet.has(ing)) return true;
+                
+                // Partial match - check if recipe ingredient contains any of our ingredients
+                for (const setIng of enhancedIngredientSet) {
+                    if (ing.includes(setIng) || setIng.includes(ing)) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            });
             
             return {
                 recipe,
                 matchCount: matches.length,
-                matchRatio: matches.length / Math.max(1, recipeIngredients.length)
+                matchRatio: matches.length / Math.max(1, recipeIngredients.length),
+                matchedIngredients: matches
             };
         });
         
         return scored
             .filter(s => s.matchCount > 0)
-            .sort((a, b) => b.matchRatio - a.matchRatio)
-            .slice(0, 10)
-            .map(s => s.recipe);
+            .sort((a, b) => {
+                // Primary sort by match ratio
+                if (b.matchRatio !== a.matchRatio) {
+                    return b.matchRatio - a.matchRatio;
+                }
+                // Secondary sort by absolute match count
+                return b.matchCount - a.matchCount;
+            })
+            .slice(0, 15) // Increased from 10 to show more options
+            .map(s => ({
+                ...s.recipe,
+                matchScore: Math.round(s.matchRatio * 100),
+                matchedIngredients: s.matchedIngredients
+            }));
+    }
+    
+    /**
+     * Get related ingredients for enhanced matching
+     * @param {string} ingredient - Base ingredient
+     * @returns {Array} - Array of related ingredients
+     */
+    getRelatedIngredients(ingredient) {
+        // Import from budgetMealPlanner if available
+        if (typeof getRelatedIngredients === 'function') {
+            return getRelatedIngredients(ingredient);
+        }
+        
+        // Fallback to basic normalization
+        const normalized = ingredient.toLowerCase().trim();
+        const related = new Set([ingredient, normalized]);
+        
+        // Basic pasta family
+        if (normalized.includes('pasta') || normalized.includes('noodle') || 
+            ['spaghetti', 'linguini', 'penne', 'fettuccine', 'macaroni'].some(p => normalized.includes(p))) {
+            ['pasta', 'noodles', 'spaghetti', 'linguini', 'penne', 'fettuccine', 'macaroni', 'rotini', 'orzo'].forEach(ing => related.add(ing));
+        }
+        
+        // Basic cheese family
+        if (normalized.includes('cheese') || 
+            ['cheddar', 'mozzarella', 'provolone', 'swiss', 'gouda'].some(c => normalized.includes(c))) {
+            ['cheese', 'cheddar', 'mozzarella', 'provolone', 'swiss', 'gouda', 'parmesan', 'romano'].forEach(ing => related.add(ing));
+        }
+        
+        // Basic oil family
+        if (normalized.includes('oil') || 
+            ['olive', 'vegetable', 'canola', 'coconut', 'avocado'].some(o => normalized.includes(o))) {
+            ['oil', 'olive oil', 'vegetable oil', 'canola oil', 'coconut oil', 'avocado oil'].forEach(ing => related.add(ing));
+        }
+        
+        return Array.from(related);
     }
     
     /**
@@ -167,6 +240,7 @@ export class WasteReductionManager {
      * @returns {number} Estimated cost
      */
     estimateCost(item) {
+
         // Simple estimation based on category
         const categoryCosts = {
             'vegetables': 2,
