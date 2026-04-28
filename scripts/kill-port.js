@@ -5,8 +5,8 @@
  * Usage: node kill-port.js <port>
  */
 
-const { exec } = require('child_process');
-const os = require('os');
+import { exec } from 'child_process';
+import os from 'os';
 
 const port = process.argv[2];
 
